@@ -55,6 +55,25 @@ def test_iso_format():
     assert_equal(d1.isoformat(timespec="seconds"), "2023-10-01T00:00:00+08:00")
 
 
+def test_time_zone():
+    print("Running test_time_zone()")
+    assert_equal(Timezone.from_utc('UTC+0800').offset, 28800)
+    assert_equal(Timezone.from_utc('UTC+08:00').offset, 28800)
+    assert_equal(Timezone.from_utc('UTC08:00').offset, 28800)
+    assert_equal(Timezone.from_utc('UTC0800').offset, 28800)
+    assert_equal(Timezone.from_utc('+08:00').offset, 28800)
+    assert_equal(Timezone.from_utc('+0800').offset, 28800)
+    assert_equal(Timezone.from_utc('08').offset, 28800)
+
+def test_strptime():
+    print("Running test_strptime()")
+    m = Morrow.strptime('20-01-2023 15:49:10', '%d-%m-%Y %H:%M:%S', Timezone.local())
+    assert_equal(m.__str__(), '2023-01-20T15:49:10.000000+08:00')
+    
+    m = Morrow.strptime('2023-10-18 15:49:10 +08:00', '%Y-%m-%d %H:%M:%S %z')
+    assert_equal(m.__str__(), '2023-10-18T15:49:10.000000+08:00')
+
+
 def test_sub():
     print("Running test_sub()")
     var result = Morrow(2023, 10, 1, 10, 0, 0, 1) - Morrow(2023, 10, 1, 10, 0, 0)
@@ -77,3 +96,5 @@ def main():
     test_utcfromtimestamp()
     test_iso_format()
     test_sub()
+    test_time_zone()
+    test_strptime()
