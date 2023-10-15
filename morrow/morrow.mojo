@@ -42,7 +42,7 @@ struct Morrow:
         minute: Int = 0,
         second: Int = 0,
         microsecond: Int = 0,
-        timezone: Timezone = Timezone(0, 'None')
+        timezone: Timezone = Timezone.none(),
     ) raises:
         self.year = year
         self.month = month
@@ -69,10 +69,10 @@ struct Morrow:
         let tz: Timezone
         if utc:
             tm = c_gmtime(t.tv_sec)
-            tz = Timezone(0, 'UTC')
+            tz = Timezone(0, "UTC")
         else:
             tm = c_localtime(t.tv_sec)
-            tz = Timezone(tm.tm_gmtoff.to_int(), 'local')
+            tz = Timezone(tm.tm_gmtoff.to_int(), "local")
 
         let result = Morrow(
             tm.tm_year.to_int() + 1900,
@@ -82,7 +82,7 @@ struct Morrow:
             tm.tm_min.to_int(),
             tm.tm_sec.to_int(),
             t.tv_usec,
-            tz
+            tz,
         )
         return result
 
@@ -97,6 +97,38 @@ struct Morrow:
         let timestamp_ = normalize_timestamp(timestamp)
         let t = CTimeval(timestamp_.to_int())
         return Morrow._fromtimestamp(t, True)
+
+    @staticmethod
+    fn strptime(
+        date_str: String, fmt: String, tzinfo: Timezone = Timezone.none()
+    ) raises -> Morrow:
+        """
+        Create a Morrow instance from a date string and format,
+        in the style of ``datetime.strptime``.  Optionally replaces the parsed timezone.
+
+        Usage::
+
+        >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S')
+            <Morrow [2019-01-20T15:49:10+00:00]>
+        """
+        let dt = py_dt_datetime().strptime(date_str, fmt)
+        let tz: Timezone
+        if tzinfo.is_none() and dt.tzinfo.to_string() != "None":
+            tz = Timezone(
+                dt.tzinfo.utcoffset(None).total_seconds().to_float64().to_int()
+            )
+        else:
+            tz = tzinfo
+        return Morrow(
+            dt.year.to_float64().to_int(),
+            dt.month.to_float64().to_int(),
+            dt.day.to_float64().to_int(),
+            dt.hour.to_float64().to_int(),
+            dt.minute.to_float64().to_int(),
+            dt.second.to_float64().to_int(),
+            dt.microsecond.to_float64().to_int(),
+            tz,
+        )
 
     fn isoformat(
         self, sep: String = "T", timespec: StringLiteral = "auto"
@@ -115,24 +147,42 @@ struct Morrow:
         terms of the time to include. Valid options are 'auto', 'hours',
         'minutes', 'seconds', 'milliseconds' and 'microseconds'.
         """
-        let date_str = num2str(self.year, 4) + "-"
-            + num2str(self.month, 2) + "-"
+        let date_str = (
+            num2str(self.year, 4)
+            + "-"
+            + num2str(self.month, 2)
+            + "-"
             + num2str(self.day, 2)
+        )
         var time_str = String("")
         if timespec == "auto" or timespec == "microseconds":
-            time_str = num2str(self.hour, 2) + ":"
-                + num2str(self.minute, 2) + ":"
-                + num2str(self.second, 2) + "."
-                + num2str(self.microsecond, 6)
-        elif timespec == "milliseconds":
-            time_str = num2str(self.hour, 2) + ":"
-                + num2str(self.minute, 2) + ":"
-                + num2str(self.second, 2) + "."
-                + num2str(self.microsecond // 1000, 3)
-        elif timespec == "seconds":
-            time_str = num2str(self.hour, 2) + ":"
-                + num2str(self.minute, 2) + ":"
+            time_str = (
+                num2str(self.hour, 2)
+                + ":"
+                + num2str(self.minute, 2)
+                + ":"
                 + num2str(self.second, 2)
+                + "."
+                + num2str(self.microsecond, 6)
+            )
+        elif timespec == "milliseconds":
+            time_str = (
+                num2str(self.hour, 2)
+                + ":"
+                + num2str(self.minute, 2)
+                + ":"
+                + num2str(self.second, 2)
+                + "."
+                + num2str(self.microsecond // 1000, 3)
+            )
+        elif timespec == "seconds":
+            time_str = (
+                num2str(self.hour, 2)
+                + ":"
+                + num2str(self.minute, 2)
+                + ":"
+                + num2str(self.second, 2)
+            )
         elif timespec == "minutes":
             time_str = num2str(self.hour, 2) + ":" + num2str(self.minute, 2)
         elif timespec == "hours":
