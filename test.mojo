@@ -78,15 +78,25 @@ def test_sub():
     print("Running test_sub()")
     var result = Morrow(2023, 10, 1, 10, 0, 0, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.microseconds, 1)
+    assert_equal(result.__str__(), "0:00:00000001")
 
     result = Morrow(2023, 10, 1, 10, 0, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.seconds, 1)
+    assert_equal(result.__str__(), "0:00:01")
+
 
     result = Morrow(2023, 10, 1, 10, 1, 0) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.seconds, 60)
+    assert_equal(result.__str__(), "0:01:00")
+
 
     result = Morrow(2023, 10, 2, 10, 0, 0) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 1)
+    assert_equal(result.__str__(), "1 day 0:00:00")
+
+    result = Morrow(2023, 10, 3, 10, 1, 1) - Morrow(2023, 10, 1, 10, 0, 0)
+    assert_equal(result.days, 2)
+    assert_equal(result.__str__(), "2 days 0:01:01")
 
 
 def main():

@@ -3,23 +3,7 @@ from .util import normalize_timestamp, num2str, _ymd2ord
 from ._libc import c_gettimeofday, c_localtime, c_gmtime
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
-
-
-@value
-struct Timedelta:
-    var days: Int
-    var seconds: Int
-    var microseconds: Int
-
-    fn __init__(
-        inout self,
-        days: Int = 0,
-        seconds: Int = 0,
-        microseconds: Int = 0,
-    ) raises:
-        self.days = days
-        self.seconds = seconds
-        self.microseconds = microseconds
+from .timedelta import TimeDelta
 
 
 @value
@@ -205,12 +189,12 @@ struct Morrow:
     fn __str__(self) raises -> String:
         return self.isoformat()
 
-    fn __sub__(self, other: Morrow) raises -> Timedelta:
+    fn __sub__(self, other: Morrow) raises -> TimeDelta:
         let days1 = self.toordinal()
         let days2 = other.toordinal()
         let secs1 = self.second + self.minute * 60 + self.hour * 3600
         let secs2 = other.second + other.minute * 60 + other.hour * 3600
-        let base = Timedelta(
+        let base = TimeDelta(
             days1 - days2, secs1 - secs2, self.microsecond - other.microsecond
         )
         return base
