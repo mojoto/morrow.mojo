@@ -3,7 +3,7 @@ from testing import assert_equal, assert_true
 from morrow import Morrow
 from morrow._libc import c_gettimeofday
 from morrow._py import py_dt_datetime, py_time
-from morrow.timezone import Timezone
+from morrow.timezone import TimeZone
 
 
 fn assert_datetime_equal(dt: Morrow, py_dt: PythonObject) raises:
@@ -50,24 +50,24 @@ def test_iso_format():
     assert_equal(d0.isoformat(timespec="seconds"), "2023-10-01T00:00:00")
     assert_equal(d0.isoformat(timespec="milliseconds"), "2023-10-01T00:00:00.001")
 
-    # with timezone
-    let d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, Timezone(28800, 'Bejing'))
+    # with TimeZone
+    let d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, 'Bejing'))
     assert_equal(d1.isoformat(timespec="seconds"), "2023-10-01T00:00:00+08:00")
 
 
 def test_time_zone():
     print("Running test_time_zone()")
-    assert_equal(Timezone.from_utc('UTC+0800').offset, 28800)
-    assert_equal(Timezone.from_utc('UTC+08:00').offset, 28800)
-    assert_equal(Timezone.from_utc('UTC08:00').offset, 28800)
-    assert_equal(Timezone.from_utc('UTC0800').offset, 28800)
-    assert_equal(Timezone.from_utc('+08:00').offset, 28800)
-    assert_equal(Timezone.from_utc('+0800').offset, 28800)
-    assert_equal(Timezone.from_utc('08').offset, 28800)
+    assert_equal(TimeZone.from_utc('UTC+0800').offset, 28800)
+    assert_equal(TimeZone.from_utc('UTC+08:00').offset, 28800)
+    assert_equal(TimeZone.from_utc('UTC08:00').offset, 28800)
+    assert_equal(TimeZone.from_utc('UTC0800').offset, 28800)
+    assert_equal(TimeZone.from_utc('+08:00').offset, 28800)
+    assert_equal(TimeZone.from_utc('+0800').offset, 28800)
+    assert_equal(TimeZone.from_utc('08').offset, 28800)
 
 def test_strptime():
     print("Running test_strptime()")
-    m = Morrow.strptime('20-01-2023 15:49:10', '%d-%m-%Y %H:%M:%S', Timezone.local())
+    m = Morrow.strptime('20-01-2023 15:49:10', '%d-%m-%Y %H:%M:%S', TimeZone.local())
     assert_equal(m.__str__(), '2023-01-20T15:49:10.000000+08:00')
     
     m = Morrow.strptime('2023-10-18 15:49:10 +08:00', '%Y-%m-%d %H:%M:%S %z')

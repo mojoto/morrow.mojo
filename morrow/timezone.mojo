@@ -3,7 +3,7 @@ from ._libc import c_localtime
 
 
 @value
-struct Timezone:
+struct TimeZone:
     var offset: Int
     var name: String
 
@@ -18,20 +18,20 @@ struct Timezone:
         return self.name == "None"
 
     @staticmethod
-    fn none() -> Timezone:
-        return Timezone(0, "None")
+    fn none() -> TimeZone:
+        return TimeZone(0, "None")
 
     @staticmethod
-    fn local() -> Timezone:
+    fn local() -> TimeZone:
         let local_t = c_localtime(0)
-        return Timezone(local_t.tm_gmtoff.to_int(), "local")
+        return TimeZone(local_t.tm_gmtoff.to_int(), "local")
 
     @staticmethod
-    fn from_utc(utc_str: String) raises -> Timezone:
+    fn from_utc(utc_str: String) raises -> TimeZone:
         if len(utc_str) == 0:
             raise Error("utc_str is empty")
         if utc_str == "utc" or utc_str == "UTC" or utc_str == "Z":
-            return Timezone(0, "utc")
+            return TimeZone(0, "utc")
         var p = 3 if len(utc_str) > 3 and utc_str[0:3] == "UTC" else 0
 
         let sign = -1 if utc_str[p] == "-" else 1
@@ -58,7 +58,7 @@ struct Timezone:
             minutes = 0
             raise Error("utc_str format is invalid")
         let offset: Int = sign * (hours * 3600 + minutes * 60)
-        return Timezone(offset)
+        return TimeZone(offset)
 
     fn format(self) -> String:
         let sign: String
