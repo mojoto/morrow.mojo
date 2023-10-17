@@ -8,10 +8,16 @@ Morrow is heavily inspired by [arrow](https://github.com/arrow-py/arrow), and th
 
 ## Features
 
-- TimeZone-aware and UTC by default
-- Support format and parse strings
-- Support for the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) standard
+- TimeZone-aware and UTC by default.
+- Support format and parse strings.
+- Support for the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) standard.
 
+## Preparation
+
+You have three ways to reference this library:
+- Download morrow.mojopkg from [releases](https://github.com/mojoto/morrow.mojo/releases).
+- Clone this project and execute `make build` to build morrow.mojopkg.
+- Directly copy the `morrow`` directory of this project to your own project.
 
 ## Usage
 
