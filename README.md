@@ -1,7 +1,7 @@
 # Morrow.mojo: Human-friendly date & time for Mojo 🔥
 
 
-**Morrow** is Mojo library that provides human-friendly method for managing, formatting, and transforming dates, times, and timestamps.
+**Morrow** is a Mojo library that provides human-friendly method for managing, formatting, and transforming dates, times, and timestamps.
 
 Morrow is heavily inspired by [arrow](https://github.com/arrow-py/arrow), and thanks for its elegant design.
 
