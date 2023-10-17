@@ -16,31 +16,31 @@ Morrow is heavily inspired by [arrow](https://github.com/arrow-py/arrow), and th
 ## Usage
 
 ```python
-from morrow import Morrow, TimeZone
+from morrow import Morrow, Timezone
 
 # Get local date and time.
 var result = Morrow.now()
-print(result.__str__())
+print(result.__str__())  # 2023-10-01T20:10:25.188957+08:00
 
 # Get UTC date and time.
 result = Morrow.utcnow()
-print(result.__str__())
+print(result.__str__())  # 2023-10-01T20:10:25.954638+00:00
 
 # Get local time from POSIX timestamp.
 result = Morrow.fromtimestamp(1696089600)
-print(result.__str__())
+print(result.__str__())  # 2023-10-01T00:00:00.000000+08:00
 
 # Get UTC time from POSIX timestamp.
 result = Morrow.utcfromtimestamp(1696089600)
-print(result.__str__())
+print(result.__str__())  # 2023-09-30T16:00:00.000000+00:00
 
 # Get ISO format.
 result = Morrow(2023, 10, 1, 0, 0, 0, 1234)
-print(result.isoformat())  # "2023-10-01T00:00:00.001234"
+print(result.isoformat())  # 2023-10-01T00:00:00.001234
 
 # Get ISO format with time zone.
 result = Morrow(2023, 10, 1, 0, 0, 0, 1234, Timezone(28800, 'Bejing'))
-print(result.isoformat(timespec="seconds"))  # "2023-10-01T00:00:00+08:00"
+print(result.isoformat(timespec="seconds"))  # 2023-10-01T00:00:00+08:00
 
 # Get time zone offset.
 print(Timezone.from_utc('UTC+08:00').offset)  # 28800
