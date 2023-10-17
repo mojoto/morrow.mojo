@@ -1,6 +1,7 @@
 from math import abs
 from .util import num2str
 
+
 @value
 struct TimeDelta:
     var days: Int

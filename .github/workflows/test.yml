@@ -1,0 +1,23 @@
+name: Run Tests
+
+on: [push, pull_request]
+
+env:
+  PACKAGE_NAME: morrow.mojopkg
+  MORROW_SRC: morrow
+  MOJO_HOME: /home/runner/.modular/pkg/packages.modular.com_mojo/bin
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          curl https://get.modular.com | MODULAR_AUTH=${{ secrets.MODULAR_AUTH }} sh - 
+          modular install mojo
+      - name: Test
+        run: |
+          ${{ env.MOJO_HOME }}/mojo run test.mojo
