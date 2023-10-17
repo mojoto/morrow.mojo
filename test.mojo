@@ -52,7 +52,7 @@ def test_iso_format():
     assert_equal(d0.isoformat(timespec="milliseconds"), "2023-10-01T00:00:00.001")
 
     # with TimeZone
-    let d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Bejing"))
+    let d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Beijing"))
     assert_equal(d1.isoformat(timespec="seconds"), "2023-10-01T00:00:00+08:00")
 
 
@@ -74,6 +74,9 @@ def test_strptime():
 
     m = Morrow.strptime("2023-10-18 15:49:10 +08:00", "%Y-%m-%d %H:%M:%S %z")
     assert_equal(m.__str__(), "2023-10-18T15:49:10.000000+08:00")
+
+    m = Morrow.strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "+09:00")
+    assert_equal(m.__str__(), "2023-10-18T15:49:10.000000+09:00")
 
 
 def test_sub():
