@@ -2,7 +2,7 @@ from ._py import py_dt_datetime
 from .util import normalize_timestamp, num2str, _ymd2ord
 from ._libc import c_gettimeofday, c_localtime, c_gmtime
 from ._libc import CTimeval, CTm
-from .timezone import Timezone
+from .timezone import TimeZone
 
 
 @value
@@ -31,7 +31,7 @@ struct Morrow:
     var minute: Int
     var second: Int
     var microsecond: Int
-    var timezone: Timezone
+    var TimeZone: TimeZone
 
     fn __init__(
         inout self,
@@ -42,7 +42,7 @@ struct Morrow:
         minute: Int = 0,
         second: Int = 0,
         microsecond: Int = 0,
-        timezone: Timezone = Timezone.none(),
+        TimeZone: TimeZone = TimeZone.none(),
     ) raises:
         self.year = year
         self.month = month
@@ -51,7 +51,7 @@ struct Morrow:
         self.minute = minute
         self.second = second
         self.microsecond = microsecond
-        self.timezone = timezone
+        self.TimeZone = TimeZone
 
     @staticmethod
     fn now() raises -> Morrow:
@@ -66,13 +66,13 @@ struct Morrow:
     @staticmethod
     fn _fromtimestamp(t: CTimeval, utc: Bool) raises -> Morrow:
         let tm: CTm
-        let tz: Timezone
+        let tz: TimeZone
         if utc:
             tm = c_gmtime(t.tv_sec)
-            tz = Timezone(0, "UTC")
+            tz = TimeZone(0, "UTC")
         else:
             tm = c_localtime(t.tv_sec)
-            tz = Timezone(tm.tm_gmtoff.to_int(), "local")
+            tz = TimeZone(tm.tm_gmtoff.to_int(), "local")
 
         let result = Morrow(
             tm.tm_year.to_int() + 1900,
@@ -100,11 +100,11 @@ struct Morrow:
 
     @staticmethod
     fn strptime(
-        date_str: String, fmt: String, tzinfo: Timezone = Timezone.none()
+        date_str: String, fmt: String, tzinfo: TimeZone = TimeZone.none()
     ) raises -> Morrow:
         """
         Create a Morrow instance from a date string and format,
-        in the style of ``datetime.strptime``.  Optionally replaces the parsed timezone.
+        in the style of ``datetime.strptime``.  Optionally replaces the parsed TimeZone.
 
         Usage::
 
@@ -112,9 +112,9 @@ struct Morrow:
             <Morrow [2019-01-20T15:49:10+00:00]>
         """
         let dt = py_dt_datetime().strptime(date_str, fmt)
-        let tz: Timezone
+        let tz: TimeZone
         if tzinfo.is_none() and dt.tzinfo.to_string() != "None":
-            tz = Timezone(
+            tz = TimeZone(
                 dt.tzinfo.utcoffset(None).total_seconds().to_float64().to_int()
             )
         else:
@@ -189,10 +189,10 @@ struct Morrow:
             time_str = num2str(self.hour, 2)
         else:
             raise Error()
-        if self.timezone.is_none():
+        if self.TimeZone.is_none():
             return sep.join(date_str, time_str)
         else:
-            return sep.join(date_str, time_str) + self.timezone.format()
+            return sep.join(date_str, time_str) + self.TimeZone.format()
 
     fn toordinal(self) raises -> Int:
         """Return proleptic Gregorian ordinal for the year, month and day.

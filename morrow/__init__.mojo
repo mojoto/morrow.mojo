@@ -1,2 +1,2 @@
 from .morrow import Morrow
-from .timezone import Timezone
+from .timezone import TimeZone
