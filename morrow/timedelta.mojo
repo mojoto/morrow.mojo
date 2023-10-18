@@ -32,3 +32,52 @@ struct TimeDelta:
         if self.microseconds:
             s = s + num2str(self.microseconds, 6)
         return s
+
+    fn total_seconds(self) -> Float64:
+        """Total seconds in the duration."""
+        return ((self.days * 86400 + self.seconds) * 10 ** 6 + 
+                self.microseconds) / 10 ** 6
+    
+    @always_inline
+    fn __add__(self, other: TimeDelta) -> TimeDelta:
+        return TimeDelta(
+            self.days + other.days,
+            self.seconds + other.seconds,
+            self.microseconds + other.microseconds,
+        )
+    
+    fn __radd_(self, other: TimeDelta) -> TimeDelta:
+        return self.__add__(other)
+    
+    fn __sub__(self, other: TimeDelta) -> TimeDelta:
+        return TimeDelta(
+            self.days - other.days,
+            self.seconds - other.seconds,
+            self.microseconds - other.microseconds,
+        )
+    
+    fn __rsub__(self, other: TimeDelta) -> TimeDelta:
+        return TimeDelta(
+            other.days - self.days,
+            other.seconds - self.seconds,
+            other.microseconds - self.microseconds,
+        )
+    
+    fn __neg__(self) -> TimeDelta:
+        return TimeDelta(-self.days, -self.seconds, -self.microseconds)
+    
+    fn __pos__(self) -> TimeDelta:
+        return self
+    
+    def __abs__(self) -> TimeDelta:
+        if self.days < 0:
+            return -self
+        else:
+            return self
+    
+    fn __mul__(self, other: Int) -> TimeDelta:
+        return TimeDelta(
+            self.days * other,
+            self.seconds * other,
+            self.microseconds * other,
+        )
