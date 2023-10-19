@@ -1,13 +1,14 @@
 from testing import assert_equal, assert_true
 
-from morrow import Morrow
 from morrow._libc import c_gettimeofday
 from morrow._py import py_dt_datetime, py_time
-from morrow.timezone import TimeZone
+from morrow import Morrow
+from morrow import TimeZone
+from morrow import TimeDelta
 
 
-fn assert_datetime_equal(dt: Morrow, py_dt: PythonObject) raises:
-    _ = assert_true(
+def assert_datetime_equal(dt: Morrow, py_dt: PythonObject):
+    assert_true(
         dt.year == py_dt.year.to_float64().to_int()
         and dt.month == py_dt.month.to_float64().to_int()
         and dt.hour == py_dt.hour.to_float64().to_int()
@@ -17,26 +18,26 @@ fn assert_datetime_equal(dt: Morrow, py_dt: PythonObject) raises:
     )
 
 
-fn test_now() raises:
+def test_now():
     print("Running test_now()")
     let result = Morrow.now()
     assert_datetime_equal(result, py_dt_datetime().now())
 
 
-fn test_utcnow() raises:
+def test_utcnow():
     print("Running test_utcnow()")
     let result = Morrow.utcnow()
     assert_datetime_equal(result, py_dt_datetime().utcnow())
 
 
-fn test_fromtimestamp() raises:
+def test_fromtimestamp():
     print("Running test_fromtimestamp()")
     let t = c_gettimeofday()
     let result = Morrow.fromtimestamp(t.tv_sec)
     assert_datetime_equal(result, py_dt_datetime().now())
 
 
-fn test_utcfromtimestamp() raises:
+def test_utcfromtimestamp():
     print("Running test_utcfromtimestamp()")
     let t = c_gettimeofday()
     let result = Morrow.utcfromtimestamp(t.tv_sec)
@@ -98,6 +99,27 @@ def test_sub():
     assert_equal(result.__str__(), "2 days 0:01:01")
 
 
+def test_timedelta():
+    print("Running test_timedelta()")
+    assert_equal(TimeDelta(3, 2, 100).total_seconds(), 259202.0001)
+    assert_true(
+        TimeDelta(2, 1, 50).__add__(TimeDelta(1, 1, 50)).__eq__(TimeDelta(3, 2, 100))
+    )
+    assert_true(
+        TimeDelta(3, 2, 100).__sub__(TimeDelta(2, 1, 50)).__eq__(TimeDelta(1, 1, 50))
+    )
+    assert_true(TimeDelta(3, 2, 100).__neg__().__eq__(TimeDelta(-3, -2, -100)))
+    assert_true(TimeDelta(-3, -2, -100).__abs__().__eq__(TimeDelta(3, 2, 100)))
+    assert_true(TimeDelta(1, 1, 50).__le__(TimeDelta(1, 1, 51)))
+    assert_true(TimeDelta(1, 1, 50).__le__(TimeDelta(1, 1, 50)))
+    assert_true(TimeDelta(1, 1, 50).__lt__(TimeDelta(1, 1, 51)))
+    assert_true(not TimeDelta(1, 1, 50).__lt__(TimeDelta(1, 1, 50)))
+    assert_true(TimeDelta(1, 1, 50).__ge__(TimeDelta(1, 1, 50)))
+    assert_true(TimeDelta(1, 1, 50).__ge__(TimeDelta(1, 1, 49)))
+    assert_true(not TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 50)))
+    assert_true(TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 49)))
+
+
 def main():
     test_now()
     test_utcnow()
@@ -107,3 +129,4 @@ def main():
     test_sub()
     test_time_zone()
     test_strptime()
+    test_timedelta()
