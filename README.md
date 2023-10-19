@@ -1,10 +1,17 @@
 # Morrow.mojo: Human-friendly date & time for Mojo 🔥
 
+<p align="center">
+  <a href="https://github.com/mojoto/morrow.mojo/actions/workflows/test.yml">
+    <img src="https://github.com/mojoto/morrow.mojo/actions/workflows/test.yml/badge.svg" alt="Test" />
+  </a>
+  <a href="https://github.com/mojoto/morrow.mojo/releases">
+    <img alt="GitHub release" src="https://img.shields.io/github/v/release/mojoto/morrow.mojo">
+  </a>
+</p>
 
 **Morrow** is a Mojo library that provides human-friendly method for managing, formatting, and transforming dates, times, and timestamps.
 
 Morrow is heavily inspired by [arrow](https://github.com/arrow-py/arrow), and thanks for its elegant design.
-
 
 ## Features
 
@@ -15,6 +22,7 @@ Morrow is heavily inspired by [arrow](https://github.com/arrow-py/arrow), and th
 ## Preparation
 
 You have three ways to reference this library:
+
 - Download morrow.mojopkg from [releases](https://github.com/mojoto/morrow.mojo/releases).
 - Clone this project and execute `make build` to build morrow.mojopkg.
 - Directly copy the `morrow`` directory of this project to your own project.
