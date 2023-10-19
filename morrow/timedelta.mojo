@@ -128,6 +128,6 @@ struct TimeDelta:
         return self.days != 0 or self.seconds != 0 or self.microseconds != 0
 
 
-alias Min = TimeDelta(-999999999)
-alias Max = TimeDelta(days=999999999)
+alias Min = TimeDelta(-99999999)
+alias Max = TimeDelta(days=99999999)
 alias Resolution = TimeDelta(microseconds=1)
