@@ -17,6 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           curl https://get.modular.com | MODULAR_AUTH=${{ secrets.MODULAR_AUTH }} sh - 
+          modular auth ${{ secrets.MODULAR_AUTH }}
           modular install mojo
       - name: Build
         run: |
