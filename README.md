@@ -25,7 +25,7 @@ You have three ways to reference this library:
 
 - Download morrow.mojopkg from [releases](https://github.com/mojoto/morrow.mojo/releases).
 - Clone this project and execute `make build` to build morrow.mojopkg.
-- Directly copy the `morrow`` directory of this project to your own project.
+- Directly copy the `morrow` directory of this project to your own project.
 
 ## Usage
 
