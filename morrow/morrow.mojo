@@ -1,6 +1,6 @@
 from ._py import py_dt_datetime
 from .util import normalize_timestamp, num2str, _ymd2ord
-from ._libc import c_gettimeofday, c_localtime, c_gmtime
+from ._libc import c_gettimeofday, c_localtime, c_gmtime, c_strptime
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
 from .timedelta import TimeDelta
@@ -95,24 +95,31 @@ struct Morrow:
         >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S')
             <Morrow [2019-01-20T15:49:10+00:00]>
         """
-        let dt = py_dt_datetime().strptime(date_str, fmt)
-        let tz: TimeZone
-        if tzinfo.is_none() and dt.tzinfo.to_string() != "None":
-            tz = TimeZone(
-                dt.tzinfo.utcoffset(None).total_seconds().to_float64().to_int()
-            )
-        else:
-            tz = tzinfo
+        let tm = c_strptime(date_str, fmt)
+        let tz = TimeZone(tm.tm_gmtoff.to_int()) if tzinfo.is_none() else tzinfo
         return Morrow(
-            dt.year.to_float64().to_int(),
-            dt.month.to_float64().to_int(),
-            dt.day.to_float64().to_int(),
-            dt.hour.to_float64().to_int(),
-            dt.minute.to_float64().to_int(),
-            dt.second.to_float64().to_int(),
-            dt.microsecond.to_float64().to_int(),
+            tm.tm_year.to_int() + 1900,
+            tm.tm_mon.to_int() + 1,
+            tm.tm_mday.to_int(),
+            tm.tm_hour.to_int(),
+            tm.tm_min.to_int(),
+            tm.tm_sec.to_int(),
+            0,
             tz,
         )
+
+    @staticmethod
+    fn strptime(date_str: String, fmt: String, tz_str: String) raises -> Morrow:
+        """
+        Create a Morrow instance by time_zone_string with utc format
+
+        Usage::
+
+        >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S', '+08:00')
+            <Morrow [2019-01-20T15:49:10+08:00]>
+        """
+        let tzinfo = TimeZone.from_utc(tz_str)
+        return Morrow.strptime(date_str, fmt, tzinfo)
 
     fn isoformat(
         self, sep: String = "T", timespec: StringLiteral = "auto"
