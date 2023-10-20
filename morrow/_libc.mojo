@@ -1,6 +1,20 @@
 from memory.unsafe import Pointer
 
 
+alias c_void = UInt8
+alias c_char = UInt8
+alias c_schar = Int8
+alias c_uchar = UInt8
+alias c_short = Int16
+alias c_ushort = UInt16
+alias c_int = Int32
+alias c_uint = UInt32
+alias c_long = Int64
+alias c_ulong = UInt64
+alias c_float = Float32
+alias c_double = Float64
+
+
 @value
 @register_passable("trivial")
 struct CTimeval:
@@ -56,7 +70,25 @@ fn c_localtime(owned tv_sec: Int) -> CTm:
 
 
 @always_inline
+fn c_strptime(time_str: String, time_format: String) -> CTm:
+    var tm = CTm()
+    let p_tm = Pointer[CTm].address_of(tm)
+    external_call["strptime", NoneType, Pointer[c_char], Pointer[c_char], Pointer[CTm]](
+        to_char_ptr(time_str), to_char_ptr(time_format), p_tm
+    )
+    return tm
+
+
+@always_inline
 fn c_gmtime(owned tv_sec: Int) -> CTm:
     let p_tv_sec = Pointer[Int].address_of(tv_sec)
     let tm = external_call["gmtime", Pointer[CTm], Pointer[Int]](p_tv_sec).load()
     return tm
+
+
+fn to_char_ptr(s: String) -> Pointer[c_char]:
+    """only ASCII-based strings"""
+    let ptr = Pointer[c_char]().alloc(len(s))
+    for i in range(len(s)):
+        ptr.store(i, ord(s[i]))
+    return ptr
