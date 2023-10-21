@@ -95,11 +95,11 @@ def test_sub():
 
     result = Morrow(2023, 10, 2, 10, 0, 0) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 1)
-    assert_equal(result.__str__(), "1 day 0:00:00")
+    assert_equal(result.__str__(), "1 day, 0:00:00")
 
     result = Morrow(2023, 10, 3, 10, 1, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 2)
-    assert_equal(result.__str__(), "2 days 0:01:01")
+    assert_equal(result.__str__(), "2 days, 0:01:01")
 
 
 def test_timedelta():
@@ -121,6 +121,18 @@ def test_timedelta():
     assert_true(TimeDelta(1, 1, 50).__ge__(TimeDelta(1, 1, 49)))
     assert_true(not TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 50)))
     assert_true(TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 49)))
+    assert_equal(
+        TimeDelta(
+            weeks=100,
+            days=100,
+            hours=100,
+            minutes=100,
+            seconds=100,
+            microseconds=10000000,
+            milliseconds=10000000000,
+        ).__str__(),
+        "919 days, 23:28:30",
+    )
 
 
 def main():
