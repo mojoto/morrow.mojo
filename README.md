@@ -71,4 +71,13 @@ print(ordinal)  # 738794
 # Construct a Morrow from a proleptic Gregorian ordinal.
 let m_10_1_ = Morrow.fromordinal(ordinal)
 print(m_10_1_.__str__())  # 2023-10-01T00:00:00.000000
+
+# Convert Morrow to python datetime
+let py_dt = now.to_py()
+print(dt.isoformat())  # 2023-10-01T20:10:25.188957
+
+# Convert python datetime to Morrow
+let m_from_py = Morrow.from_py(py_dt)
+print(m_from_py.__str__())  # 2023-10-01T20:10:25.188957
+
 ```
