@@ -147,6 +147,16 @@ def test_timedelta():
     )
 
 
+def test_from_to_py():
+    print("Running test_from_to_py")
+    m = Morrow.now()
+    dt = m.to_py()
+    assert_datetime_equal(m, dt)
+
+    m2 = Morrow.from_py(dt)
+    assert_datetime_equal(m2, dt)
+
+
 def main():
     test_now()
     test_utcnow()
@@ -157,3 +167,5 @@ def main():
     test_time_zone()
     test_strptime()
     test_timedelta()
+    test_from_to_py()
+

@@ -5,6 +5,8 @@ from ._libc import CTimeval, CTm
 from .timezone import TimeZone
 from .timedelta import TimeDelta
 from .constants import _DAYS_BEFORE_MONTH, _DAYS_IN_MONTH
+from python.object import PythonObject
+from python import Python
 
 
 alias _DI400Y = 146097  # number of days in 400 years
@@ -21,7 +23,7 @@ struct Morrow:
     var minute: Int
     var second: Int
     var microsecond: Int
-    var TimeZone: TimeZone
+    var tz: TimeZone
 
     fn __init__(
         inout self,
@@ -32,7 +34,7 @@ struct Morrow:
         minute: Int = 0,
         second: Int = 0,
         microsecond: Int = 0,
-        TimeZone: TimeZone = TimeZone.none(),
+        tz: TimeZone = TimeZone.none(),
     ) raises:
         self.year = year
         self.month = month
@@ -41,7 +43,7 @@ struct Morrow:
         self.minute = minute
         self.second = second
         self.microsecond = microsecond
-        self.TimeZone = TimeZone
+        self.tz = tz
 
     @staticmethod
     fn now() raises -> Self:
@@ -186,10 +188,12 @@ struct Morrow:
             time_str = num2str(self.hour, 2)
         else:
             raise Error()
-        if self.TimeZone.is_none():
+        if self.tz.is_none():
             return sep.join(date_str, time_str)
         else:
-            return sep.join(date_str, time_str) + self.TimeZone.format()
+            return sep.join(date_str, time_str) + self.tz.format()
+
+
 
     fn toordinal(self) raises -> Int:
         """Return proleptic Gregorian ordinal for the year, month and day.
@@ -286,3 +290,41 @@ struct Morrow:
             days1 - days2, secs1 - secs2, self.microsecond - other.microsecond
         )
         return base
+
+    fn to_py(self) raises -> PythonObject:
+        # todo: add tz later
+        let dateimte = Python.import_module("datetime")
+        return dateimte.datetime(
+            self.year,
+            self.month,
+            self.day,
+            self.hour,
+            self.minute,
+            self.second,
+            self.microsecond,
+        )
+
+    @staticmethod
+    fn from_py(py_datetime: PythonObject) raises -> Morrow:
+        # Python.is_type not working, use __class__.__name__ instead
+        if py_datetime.__class__.__name__ == 'datetime':
+            return Morrow(
+                py_datetime.year.to_float64().to_int(),
+                py_datetime.month.to_float64().to_int(),
+                py_datetime.day.to_float64().to_int(),
+                py_datetime.hour.to_float64().to_int(),
+                py_datetime.minute.to_float64().to_int(),
+                py_datetime.second.to_float64().to_int(),
+                py_datetime.second.to_float64().to_int(),
+            )
+        elif py_datetime.__class__.__name__ == 'date':
+            return Morrow(
+                py_datetime.year.to_float64().to_int(),
+                py_datetime.month.to_float64().to_int(),
+                py_datetime.day.to_float64().to_int(),
+            )
+        else:
+            raise Error("invalid python object, only support py builtin datetime or date")
+
+
+
