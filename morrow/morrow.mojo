@@ -265,14 +265,14 @@ struct Morrow:
         if preceding > n:  # estimate is too large
             month -= 1
             if month == 2 and leapyear:
-                preceding -= (_DAYS_BEFORE_MONTH[month] + 1)
+                preceding -= _DAYS_BEFORE_MONTH[month] + 1
             else:
                 preceding -= _DAYS_BEFORE_MONTH[month]
         n -= preceding
 
         # Now the year and month are correct, and n is the offset from the
         # start of that month:  we're done!
-        return Self(year, month, n+1)
+        return Self(year, month, n + 1)
 
     fn __str__(self) raises -> String:
         return self.isoformat()
