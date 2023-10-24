@@ -61,5 +61,14 @@ print(TimeZone.from_utc('UTC+08:00').offset)  # 28800
 
 # Subtract two dates.
 let timedelta = Morrow(2023, 10, 2, 10, 0, 0) - Morrow(2023, 10, 1, 10, 0, 0)
-print(timedelta.__str__())  # 1 day 0:00:00
+print(timedelta.__str__())  # 1 day, 0:00:00
+
+# Return proleptic Gregorian ordinal for the year, month and day.
+let m_10_1 = Morrow(2023, 10, 1)
+let ordinal = m_10_1.toordinal()
+print(ordinal)  # 738794
+
+# Construct a Morrow from a proleptic Gregorian ordinal.
+let m_10_1_ = Morrow.fromordinal(ordinal)
+print(m_10_1_.__str__())  # 2023-10-01T00:00:00.000000
 ```

@@ -80,7 +80,7 @@ struct TimeDelta:
             self.microseconds + other.microseconds,
         )
 
-    fn __radd_(self, other: Self) -> Self:
+    fn __radd__(self, other: Self) -> Self:
         return self.__add__(other)
 
     fn __sub__(self, other: Self) -> Self:

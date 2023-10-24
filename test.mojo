@@ -78,6 +78,7 @@ def test_strptime():
     m = Morrow.strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "+09:00")
     assert_equal(m.__str__(), "2023-10-18T15:49:10.000000+09:00")
 
+
 def test_ordinal():
     print("Running test_ordinal()")
     m = Morrow(2023, 10, 1)
