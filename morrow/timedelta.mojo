@@ -1,5 +1,5 @@
 from math import abs
-from .util import num2str
+from .util import rjust
 
 alias SECONDS_OF_DAY = 24 * 3600
 
@@ -56,14 +56,14 @@ struct TimeDelta:
         let ss = self.seconds % 60
         let hh = mm // 60
         mm = mm % 60
-        var s = String(hh) + ":" + num2str(mm, 2) + ":" + num2str(ss, 2)
+        var s = String(hh) + ":" + rjust(mm, 2, "0") + ":" + rjust(ss, 2, "0")
         if self.days:
             if abs(self.days) != 1:
                 s = String(self.days) + " days, " + s
             else:
                 s = String(self.days) + " day, " + s
         if self.microseconds:
-            s = s + num2str(self.microseconds, 6)
+            s = s + rjust(self.microseconds, 6, "0")
         return s
 
     fn total_seconds(self) -> Float64:

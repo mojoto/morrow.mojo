@@ -1,5 +1,5 @@
 from ._py import py_dt_datetime
-from .util import normalize_timestamp, num2str, _ymd2ord, _days_before_year
+from .util import normalize_timestamp, rjust, _ymd2ord, _days_before_year
 from ._libc import c_gettimeofday, c_localtime, c_gmtime, c_strptime
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
@@ -147,53 +147,51 @@ struct Morrow:
         'minutes', 'seconds', 'milliseconds' and 'microseconds'.
         """
         let date_str = (
-            num2str(self.year, 4)
+            rjust(self.year, 4, "0")
             + "-"
-            + num2str(self.month, 2)
+            + rjust(self.month, 2, "0")
             + "-"
-            + num2str(self.day, 2)
+            + rjust(self.day, 2, "0")
         )
         var time_str = String("")
         if timespec == "auto" or timespec == "microseconds":
             time_str = (
-                num2str(self.hour, 2)
+                rjust(self.hour, 2, "0")
                 + ":"
-                + num2str(self.minute, 2)
+                + rjust(self.minute, 2, "0")
                 + ":"
-                + num2str(self.second, 2)
+                + rjust(self.second, 2, "0")
                 + "."
-                + num2str(self.microsecond, 6)
+                + rjust(self.microsecond, 6, "0")
             )
         elif timespec == "milliseconds":
             time_str = (
-                num2str(self.hour, 2)
+                rjust(self.hour, 2, "0")
                 + ":"
-                + num2str(self.minute, 2)
+                + rjust(self.minute, 2, "0")
                 + ":"
-                + num2str(self.second, 2)
+                + rjust(self.second, 2, "0")
                 + "."
-                + num2str(self.microsecond // 1000, 3)
+                + rjust(self.microsecond // 1000, 3, "0")
             )
         elif timespec == "seconds":
             time_str = (
-                num2str(self.hour, 2)
+                rjust(self.hour, 2, "0")
                 + ":"
-                + num2str(self.minute, 2)
+                + rjust(self.minute, 2, "0")
                 + ":"
-                + num2str(self.second, 2)
+                + rjust(self.second, 2, "0")
             )
         elif timespec == "minutes":
-            time_str = num2str(self.hour, 2) + ":" + num2str(self.minute, 2)
+            time_str = rjust(self.hour, 2, "0") + ":" + rjust(self.minute, 2, "0")
         elif timespec == "hours":
-            time_str = num2str(self.hour, 2)
+            time_str = rjust(self.hour, 2, "0")
         else:
             raise Error()
         if self.tz.is_none():
             return sep.join(date_str, time_str)
         else:
             return sep.join(date_str, time_str) + self.tz.format()
-
-
 
     fn toordinal(self) raises -> Int:
         """Return proleptic Gregorian ordinal for the year, month and day.
@@ -307,7 +305,7 @@ struct Morrow:
     @staticmethod
     fn from_py(py_datetime: PythonObject) raises -> Morrow:
         # Python.is_type not working, use __class__.__name__ instead
-        if py_datetime.__class__.__name__ == 'datetime':
+        if py_datetime.__class__.__name__ == "datetime":
             return Morrow(
                 py_datetime.year.to_float64().to_int(),
                 py_datetime.month.to_float64().to_int(),
@@ -317,14 +315,13 @@ struct Morrow:
                 py_datetime.second.to_float64().to_int(),
                 py_datetime.second.to_float64().to_int(),
             )
-        elif py_datetime.__class__.__name__ == 'date':
+        elif py_datetime.__class__.__name__ == "date":
             return Morrow(
                 py_datetime.year.to_float64().to_int(),
                 py_datetime.month.to_float64().to_int(),
                 py_datetime.day.to_float64().to_int(),
             )
         else:
-            raise Error("invalid python object, only support py builtin datetime or date")
-
-
-
+            raise Error(
+                "invalid python object, only support py builtin datetime or date"
+            )
