@@ -44,7 +44,13 @@ struct TimeDelta:
         seconds_ = seconds_ % SECONDS_OF_DAY
         self.days += days_
         self.seconds += seconds_
-        self.microseconds = microseconds_
+
+        seconds_ = microseconds_ // 1000000
+        self.microseconds = microseconds_ % 1000000
+        self.seconds += seconds_
+        days_ = self.seconds // SECONDS_OF_DAY
+        self.seconds = self.seconds % SECONDS_OF_DAY
+        self.days += days_
 
     fn __copyinit__(inout self, other: Self):
         self.days = other.days
