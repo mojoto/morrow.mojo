@@ -1,4 +1,4 @@
-from .util import num2str
+from .util import rjust
 from ._libc import c_localtime
 
 
@@ -71,4 +71,4 @@ struct TimeZone:
             offset_abs = self.offset
         let hh = offset_abs // 3600
         let mm = offset_abs % 3600
-        return sign + num2str(hh, 2) + ":" + num2str(mm, 2)
+        return sign + rjust(hh, 2, "0") + ":" + rjust(mm, 2, "0")

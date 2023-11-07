@@ -57,3 +57,19 @@ fn num2str(n: Int, l: Int) -> String:
         else:
             x.push_back(48 + (n % (10**i) // (10 ** (i - 1))))
     return String(x.data, l)
+
+
+fn _repeat_string(string: String, n: Int) -> String:
+    var result: String = ""
+    for _ in range(n):
+        result += string
+    return result
+
+
+fn rjust(string: String, width: Int, fillchar: String = " ") -> String:
+    let extra = width - len(string)
+    return _repeat_string(fillchar, extra) + string
+
+
+fn rjust(string: Int, width: Int, fillchar: String = " ") -> String:
+    return rjust(String(string), width, fillchar)
