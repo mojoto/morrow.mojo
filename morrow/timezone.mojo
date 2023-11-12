@@ -2,6 +2,10 @@ from .util import rjust
 from ._libc import c_localtime
 
 
+# for none tz datetime
+alias NoneTimeZone = TimeZone(0, "None")
+
+
 @value
 struct TimeZone(Stringable):
     var offset: Int
@@ -16,10 +20,6 @@ struct TimeZone(Stringable):
 
     fn is_none(self) -> Bool:
         return self.name == "None"
-
-    @staticmethod
-    fn none() -> TimeZone:
-        return TimeZone(0, "None")
 
     @staticmethod
     fn local() -> TimeZone:

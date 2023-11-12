@@ -2,7 +2,7 @@ from ._py import py_dt_datetime
 from .util import normalize_timestamp, rjust, _ymd2ord, _days_before_year
 from ._libc import c_gettimeofday, c_localtime, c_gmtime, c_strptime
 from ._libc import CTimeval, CTm
-from .timezone import TimeZone
+from .timezone import TimeZone, NoneTimeZone
 from .timedelta import TimeDelta
 from .constants import _DAYS_BEFORE_MONTH, _DAYS_IN_MONTH
 from python.object import PythonObject
@@ -34,7 +34,7 @@ struct Morrow(StringableRaising):
         minute: Int = 0,
         second: Int = 0,
         microsecond: Int = 0,
-        tz: TimeZone = TimeZone.none(),
+        tz: TimeZone = NoneTimeZone,
     ) raises:
         self.year = year
         self.month = month
@@ -92,7 +92,7 @@ struct Morrow(StringableRaising):
 
     @staticmethod
     fn strptime(
-        date_str: String, fmt: String, tzinfo: TimeZone = TimeZone.none()
+        date_str: String, fmt: String, tzinfo: TimeZone = NoneTimeZone
     ) raises -> Self:
         """
         Create a Morrow instance from a date string and format,
@@ -119,7 +119,7 @@ struct Morrow(StringableRaising):
     @staticmethod
     fn strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:
         """
-        Create a Morrow instance by time_zone_string with utc format
+        Create a Morrow instance by time_zone_string with utc format.
 
         Usage::
 
@@ -290,9 +290,13 @@ struct Morrow(StringableRaising):
         return base
 
     fn to_py(self) raises -> PythonObject:
-        # todo: add tz later
-        let dateimte = Python.import_module("datetime")
-        return dateimte.datetime(
+        let datetime = Python.import_module("datetime")
+        var tzinfo: PythonObject = None
+        if not self.tz.is_none():
+            tzinfo = datetime.timezone(
+                datetime.timedelta(0, self.tz.offset), self.tz.name
+            )
+        return datetime.datetime(
             self.year,
             self.month,
             self.day,
@@ -300,12 +304,19 @@ struct Morrow(StringableRaising):
             self.minute,
             self.second,
             self.microsecond,
+            tzinfo,
         )
 
     @staticmethod
     fn from_py(py_datetime: PythonObject) raises -> Morrow:
         # Python.is_type not working, use __class__.__name__ instead
         if py_datetime.__class__.__name__ == "datetime":
+            var tz = NoneTimeZone
+            if not Python.is_type(py_datetime.tzinfo, Python.none()):
+                let py_tz_delta = py_datetime.tzinfo.utcoffset(Python.none())
+                let py_tz_name = py_datetime.tzinfo.tzname(Python.none())
+                tz = TimeZone(py_tz_delta.total_seconds().to_float64().to_int(), py_tz_name.to_string())
+
             return Morrow(
                 py_datetime.year.to_float64().to_int(),
                 py_datetime.month.to_float64().to_int(),
@@ -313,7 +324,8 @@ struct Morrow(StringableRaising):
                 py_datetime.hour.to_float64().to_int(),
                 py_datetime.minute.to_float64().to_int(),
                 py_datetime.second.to_float64().to_int(),
-                py_datetime.second.to_float64().to_int(),
+                py_datetime.microsecond.to_float64().to_int(),
+                tz,
             )
         elif py_datetime.__class__.__name__ == "date":
             return Morrow(
