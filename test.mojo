@@ -50,7 +50,6 @@ def test_iso_format():
     assert_equal(d0.isoformat(), "2023-10-01T00:00:00.001234")
     assert_equal(d0.isoformat(timespec="seconds"), "2023-10-01T00:00:00")
     assert_equal(d0.isoformat(timespec="milliseconds"), "2023-10-01T00:00:00.001")
-
     # with TimeZone
     let d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Beijing"))
     assert_equal(d1.isoformat(timespec="seconds"), "2023-10-01T00:00:00+08:00")
@@ -149,12 +148,22 @@ def test_timedelta():
 
 def test_from_to_py():
     print("Running test_from_to_py")
-    m = Morrow.now()
+    m = Morrow(2023, 11, 7, 19, 51, 0, tz=TimeZone.from_utc("UTC+0800"))
     dt = m.to_py()
     assert_datetime_equal(m, dt)
 
     m2 = Morrow.from_py(dt)
     assert_datetime_equal(m2, dt)
+
+    # test without timezone
+    m3 = Morrow.now()
+    dt3 = m3.to_py()
+    assert_datetime_equal(m3, dt3)
+
+    dt4 = py_dt_datetime().now()
+    m4 = Morrow.from_py(dt4)
+    assert_datetime_equal(m4, dt4)
+    assert_true(m4.tz.is_none())
 
 
 def main():
