@@ -15,7 +15,7 @@ alias _DI4Y = 1461  #    "    "   "   "   4   "
 
 
 @value
-struct Morrow:
+struct Morrow(StringableRaising):
     var year: Int
     var month: Int
     var day: Int

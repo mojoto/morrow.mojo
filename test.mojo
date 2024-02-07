@@ -14,7 +14,7 @@ def assert_datetime_equal(dt: Morrow, py_dt: PythonObject):
         and dt.hour == py_dt.hour.to_float64().to_int()
         and dt.minute == py_dt.minute.to_float64().to_int()
         and dt.second == py_dt.second.to_float64().to_int(),
-        "dt: " + dt.__str__() + " is not equal to py_dt: " + py_dt.to_string(),
+        "dt: " + str(dt) + " is not equal to py_dt: " + str(py_dt),
     )
 
 
@@ -70,13 +70,13 @@ def test_time_zone():
 def test_strptime():
     print("Running test_strptime()")
     m = Morrow.strptime("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", TimeZone.local())
-    assert_equal(m.__str__(), "2023-01-20T15:49:10.000000+08:00")
+    assert_equal(str(m), "2023-01-20T15:49:10.000000+08:00")
 
-    m = Morrow.strptime("2023-10-18 15:49:10 +08:00", "%Y-%m-%d %H:%M:%S %z")
-    assert_equal(m.__str__(), "2023-10-18T15:49:10.000000+08:00")
+    m = Morrow.strptime("2023-10-18 15:49:10 +08:00", "%Y-%m-%d %H:%M:%S %")
+    assert_equal(str(m), "2023-10-18T15:49:10.000000+08:00")
 
     m = Morrow.strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "+09:00")
-    assert_equal(m.__str__(), "2023-10-18T15:49:10.000000+09:00")
+    assert_equal(str(m), "2023-10-18T15:49:10.000000+09:00")
 
 
 def test_ordinal():
@@ -95,23 +95,23 @@ def test_sub():
     print("Running test_sub()")
     var result = Morrow(2023, 10, 1, 10, 0, 0, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.microseconds, 1)
-    assert_equal(result.__str__(), "0:00:00000001")
+    assert_equal(str(result), "0:00:00000001")
 
     result = Morrow(2023, 10, 1, 10, 0, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.seconds, 1)
-    assert_equal(result.__str__(), "0:00:01")
+    assert_equal(str(result), "0:00:01")
 
     result = Morrow(2023, 10, 1, 10, 1, 0) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.seconds, 60)
-    assert_equal(result.__str__(), "0:01:00")
+    assert_equal(str(result), "0:01:00")
 
     result = Morrow(2023, 10, 2, 10, 0, 0) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 1)
-    assert_equal(result.__str__(), "1 day, 0:00:00")
+    assert_equal(str(result), "1 day, 0:00:00")
 
     result = Morrow(2023, 10, 3, 10, 1, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 2)
-    assert_equal(result.__str__(), "2 days, 0:01:01")
+    assert_equal(str(result), "2 days, 0:01:01")
 
 
 def test_timedelta():
@@ -134,7 +134,7 @@ def test_timedelta():
     assert_true(not TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 50)))
     assert_true(TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 49)))
     assert_equal(
-        TimeDelta(
+        str(TimeDelta(
             weeks=100,
             days=100,
             hours=100,
@@ -142,7 +142,7 @@ def test_timedelta():
             seconds=100,
             microseconds=10000000,
             milliseconds=10000000000,
-        ).__str__(),
+        )),
         "919 days, 23:28:30",
     )
 
