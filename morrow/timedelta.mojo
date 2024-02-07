@@ -4,7 +4,7 @@ from .util import rjust
 alias SECONDS_OF_DAY = 24 * 3600
 
 
-struct TimeDelta:
+struct TimeDelta(Stringable):
     var days: Int
     var seconds: Int
     var microseconds: Int

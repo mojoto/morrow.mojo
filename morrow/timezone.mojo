@@ -3,7 +3,7 @@ from ._libc import c_localtime
 
 
 @value
-struct TimeZone:
+struct TimeZone(Stringable):
     var offset: Int
     var name: String
 

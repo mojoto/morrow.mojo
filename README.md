@@ -34,19 +34,19 @@ from morrow import Morrow, TimeZone
 
 # Get local date and time.
 let now = Morrow.now()
-print(now.__str__())  # 2023-10-01T20:10:25.188957+08:00
+print(str(now))  # 2023-10-01T20:10:25.188957+08:00
 
 # Get UTC date and time.
 let utcnow = Morrow.utcnow()
-print(utcnow.__str__())  # 2023-10-01T20:10:25.954638+00:00
+print(str(utcnow))  # 2023-10-01T20:10:25.954638+00:00
 
 # Get local time from POSIX timestamp.
 let t = Morrow.fromtimestamp(1696089600)
-print(t.__str__())  # 2023-10-01T00:00:00.000000+08:00
+print(str(t))  # 2023-10-01T00:00:00.000000+08:00
 
 # Get UTC time from POSIX timestamp.
 let utc_t = Morrow.utcfromtimestamp(1696089600)
-print(utc_t.__str__())  # 2023-09-30T16:00:00.000000+00:00
+print(str(utc_t))  # 2023-09-30T16:00:00.000000+00:00
 
 # Get ISO format.
 let m = Morrow(2023, 10, 1, 0, 0, 0, 1234)
@@ -61,7 +61,7 @@ print(TimeZone.from_utc('UTC+08:00').offset)  # 28800
 
 # Subtract two dates.
 let timedelta = Morrow(2023, 10, 2, 10, 0, 0) - Morrow(2023, 10, 1, 10, 0, 0)
-print(timedelta.__str__())  # 1 day, 0:00:00
+print(str(timedelta))  # 1 day, 0:00:00
 
 # Return proleptic Gregorian ordinal for the year, month and day.
 let m_10_1 = Morrow(2023, 10, 1)
@@ -70,7 +70,7 @@ print(ordinal)  # 738794
 
 # Construct a Morrow from a proleptic Gregorian ordinal.
 let m_10_1_ = Morrow.fromordinal(ordinal)
-print(m_10_1_.__str__())  # 2023-10-01T00:00:00.000000
+print(str(m_10_1_))  # 2023-10-01T00:00:00.000000
 
 # Convert Morrow to python datetime
 let py_dt = now.to_py()
@@ -78,6 +78,6 @@ print(py_dt.isoformat())  # 2023-10-01T20:10:25.188957
 
 # Convert python datetime to Morrow
 let m_from_py = Morrow.from_py(py_dt)
-print(m_from_py.__str__())  # 2023-10-01T20:10:25.188957
+print(m_from_py)  # 2023-10-01T20:10:25.188957
 
 ```

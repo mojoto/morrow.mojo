@@ -56,7 +56,7 @@ fn num2str(n: Int, l: Int) -> String:
             x.push_back(48)
         else:
             x.push_back(48 + (n % (10**i) // (10 ** (i - 1))))
-    return String(x.data, l)
+    return String(x)
 
 
 fn _repeat_string(string: String, n: Int) -> String:
