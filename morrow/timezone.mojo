@@ -1,6 +1,8 @@
 from .util import rjust
 from ._libc import c_localtime
 
+alias UTC_TZ = TimeZone(0, "UTC")
+
 
 @value
 struct TimeZone(Stringable):
@@ -60,7 +62,7 @@ struct TimeZone(Stringable):
         let offset: Int = sign * (hours * 3600 + minutes * 60)
         return TimeZone(offset)
 
-    fn format(self) -> String:
+    fn format(self, sep: String = ":") -> String:
         let sign: String
         let offset_abs: Int
         if self.offset < 0:
@@ -71,4 +73,4 @@ struct TimeZone(Stringable):
             offset_abs = self.offset
         let hh = offset_abs // 3600
         let mm = offset_abs % 3600
-        return sign + rjust(hh, 2, "0") + ":" + rjust(mm, 2, "0")
+        return sign + rjust(hh, 2, "0") + sep + rjust(mm, 2, "0")
