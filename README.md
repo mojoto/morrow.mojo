@@ -52,6 +52,12 @@ print(str(utc_t))  # 2023-09-30T16:00:00.000000+00:00
 let m = Morrow(2023, 10, 1, 0, 0, 0, 1234)
 print(m.isoformat())  # 2023-10-01T00:00:00.001234
 
+# custom format
+let m = Morrow(2023, 10, 1, 0, 0, 0, 1234)
+print(m.format("YYYY-MM-DD HH:mm:ss.SSSSSS ZZ"))  # 2023-10-01 00:00:00.001234 +00:00
+print(m.format("dddd, DD MMM YYYY HH:mm:ss ZZZ"))  # Sunday, 01 Oct 2023 00:00:00 UTC
+print(m.format("YYYY[Y]MM[M]DD[D]"))  # 2023Y10M01D
+
 # Get ISO format with time zone.
 let m_beijing = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, 'Bejing'))
 print(m_beijing.isoformat(timespec="seconds"))  # 2023-10-01T00:00:00+08:00

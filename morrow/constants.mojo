@@ -10,3 +10,50 @@ alias _DAYS_IN_MONTH = VariadicList[Int](
 alias _DAYS_BEFORE_MONTH = VariadicList[Int](
     -1, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
 )  # -1 is a placeholder for indexing purposes.
+
+
+alias MONTH_NAMES = StaticTuple[13](
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
+
+alias MONTH_ABBREVIATIONS = StaticTuple[13](
+    "",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
+
+alias DAY_NAMES = StaticTuple[8](
+    "",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+)
+alias DAY_ABBREVIATIONS = StaticTuple[8](
+    "", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
+)
