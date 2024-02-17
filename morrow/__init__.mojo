@@ -2,4 +2,4 @@ from .morrow import Morrow
 from .timezone import TimeZone
 from .timedelta import TimeDelta
 
-alias __version__ = "0.2.0"
+alias __version__ = "0.3.0"
