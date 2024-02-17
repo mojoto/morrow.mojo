@@ -148,7 +148,7 @@ def test_timedelta():
 
 
 def test_from_to_py():
-    print("Running test_from_to_py")
+    print("Running test_from_to_py()")
     m = Morrow.now()
     dt = m.to_py()
     assert_datetime_equal(m, dt)
@@ -158,7 +158,7 @@ def test_from_to_py():
 
 
 def test_format():
-    print("Running test_format")
+    print("Running test_format()")
     let m = Morrow(2024, 2, 1, 3, 4, 5, 123456)
     assert_equal(m.format("YYYY-MM-DD HH:mm:ss.SSS ZZ"), "2024-02-01 03:04:05.123 +00:00")
     assert_equal(m.format("Y-YY-YYY-YYYY M-MM D-DD"), "Y-24--2024 2-02 1-01")
