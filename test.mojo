@@ -20,39 +20,39 @@ def assert_datetime_equal(dt: Morrow, py_dt: PythonObject):
 
 def test_now():
     print("Running test_now()")
-    let result = Morrow.now()
+    var result = Morrow.now()
     assert_datetime_equal(result, py_dt_datetime().now())
 
 
 def test_utcnow():
     print("Running test_utcnow()")
-    let result = Morrow.utcnow()
+    var result = Morrow.utcnow()
     assert_datetime_equal(result, py_dt_datetime().utcnow())
 
 
 def test_fromtimestamp():
     print("Running test_fromtimestamp()")
-    let t = c_gettimeofday()
-    let result = Morrow.fromtimestamp(t.tv_sec)
+    var t = c_gettimeofday()
+    var result = Morrow.fromtimestamp(t.tv_sec)
     assert_datetime_equal(result, py_dt_datetime().now())
 
 
 def test_utcfromtimestamp():
     print("Running test_utcfromtimestamp()")
-    let t = c_gettimeofday()
-    let result = Morrow.utcfromtimestamp(t.tv_sec)
+    var t = c_gettimeofday()
+    var result = Morrow.utcfromtimestamp(t.tv_sec)
     assert_datetime_equal(result, py_dt_datetime().utcnow())
 
 
 def test_iso_format():
     print("Running test_iso_format()")
-    let d0 = Morrow(2023, 10, 1, 0, 0, 0, 1234)
+    var d0 = Morrow(2023, 10, 1, 0, 0, 0, 1234)
     assert_equal(d0.isoformat(), "2023-10-01T00:00:00.001234")
     assert_equal(d0.isoformat(timespec="seconds"), "2023-10-01T00:00:00")
     assert_equal(d0.isoformat(timespec="milliseconds"), "2023-10-01T00:00:00.001")
 
     # with TimeZone
-    let d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Beijing"))
+    var d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Beijing"))
     assert_equal(d1.isoformat(timespec="seconds"), "2023-10-01T00:00:00+08:00")
 
 
@@ -134,15 +134,17 @@ def test_timedelta():
     assert_true(not TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 50)))
     assert_true(TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 49)))
     assert_equal(
-        str(TimeDelta(
-            weeks=100,
-            days=100,
-            hours=100,
-            minutes=100,
-            seconds=100,
-            microseconds=10000000,
-            milliseconds=10000000000,
-        )),
+        str(
+            TimeDelta(
+                weeks=100,
+                days=100,
+                hours=100,
+                minutes=100,
+                seconds=100,
+                microseconds=10000000,
+                milliseconds=10000000000,
+            )
+        ),
         "919 days, 23:28:30",
     )
 
@@ -159,8 +161,10 @@ def test_from_to_py():
 
 def test_format():
     print("Running test_format()")
-    let m = Morrow(2024, 2, 1, 3, 4, 5, 123456)
-    assert_equal(m.format("YYYY-MM-DD HH:mm:ss.SSS ZZ"), "2024-02-01 03:04:05.123 +00:00")
+    var m = Morrow(2024, 2, 1, 3, 4, 5, 123456)
+    assert_equal(
+        m.format("YYYY-MM-DD HH:mm:ss.SSS ZZ"), "2024-02-01 03:04:05.123 +00:00"
+    )
     assert_equal(m.format("Y-YY-YYY-YYYY M-MM D-DD"), "Y-24--2024 2-02 1-01")
     assert_equal(m.format("H-HH-h-hh m-mm s-ss"), "3-03-3-03 4-04 5-05")
     assert_equal(m.format("S-SS-SSS-SSSS-SSSSS-SSSSSS"), "1-12-123-1234-12345-123456")

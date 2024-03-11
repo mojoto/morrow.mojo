@@ -48,18 +48,18 @@ struct Morrow(StringableRaising):
 
     @staticmethod
     fn now() raises -> Self:
-        let t = c_gettimeofday()
+        var t = c_gettimeofday()
         return Self._fromtimestamp(t, False)
 
     @staticmethod
     fn utcnow() raises -> Self:
-        let t = c_gettimeofday()
+        var t = c_gettimeofday()
         return Self._fromtimestamp(t, True)
 
     @staticmethod
     fn _fromtimestamp(t: CTimeval, utc: Bool) raises -> Self:
-        let tm: CTm
-        let tz: TimeZone
+        var tm: CTm
+        var tz: TimeZone
         if utc:
             tm = c_gmtime(t.tv_sec)
             tz = TimeZone(0, "UTC")
@@ -67,7 +67,7 @@ struct Morrow(StringableRaising):
             tm = c_localtime(t.tv_sec)
             tz = TimeZone(tm.tm_gmtoff.to_int(), "local")
 
-        let result = Self(
+        var result = Self(
             tm.tm_year.to_int() + 1900,
             tm.tm_mon.to_int() + 1,
             tm.tm_mday.to_int(),
@@ -81,14 +81,14 @@ struct Morrow(StringableRaising):
 
     @staticmethod
     fn fromtimestamp(timestamp: Float64) raises -> Self:
-        let timestamp_ = normalize_timestamp(timestamp)
-        let t = CTimeval(timestamp_.to_int())
+        var timestamp_ = normalize_timestamp(timestamp)
+        var t = CTimeval(timestamp_.to_int())
         return Self._fromtimestamp(t, False)
 
     @staticmethod
     fn utcfromtimestamp(timestamp: Float64) raises -> Self:
-        let timestamp_ = normalize_timestamp(timestamp)
-        let t = CTimeval(timestamp_.to_int())
+        var timestamp_ = normalize_timestamp(timestamp)
+        var t = CTimeval(timestamp_.to_int())
         return Self._fromtimestamp(t, True)
 
     @staticmethod
@@ -104,8 +104,8 @@ struct Morrow(StringableRaising):
         >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S')
             <Morrow [2019-01-20T15:49:10+00:00]>
         """
-        let tm = c_strptime(date_str, fmt)
-        let tz = TimeZone(tm.tm_gmtoff.to_int()) if tzinfo.is_none() else tzinfo
+        var tm = c_strptime(date_str, fmt)
+        var tz = TimeZone(tm.tm_gmtoff.to_int()) if tzinfo.is_none() else tzinfo
         return Self(
             tm.tm_year.to_int() + 1900,
             tm.tm_mon.to_int() + 1,
@@ -120,14 +120,14 @@ struct Morrow(StringableRaising):
     @staticmethod
     fn strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:
         """
-        Create a Morrow instance by time_zone_string with utc format
+        Create a Morrow instance by time_zone_string with utc format.
 
         Usage::
 
         >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S', '+08:00')
             <Morrow [2019-01-20T15:49:10+08:00]>
         """
-        let tzinfo = TimeZone.from_utc(tz_str)
+        var tzinfo = TimeZone.from_utc(tz_str)
         return Self.strptime(date_str, fmt, tzinfo)
 
     fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
@@ -137,7 +137,7 @@ struct Morrow(StringableRaising):
         :param fmt: the format string.
 
         Usage::
-            >>> let m = Morrow.now()  
+            >>> var m = Morrow.now()
             >>> m.format('YYYY-MM-DD HH:mm:ss ZZ')
             '2013-05-09 03:56:47 -00:00'
 
@@ -167,7 +167,7 @@ struct Morrow(StringableRaising):
         terms of the time to include. Valid options are 'auto', 'hours',
         'minutes', 'seconds', 'milliseconds' and 'microseconds'.
         """
-        let date_str = (
+        var date_str = (
             rjust(self.year, 4, "0")
             + "-"
             + rjust(self.month, 2, "0")
@@ -251,7 +251,7 @@ struct Morrow(StringableRaising):
         #      1 Jan  401         _DI400Y +1     _DI400Y      400-year boundary
         var n = ordinal
         n -= 1
-        let n400 = n // _DI400Y
+        var n400 = n // _DI400Y
         n = n % _DI400Y
         var year = n400 * 400 + 1  # ..., -399, 1, 401, ...
 
@@ -260,16 +260,16 @@ struct Morrow(StringableRaising):
         # Note that it's possible for n100 to equal 4!  In that case 4 full
         # 100-year cycles precede the desired day, which implies the desired
         # day is December 31 at the end of a 400-year cycle.
-        let n100 = n // _DI100Y
+        var n100 = n // _DI100Y
         n = n % _DI100Y
 
         # Now compute how many 4-year cycles precede it.
-        let n4 = n // _DI4Y
+        var n4 = n // _DI4Y
         n = n % _DI4Y
 
         # And now how many single years.  Again n1 can be 4, and again meaning
         # that the desired day is December 31 at the end of the 4-year cycle.
-        let n1 = n // 365
+        var n1 = n // 365
         n = n % 365
 
         year += n100 * 100 + n4 * 4 + n1
@@ -278,7 +278,7 @@ struct Morrow(StringableRaising):
 
         # Now the year is correct, and n is the offset from January 1.  We find
         # the month via an estimate that's either exact or one too large.
-        let leapyear = n1 == 3 and (n4 != 24 or n100 == 3)
+        var leapyear = n1 == 3 and (n4 != 24 or n100 == 3)
         var month = (n + 50) >> 5
         var preceding: Int
         if month > 2 and leapyear:
@@ -306,18 +306,18 @@ struct Morrow(StringableRaising):
         return self.isoformat()
 
     fn __sub__(self, other: Self) raises -> TimeDelta:
-        let days1 = self.toordinal()
-        let days2 = other.toordinal()
-        let secs1 = self.second + self.minute * 60 + self.hour * 3600
-        let secs2 = other.second + other.minute * 60 + other.hour * 3600
-        let base = TimeDelta(
+        var days1 = self.toordinal()
+        var days2 = other.toordinal()
+        var secs1 = self.second + self.minute * 60 + self.hour * 3600
+        var secs2 = other.second + other.minute * 60 + other.hour * 3600
+        var base = TimeDelta(
             days1 - days2, secs1 - secs2, self.microsecond - other.microsecond
         )
         return base
 
     fn to_py(self) raises -> PythonObject:
         # todo: add tz later
-        let dateimte = Python.import_module("datetime")
+        var dateimte = Python.import_module("datetime")
         return dateimte.datetime(
             self.year,
             self.month,

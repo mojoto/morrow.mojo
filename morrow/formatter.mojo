@@ -68,7 +68,7 @@ struct _Formatter:
         var match_chr_ord = 0
         var match_count = 0
         for i in range(len(s)):
-            let c = ord(s[i])
+            var c = ord(s[i])
             if 0 < c < 128 and self._sub_chrs[c] > 0:
                 if c == match_chr_ord:
                     match_count += 1
