@@ -1,3 +1,5 @@
+from collections.vector import DynamicVector
+
 from .constants import MAX_TIMESTAMP, MAX_TIMESTAMP_MS, MAX_TIMESTAMP_US
 from .constants import _DAYS_IN_MONTH, _DAYS_BEFORE_MONTH
 
@@ -9,7 +11,7 @@ fn _is_leap(year: Int) -> Bool:
 
 def _days_before_year(year: Int) -> Int:
     "year -> number of days before January 1st of year."
-    let y = year - 1
+    var y = year - 1
     return y * 365 + y // 4 - y // 100 + y // 400
 
 
@@ -48,17 +50,6 @@ def normalize_timestamp(timestamp: Float64) -> Float64:
     return timestamp
 
 
-fn num2str(n: Int, l: Int) -> String:
-    """Transfer Int to String with 0 surffix to match length."""
-    var x = DynamicVector[Int8](l)
-    for i in range(l, 0, -1):
-        if 10 ** (i - 1) > n:
-            x.push_back(48)
-        else:
-            x.push_back(48 + (n % (10**i) // (10 ** (i - 1))))
-    return String(x)
-
-
 fn _repeat_string(string: String, n: Int) -> String:
     var result: String = ""
     for _ in range(n):
@@ -67,7 +58,7 @@ fn _repeat_string(string: String, n: Int) -> String:
 
 
 fn rjust(string: String, width: Int, fillchar: String = " ") -> String:
-    let extra = width - len(string)
+    var extra = width - len(string)
     return _repeat_string(fillchar, extra) + string
 
 

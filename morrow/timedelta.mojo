@@ -59,8 +59,8 @@ struct TimeDelta(Stringable):
 
     fn __str__(self) -> String:
         var mm = self.seconds // 60
-        let ss = self.seconds % 60
-        let hh = mm // 60
+        var ss = self.seconds % 60
+        var hh = mm // 60
         mm = mm % 60
         var s = String(hh) + ":" + rjust(mm, 2, "0") + ":" + rjust(ss, 2, "0")
         if self.days:
@@ -130,7 +130,7 @@ struct TimeDelta(Stringable):
         return (self.days * SECONDS_OF_DAY + self.seconds) * 1000000 + self.microseconds
 
     fn __mod__(self, other: Self) -> Self:
-        let r = self._to_microseconds() % other._to_microseconds()
+        var r = self._to_microseconds() % other._to_microseconds()
         return Self(0, 0, r)
 
     fn __eq__(self, other: Self) -> Bool:
