@@ -12,7 +12,7 @@ alias _DAYS_BEFORE_MONTH = VariadicList[Int](
 )  # -1 is a placeholder for indexing purposes.
 
 
-alias MONTH_NAMES = StaticTuple[13](
+alias MONTH_NAMES = StaticTuple[StringLiteral, 13](
     "",
     "January",
     "February",
@@ -28,7 +28,7 @@ alias MONTH_NAMES = StaticTuple[13](
     "December",
 )
 
-alias MONTH_ABBREVIATIONS = StaticTuple[13](
+alias MONTH_ABBREVIATIONS = StaticTuple[StringLiteral, 13](
     "",
     "Jan",
     "Feb",
@@ -44,7 +44,7 @@ alias MONTH_ABBREVIATIONS = StaticTuple[13](
     "Dec",
 )
 
-alias DAY_NAMES = StaticTuple[8](
+alias DAY_NAMES = StaticTuple[StringLiteral, 8](
     "",
     "Monday",
     "Tuesday",
@@ -54,6 +54,6 @@ alias DAY_NAMES = StaticTuple[8](
     "Saturday",
     "Sunday",
 )
-alias DAY_ABBREVIATIONS = StaticTuple[8](
+alias DAY_ABBREVIATIONS = StaticTuple[StringLiteral, 8](
     "", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
 )
