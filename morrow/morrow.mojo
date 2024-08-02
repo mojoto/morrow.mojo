@@ -65,15 +65,15 @@ struct Morrow(StringableRaising):
             tz = TimeZone(0, "UTC")
         else:
             tm = c_localtime(t.tv_sec)
-            tz = TimeZone(tm.tm_gmtoff.to_int(), "local")
+            tz = TimeZone(int(tm.tm_gmtoff), "local")
 
         var result = Self(
-            tm.tm_year.to_int() + 1900,
-            tm.tm_mon.to_int() + 1,
-            tm.tm_mday.to_int(),
-            tm.tm_hour.to_int(),
-            tm.tm_min.to_int(),
-            tm.tm_sec.to_int(),
+            int(tm.tm_year) + 1900,
+            int(tm.tm_mon) + 1,
+            int(tm.tm_mday),
+            int(tm.tm_hour),
+            int(tm.tm_min),
+            int(tm.tm_sec),
             t.tv_usec,
             tz,
         )
@@ -82,13 +82,13 @@ struct Morrow(StringableRaising):
     @staticmethod
     fn fromtimestamp(timestamp: Float64) raises -> Self:
         var timestamp_ = normalize_timestamp(timestamp)
-        var t = CTimeval(timestamp_.to_int())
+        var t = CTimeval(int(timestamp_))
         return Self._fromtimestamp(t, False)
 
     @staticmethod
     fn utcfromtimestamp(timestamp: Float64) raises -> Self:
         var timestamp_ = normalize_timestamp(timestamp)
-        var t = CTimeval(timestamp_.to_int())
+        var t = CTimeval(int(timestamp_))
         return Self._fromtimestamp(t, True)
 
     @staticmethod
@@ -105,14 +105,14 @@ struct Morrow(StringableRaising):
             <Morrow [2019-01-20T15:49:10+00:00]>
         """
         var tm = c_strptime(date_str, fmt)
-        var tz = TimeZone(tm.tm_gmtoff.to_int()) if tzinfo.is_none() else tzinfo
+        var tz = TimeZone(int(tm.tm_gmtoff)) if tzinfo.is_none() else tzinfo
         return Self(
-            tm.tm_year.to_int() + 1900,
-            tm.tm_mon.to_int() + 1,
-            tm.tm_mday.to_int(),
-            tm.tm_hour.to_int(),
-            tm.tm_min.to_int(),
-            tm.tm_sec.to_int(),
+            int(tm.tm_year) + 1900,
+            int(tm.tm_mon) + 1,
+            int(tm.tm_mday),
+            int(tm.tm_hour),
+            int(tm.tm_min),
+            int(tm.tm_sec),
             0,
             tz,
         )
@@ -333,19 +333,19 @@ struct Morrow(StringableRaising):
         # Python.is_type not working, use __class__.__name__ instead
         if py_datetime.__class__.__name__ == "datetime":
             return Morrow(
-                py_datetime.year.to_float64().to_int(),
-                py_datetime.month.to_float64().to_int(),
-                py_datetime.day.to_float64().to_int(),
-                py_datetime.hour.to_float64().to_int(),
-                py_datetime.minute.to_float64().to_int(),
-                py_datetime.second.to_float64().to_int(),
-                py_datetime.second.to_float64().to_int(),
+                int(py_datetime.year),
+                int(py_datetime.month),
+                int(py_datetime.day),
+                int(py_datetime.hour),
+                int(py_datetime.minute),
+                int(py_datetime.second),
+                int(py_datetime.second),
             )
         elif py_datetime.__class__.__name__ == "date":
             return Morrow(
-                py_datetime.year.to_float64().to_int(),
-                py_datetime.month.to_float64().to_int(),
-                py_datetime.day.to_float64().to_int(),
+                int(py_datetime.year),
+                int(py_datetime.month),
+                int(py_datetime.day),
             )
         else:
             raise Error(

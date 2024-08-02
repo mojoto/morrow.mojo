@@ -1,4 +1,3 @@
-from math import abs
 from .util import rjust
 
 alias SECONDS_OF_DAY = 24 * 3600

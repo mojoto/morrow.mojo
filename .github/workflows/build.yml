@@ -3,7 +3,6 @@ name: Build and Release
 env:
   PACKAGE_NAME: morrow.mojopkg
   MORROW_SRC: morrow
-  MOJO_HOME: /home/runner/.modular/pkg/packages.modular.com_mojo/bin
 
 on: workflow_dispatch
 
@@ -18,10 +17,23 @@ jobs:
         run: |
           curl https://get.modular.com | MODULAR_AUTH=${{ secrets.MODULAR_AUTH }} sh - 
           modular auth ${{ secrets.MODULAR_AUTH }}
-          modular install mojo
+          python3 -m venv ~/max-venv && source ~/max-venv/bin/activate
+          modular install max
+          MAX_PATH=$(modular config max.path) \
+            && python3 -m pip install --find-links $MAX_PATH/wheels max-engine
+          MAX_PATH=$(modular config max.path) \
+            && BASHRC=$( [ -f "$HOME/.bash_profile" ] && echo "$HOME/.bash_profile" || echo "$HOME/.bashrc" ) \
+            && echo 'export MODULAR_HOME="'$HOME'/.modular"' >> "$BASHRC" \
+            && echo 'export PATH="'$MAX_PATH'/bin:$PATH"' >> "$BASHRC" \
+            && source "$BASHRC"
       - name: Build
         run: |
-          ${{ env.MOJO_HOME }}/mojo package ${{ env.MORROW_SRC }} -o ${{ github.workspace }}/${{ env.PACKAGE_NAME }}
+          MAX_PATH=$(modular config max.path) \
+            && BASHRC=$( [ -f "$HOME/.bash_profile" ] && echo "$HOME/.bash_profile" || echo "$HOME/.bashrc" ) \
+            && echo 'export MODULAR_HOME="'$HOME'/.modular"' >> "$BASHRC" \
+            && echo 'export PATH="'$MAX_PATH'/bin:$PATH"' >> "$BASHRC" \
+            && source "$BASHRC"
+          mojo package ${{ env.MORROW_SRC }} -o ${{ github.workspace }}/${{ env.PACKAGE_NAME }}
       - name: Upload package
         uses: actions/upload-artifact@v3
         with:
