@@ -88,7 +88,7 @@ struct _Formatter:
             ret += self.replace_token(m, match_chr_ord, match_count)
         return ret
 
-    fn replace_token(self, m: Morrow, token: String, token_count: Int) raises -> String:
+    fn replace_token(self, m: Morrow, token: Int, token_count: Int) raises -> String:
         if token == _Y:
             if token_count == 1:
                 return "Y"

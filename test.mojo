@@ -9,11 +9,11 @@ from morrow import TimeDelta
 
 def assert_datetime_equal(dt: Morrow, py_dt: PythonObject):
     assert_true(
-        dt.year == py_dt.year.to_float64().to_int()
-        and dt.month == py_dt.month.to_float64().to_int()
-        and dt.hour == py_dt.hour.to_float64().to_int()
-        and dt.minute == py_dt.minute.to_float64().to_int()
-        and dt.second == py_dt.second.to_float64().to_int(),
+        dt.year == int(py_dt.year)
+        and dt.month == int(py_dt.month)
+        and dt.hour == int(py_dt.hour)
+        and dt.minute == int(py_dt.minute)
+        and dt.second == int(py_dt.second),
         "dt: " + str(dt) + " is not equal to py_dt: " + str(py_dt),
     )
 

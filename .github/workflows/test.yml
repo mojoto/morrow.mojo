@@ -5,7 +5,6 @@ on: [pull_request, push]
 env:
   PACKAGE_NAME: morrow.mojopkg
   MORROW_SRC: morrow
-  MOJO_HOME: /home/runner/.modular/pkg/packages.modular.com_mojo/bin
 
 jobs:
   test:
@@ -18,7 +17,15 @@ jobs:
         run: |
           curl https://get.modular.com | MODULAR_AUTH=${{ secrets.MODULAR_AUTH }} sh - 
           modular auth ${{ secrets.MODULAR_AUTH }}
-          modular install mojo
+          python3 -m venv ~/max-venv && source ~/max-venv/bin/activate
+          modular install max
+          MAX_PATH=$(modular config max.path) \
+            && python3 -m pip install --find-links $MAX_PATH/wheels max-engine
       - name: Test
         run: |
-          ${{ env.MOJO_HOME }}/mojo run test.mojo
+          MAX_PATH=$(modular config max.path) \
+            && BASHRC=$( [ -f "$HOME/.bash_profile" ] && echo "$HOME/.bash_profile" || echo "$HOME/.bashrc" ) \
+            && echo 'export MODULAR_HOME="'$HOME'/.modular"' >> "$BASHRC" \
+            && echo 'export PATH="'$MAX_PATH'/bin:$PATH"' >> "$BASHRC" \
+            && source "$BASHRC"
+          mojo run test.mojo
