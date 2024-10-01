@@ -3,25 +3,33 @@ from .constants import _DAYS_IN_MONTH, _DAYS_BEFORE_MONTH
 
 
 fn _is_leap(year: Int) -> Bool:
-    "year -> 1 if leap year, else 0."
+    """
+    Determine if a given year is a leap year.
+    """
     return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
 
 def _days_before_year(year: Int) -> Int:
-    "year -> number of days before January 1st of year."
+    """
+    Calculate the number of days before January 1st of a given year.
+    """
     var y = year - 1
     return y * 365 + y // 4 - y // 100 + y // 400
 
 
 def _days_in_month(year: Int, month: Int) -> Int:
-    "year, month -> number of days in that month in that year."
+    """
+    Calculate the number of days in a specific month of a given year.
+    """
     if month == 2 and _is_leap(year):
         return 29
     return _DAYS_IN_MONTH[month]
 
 
 def _days_before_month(year: Int, month: Int) -> Int:
-    "year, month -> number of days in year preceding first day of month."
+    """
+    Calculate the number of days in a year preceding the first day of a given month.
+    """
     if month > 2 and _is_leap(year):
         return _DAYS_BEFORE_MONTH[month] + 1
     return _DAYS_BEFORE_MONTH[month]
@@ -29,13 +37,16 @@ def _days_before_month(year: Int, month: Int) -> Int:
 
 @always_inline
 def _ymd2ord(year: Int, month: Int, day: Int) -> Int:
-    "year, month, day -> ordinal, considering 01-Jan-0001 as day 1."
+    """
+    Convert a date to ordinal, considering 01-Jan-0001 as day 1.
+    """
     dim = _days_in_month(year, month)
     return _days_before_year(year) + _days_before_month(year, month) + day
 
 
 def normalize_timestamp(timestamp: Float64) -> Float64:
-    """Normalize millisecond and microsecond timestamps into normal timestamps.
+    """
+    Normalize millisecond and microsecond timestamps into standard timestamps.
     """
     if timestamp > MAX_TIMESTAMP:
         if timestamp < MAX_TIMESTAMP_MS:

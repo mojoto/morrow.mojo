@@ -8,32 +8,36 @@ from .constants import (
 )
 from .timezone import UTC_TZ
 
+# Global formatter instance
 alias formatter = _Formatter()
 
 
 struct _Formatter:
+    # Vector to store the maximum number of repetitions for each formatting character
     var _sub_chrs: InlinedFixedVector[Int, 128]
 
     fn __init__(inout self):
         self._sub_chrs = InlinedFixedVector[Int, 128](0)
         for i in range(128):
             self._sub_chrs[i] = 0
-        self._sub_chrs[_Y] = 4
-        self._sub_chrs[_M] = 4
-        self._sub_chrs[_D] = 2
-        self._sub_chrs[_d] = 4
-        self._sub_chrs[_H] = 2
-        self._sub_chrs[_h] = 2
-        self._sub_chrs[_m] = 2
-        self._sub_chrs[_s] = 2
-        self._sub_chrs[_S] = 6
-        self._sub_chrs[_Z] = 3
-        self._sub_chrs[_A] = 1
-        self._sub_chrs[_a] = 1
+        # Set the maximum number of repetitions for each formatting character
+        self._sub_chrs[_Y] = 4  # Year
+        self._sub_chrs[_M] = 4  # Month
+        self._sub_chrs[_D] = 2  # Day
+        self._sub_chrs[_d] = 4  # Day of week
+        self._sub_chrs[_H] = 2  # Hour (24-hour)
+        self._sub_chrs[_h] = 2  # Hour (12-hour)
+        self._sub_chrs[_m] = 2  # Minute
+        self._sub_chrs[_s] = 2  # Second
+        self._sub_chrs[_S] = 6  # Microsecond
+        self._sub_chrs[_Z] = 3  # Timezone
+        self._sub_chrs[_A] = 1  # AM/PM
+        self._sub_chrs[_a] = 1  # am/pm
 
     fn format(self, m: Morrow, fmt: String) raises -> String:
         """
-        "YYYY[abc]MM" -> repalce("YYYY") + "abc" + replace("MM")
+        Format the Morrow object according to the given format string.
+        Handles brackets for literal text: "YYYY[abc]MM" -> replace("YYYY") + "abc" + replace("MM")
         """
         if len(fmt) == 0:
             return ""
@@ -64,7 +68,7 @@ struct _Formatter:
 
     fn replace(self, m: Morrow, s: String) raises -> String:
         """
-        split token and replace
+        Replace formatting tokens in the string with their corresponding values
         """
         if len(s) == 0:
             return ""
@@ -95,6 +99,7 @@ struct _Formatter:
     fn replace_token(
         self, m: Morrow, token: Int, token_count: Int
     ) raises -> String:
+        # Replace individual formatting tokens based on their type and count
         if token == _Y:
             if token_count == 1:
                 return "Y"
@@ -175,17 +180,18 @@ struct _Formatter:
         return ""
 
 
-alias _Y = ord("Y")
-alias _M = ord("M")
-alias _D = ord("D")
-alias _d = ord("d")
-alias _H = ord("H")
-alias _h = ord("h")
-alias _m = ord("m")
-alias _s = ord("s")
-alias _S = ord("S")
-alias _X = ord("X")
-alias _x = ord("x")
-alias _Z = ord("Z")
-alias _A = ord("A")
-alias _a = ord("a")
+# Define constants for formatting characters
+alias _Y = ord("Y")  # Year
+alias _M = ord("M")  # Month
+alias _D = ord("D")  # Day
+alias _d = ord("d")  # Day of week
+alias _H = ord("H")  # Hour (24-hour)
+alias _h = ord("h")  # Hour (12-hour)
+alias _m = ord("m")  # Minute
+alias _s = ord("s")  # Second
+alias _S = ord("S")  # Microsecond
+alias _X = ord("X")  # Time
+alias _x = ord("x")  # Date
+alias _Z = ord("Z")  # Timezone
+alias _A = ord("A")  # AM/PM
+alias _a = ord("a")  # am/pm

@@ -2,6 +2,10 @@ alias SECONDS_OF_DAY = 24 * 3600
 
 
 struct TimeDelta(Stringable, Formattable):
+    """
+    Represents a duration of time.
+    """
+
     var days: Int
     var seconds: Int
     var microseconds: Int
@@ -16,6 +20,9 @@ struct TimeDelta(Stringable, Formattable):
         hours: Int = 0,
         weeks: Int = 0,
     ):
+        """
+        Initialize a TimeDelta object.
+        """
         self.days = 0
         self.seconds = 0
         self.microseconds = 0
@@ -50,6 +57,9 @@ struct TimeDelta(Stringable, Formattable):
         self.days += days_
 
     fn __copyinit__(inout self, other: Self):
+        """
+        Copy constructor for TimeDelta.
+        """
         self.days = other.days
         self.seconds = other.seconds
         self.microseconds = other.microseconds
@@ -73,13 +83,18 @@ struct TimeDelta(Stringable, Formattable):
             writer.write(str(self.microseconds).rjust(6, "0"))
 
     fn total_seconds(self) -> Float64:
-        """Total seconds in the duration."""
+        """
+        Calculate the total number of seconds in the TimeDelta.
+        """
         return (
             (self.days * 86400 + self.seconds) * 10**6 + self.microseconds
         ) / 10**6
 
     @always_inline
     fn __add__(self, other: Self) -> Self:
+        """
+        Add two TimeDelta objects.
+        """
         return Self(
             self.days + other.days,
             self.seconds + other.seconds,
@@ -87,9 +102,15 @@ struct TimeDelta(Stringable, Formattable):
         )
 
     fn __radd__(self, other: Self) -> Self:
+        """
+        Reverse add operation for TimeDelta.
+        """
         return self.__add__(other)
 
     fn __sub__(self, other: Self) -> Self:
+        """
+        Subtract one TimeDelta from another.
+        """
         return Self(
             self.days - other.days,
             self.seconds - other.seconds,
@@ -97,6 +118,9 @@ struct TimeDelta(Stringable, Formattable):
         )
 
     fn __rsub__(self, other: Self) -> Self:
+        """
+        Reverse subtract operation for TimeDelta.
+        """
         return Self(
             other.days - self.days,
             other.seconds - self.seconds,
@@ -104,12 +128,21 @@ struct TimeDelta(Stringable, Formattable):
         )
 
     fn __neg__(self) -> Self:
+        """
+        Negate the TimeDelta.
+        """
         return Self(-self.days, -self.seconds, -self.microseconds)
 
     fn __pos__(self) -> Self:
+        """
+        Return a positive TimeDelta (self).
+        """
         return self
 
     def __abs__(self) -> Self:
+        """
+        Return the absolute value of the TimeDelta.
+        """
         if self.days < 0:
             return -self
         else:
@@ -117,6 +150,9 @@ struct TimeDelta(Stringable, Formattable):
 
     @always_inline
     fn __mul__(self, other: Int) -> Self:
+        """
+        Multiply the TimeDelta by an integer.
+        """
         return Self(
             self.days * other,
             self.seconds * other,
@@ -124,18 +160,30 @@ struct TimeDelta(Stringable, Formattable):
         )
 
     fn __rmul__(self, other: Int) -> Self:
+        """
+        Reverse multiply operation for TimeDelta.
+        """
         return self.__mul__(other)
 
     fn _to_microseconds(self) -> Int:
+        """
+        Convert the TimeDelta to microseconds.
+        """
         return (
             self.days * SECONDS_OF_DAY + self.seconds
         ) * 1000000 + self.microseconds
 
     fn __mod__(self, other: Self) -> Self:
+        """
+        Calculate the remainder of dividing this TimeDelta by another.
+        """
         var r = self._to_microseconds() % other._to_microseconds()
         return Self(0, 0, r)
 
     fn __eq__(self, other: Self) -> Bool:
+        """
+        Check if two TimeDelta objects are equal.
+        """
         return (
             self.days == other.days
             and self.seconds == other.seconds
@@ -144,6 +192,9 @@ struct TimeDelta(Stringable, Formattable):
 
     @always_inline
     fn __le__(self, other: Self) -> Bool:
+        """
+        Check if this TimeDelta is less than or equal to another.
+        """
         if self.days < other.days:
             return True
         elif self.days == other.days:
@@ -158,6 +209,9 @@ struct TimeDelta(Stringable, Formattable):
 
     @always_inline
     fn __lt__(self, other: Self) -> Bool:
+        """
+        Check if this TimeDelta is less than another.
+        """
         if self.days < other.days:
             return True
         elif self.days == other.days:
@@ -171,12 +225,21 @@ struct TimeDelta(Stringable, Formattable):
         return False
 
     fn __ge__(self, other: Self) -> Bool:
+        """
+        Check if this TimeDelta is greater than or equal to another.
+        """
         return not self.__lt__(other)
 
     fn __gt__(self, other: Self) -> Bool:
+        """
+        Check if this TimeDelta is greater than another.
+        """
         return not self.__le__(other)
 
     fn __bool__(self) -> Bool:
+        """
+        Check if the TimeDelta is non-zero.
+        """
         return self.days != 0 or self.seconds != 0 or self.microseconds != 0
 
 

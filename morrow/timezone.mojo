@@ -16,19 +16,31 @@ struct TimeZone(Stringable):
         return self.name
 
     fn is_none(self) -> Bool:
+        """
+        Check if this TimeZone is None.
+        """
         return self.name == "None"
 
     @staticmethod
     fn none() -> TimeZone:
+        """
+        Create a None TimeZone.
+        """
         return TimeZone(0, "None")
 
     @staticmethod
     fn local() -> TimeZone:
+        """
+        Get the local TimeZone.
+        """
         var local_t = c_localtime(0)
         return TimeZone(local_t.tm_gmtoff.value, "local")
 
     @staticmethod
     fn from_utc(utc_str: String) raises -> TimeZone:
+        """
+        Create a TimeZone from a UTC string.
+        """
         if len(utc_str) == 0:
             raise Error("utc_str is empty")
         if utc_str == "utc" or utc_str == "UTC" or utc_str == "Z":
@@ -62,6 +74,9 @@ struct TimeZone(Stringable):
         return TimeZone(offset)
 
     fn format(self, sep: String = ":") -> String:
+        """
+        Format the TimeZone as a string.
+        """
         var sign: String
         var offset_abs: Int
         if self.offset < 0:

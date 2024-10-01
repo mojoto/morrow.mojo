@@ -48,11 +48,17 @@ struct Morrow(StringableRaising):
 
     @staticmethod
     fn now() -> Self:
+        """
+        Return a Morrow object representing the current local date and time.
+        """
         var t = c_gettimeofday()
         return Self._fromtimestamp(t, False)
 
     @staticmethod
     fn utcnow() -> Self:
+        """
+        Return a Morrow object representing the current UTC date and time.
+        """
         var t = c_gettimeofday()
         return Self._fromtimestamp(t, True)
 
@@ -131,7 +137,8 @@ struct Morrow(StringableRaising):
         return Self.strptime(date_str, fmt, tzinfo)
 
     fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
-        """Returns a string representation of the `Morrow`
+        """
+        Returns a string representation of the `Morrow`
         formatted according to the provided format string.
 
         :param fmt: the format string.
@@ -153,7 +160,8 @@ struct Morrow(StringableRaising):
     fn isoformat(
         self, sep: String = "T", timespec: StringLiteral = "auto"
     ) raises -> String:
-        """Return the time formatted according to ISO.
+        """
+        Return the time formatted according to ISO.
 
         The full format looks like 'YYYY-MM-DD HH:MM:SS.mmmmmm'.
 
@@ -219,19 +227,17 @@ struct Morrow(StringableRaising):
             return sep.join(date_str, time_str) + self.tz.format()
 
     fn toordinal(self) raises -> Int:
-        """Return proleptic Gregorian ordinal for the year, month and day.
-
-        January 1 of year 1 is day 1.  Only the year, month and day values
-        contribute to the result.
+        """
+        Return the proleptic Gregorian ordinal of the date, where January 1 of year 1 has ordinal 1.
         """
         return _ymd2ord(self.year, self.month, self.day)
 
     @staticmethod
     fn fromordinal(ordinal: Int) raises -> Self:
-        """Construct a Morrow from a proleptic Gregorian ordinal.
+        """
+        Construct a Morrow object from a proleptic Gregorian ordinal.
 
-        January 1 of year 1 is day 1.  Only the year, month and day are
-        non-zero in the result.
+        January 1 of year 1 is day 1. Only the year, month and day are non-zero in the result.
         """
         # n is a 1-based index, starting at 1-Jan-1.  The pattern of leap years
         # repeats exactly every 400 years.  The basic strategy is to find the
@@ -302,7 +308,9 @@ struct Morrow(StringableRaising):
         return Self(year, month, n + 1)
 
     fn isoweekday(self) raises -> Int:
-        # "Return day of the week, where Monday == 1 ... Sunday == 7."
+        """
+        Return the day of the week as an integer, where Monday is 1 and Sunday is 7.
+        """
         # 1-Jan-0001 is a Monday
         return self.toordinal() % 7 or 7
 
