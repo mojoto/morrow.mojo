@@ -1,5 +1,3 @@
-from collections.vector import DynamicVector
-
 from .constants import MAX_TIMESTAMP, MAX_TIMESTAMP_MS, MAX_TIMESTAMP_US
 from .constants import _DAYS_IN_MONTH, _DAYS_BEFORE_MONTH
 
@@ -37,7 +35,8 @@ def _ymd2ord(year: Int, month: Int, day: Int) -> Int:
 
 
 def normalize_timestamp(timestamp: Float64) -> Float64:
-    """Normalize millisecond and microsecond timestamps into normal timestamps."""
+    """Normalize millisecond and microsecond timestamps into normal timestamps.
+    """
     if timestamp > MAX_TIMESTAMP:
         if timestamp < MAX_TIMESTAMP_MS:
             timestamp /= 1000
@@ -45,22 +44,6 @@ def normalize_timestamp(timestamp: Float64) -> Float64:
             timestamp /= 1_000_000
         else:
             raise Error(
-                "The specified timestamp " + String(timestamp) + "is too large."
+                "The specified timestamp " + str(timestamp) + "is too large."
             )
     return timestamp
-
-
-fn _repeat_string(string: String, n: Int) -> String:
-    var result: String = ""
-    for _ in range(n):
-        result += string
-    return result
-
-
-fn rjust(string: String, width: Int, fillchar: String = " ") -> String:
-    var extra = width - len(string)
-    return _repeat_string(fillchar, extra) + string
-
-
-fn rjust(string: Int, width: Int, fillchar: String = " ") -> String:
-    return rjust(String(string), width, fillchar)

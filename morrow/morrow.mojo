@@ -1,12 +1,12 @@
 from ._py import py_dt_datetime
-from .util import normalize_timestamp, rjust, _ymd2ord, _days_before_year
+from .util import normalize_timestamp, _ymd2ord, _days_before_year
 from ._libc import c_gettimeofday, c_localtime, c_gmtime, c_strptime
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
 from .timedelta import TimeDelta
 from .formatter import formatter
 from .constants import _DAYS_BEFORE_MONTH, _DAYS_IN_MONTH
-from python.object import PythonObject
+from python import PythonObject
 from python import Python
 
 
@@ -36,7 +36,7 @@ struct Morrow(StringableRaising):
         second: Int = 0,
         microsecond: Int = 0,
         tz: TimeZone = TimeZone.none(),
-    ) raises:
+    ):
         self.year = year
         self.month = month
         self.day = day
@@ -47,17 +47,17 @@ struct Morrow(StringableRaising):
         self.tz = tz
 
     @staticmethod
-    fn now() raises -> Self:
+    fn now() -> Self:
         var t = c_gettimeofday()
         return Self._fromtimestamp(t, False)
 
     @staticmethod
-    fn utcnow() raises -> Self:
+    fn utcnow() -> Self:
         var t = c_gettimeofday()
         return Self._fromtimestamp(t, True)
 
     @staticmethod
-    fn _fromtimestamp(t: CTimeval, utc: Bool) raises -> Self:
+    fn _fromtimestamp(t: CTimeval, utc: Bool) -> Self:
         var tm: CTm
         var tz: TimeZone
         if utc:
@@ -94,7 +94,7 @@ struct Morrow(StringableRaising):
     @staticmethod
     fn strptime(
         date_str: String, fmt: String, tzinfo: TimeZone = TimeZone.none()
-    ) raises -> Self:
+    ) -> Self:
         """
         Create a Morrow instance from a date string and format,
         in the style of ``datetime.strptime``.  Optionally replaces the parsed TimeZone.
@@ -168,45 +168,49 @@ struct Morrow(StringableRaising):
         'minutes', 'seconds', 'milliseconds' and 'microseconds'.
         """
         var date_str = (
-            rjust(self.year, 4, "0")
+            str(self.year).rjust(4, "0")
             + "-"
-            + rjust(self.month, 2, "0")
+            + str(self.month).rjust(2, "0")
             + "-"
-            + rjust(self.day, 2, "0")
+            + str(self.day).rjust(2, "0")
         )
         var time_str = String("")
         if timespec == "auto" or timespec == "microseconds":
             time_str = (
-                rjust(self.hour, 2, "0")
+                str(self.hour).rjust(2, "0")
                 + ":"
-                + rjust(self.minute, 2, "0")
+                + str(self.minute).rjust(2, "0")
                 + ":"
-                + rjust(self.second, 2, "0")
+                + str(self.second).rjust(2, "0")
                 + "."
-                + rjust(self.microsecond, 6, "0")
+                + str(self.microsecond).rjust(6, "0")
             )
         elif timespec == "milliseconds":
             time_str = (
-                rjust(self.hour, 2, "0")
+                str(self.hour).rjust(2, "0")
                 + ":"
-                + rjust(self.minute, 2, "0")
+                + str(self.minute).rjust(2, "0")
                 + ":"
-                + rjust(self.second, 2, "0")
+                + str(self.second).rjust(2, "0")
                 + "."
-                + rjust(self.microsecond // 1000, 3, "0")
+                + str(self.microsecond // 1000).rjust(3, "0")
             )
         elif timespec == "seconds":
             time_str = (
-                rjust(self.hour, 2, "0")
+                str(self.hour).rjust(2, "0")
                 + ":"
-                + rjust(self.minute, 2, "0")
+                + str(self.minute).rjust(2, "0")
                 + ":"
-                + rjust(self.second, 2, "0")
+                + str(self.second).rjust(2, "0")
             )
         elif timespec == "minutes":
-            time_str = rjust(self.hour, 2, "0") + ":" + rjust(self.minute, 2, "0")
+            time_str = (
+                str(self.hour).rjust(2, "0")
+                + ":"
+                + str(self.minute).rjust(2, "0")
+            )
         elif timespec == "hours":
-            time_str = rjust(self.hour, 2, "0")
+            time_str = str(self.hour).rjust(2, "0")
         else:
             raise Error()
         if self.tz.is_none():
@@ -349,5 +353,6 @@ struct Morrow(StringableRaising):
             )
         else:
             raise Error(
-                "invalid python object, only support py builtin datetime or date"
+                "invalid python object, only support py builtin datetime or"
+                " date"
             )

@@ -1,4 +1,3 @@
-from .util import rjust
 from ._libc import c_localtime
 
 alias UTC_TZ = TimeZone(0, "UTC")
@@ -26,7 +25,7 @@ struct TimeZone(Stringable):
     @staticmethod
     fn local() -> TimeZone:
         var local_t = c_localtime(0)
-        return TimeZone(local_t.tm_gmtoff.to_int(), "local")
+        return TimeZone(local_t.tm_gmtoff.value, "local")
 
     @staticmethod
     fn from_utc(utc_str: String) raises -> TimeZone:
@@ -73,4 +72,4 @@ struct TimeZone(Stringable):
             offset_abs = self.offset
         var hh = offset_abs // 3600
         var mm = offset_abs % 3600
-        return sign + rjust(hh, 2, "0") + sep + rjust(mm, 2, "0")
+        return sign + str(hh).rjust(2, "0") + sep + str(mm).rjust(2, "0")

@@ -1,7 +1,11 @@
 from collections.vector import InlinedFixedVector
 from utils.static_tuple import StaticTuple
-from .util import rjust
-from .constants import MONTH_NAMES, MONTH_ABBREVIATIONS, DAY_NAMES, DAY_ABBREVIATIONS
+from .constants import (
+    MONTH_NAMES,
+    MONTH_ABBREVIATIONS,
+    DAY_NAMES,
+    DAY_ABBREVIATIONS,
+)
 from .timezone import UTC_TZ
 
 alias formatter = _Formatter()
@@ -88,71 +92,73 @@ struct _Formatter:
             ret += self.replace_token(m, match_chr_ord, match_count)
         return ret
 
-    fn replace_token(self, m: Morrow, token: Int, token_count: Int) raises -> String:
+    fn replace_token(
+        self, m: Morrow, token: Int, token_count: Int
+    ) raises -> String:
         if token == _Y:
             if token_count == 1:
                 return "Y"
             if token_count == 2:
-                return rjust(m.year, 4, "0")[2:4]
+                return str(m.year).rjust(4, "0")[2:4]
             if token_count == 4:
-                return rjust(m.year, 4, "0")
+                return str(m.year).rjust(4, "0")
         elif token == _M:
             if token_count == 1:
-                return String(m.month)
+                return str(m.month)
             if token_count == 2:
-                return rjust(m.month, 2, "0")
+                return str(m.month).rjust(2, "0")
             if token_count == 3:
-                return String(MONTH_ABBREVIATIONS[m.month])
+                return str(MONTH_ABBREVIATIONS[m.month])
             if token_count == 4:
-                return String(MONTH_NAMES[m.month])
+                return str(MONTH_NAMES[m.month])
         elif token == _D:
             if token_count == 1:
-                return String(m.day)
+                return str(m.day)
             if token_count == 2:
-                return rjust(m.day, 2, "0")
+                return str(m.day).rjust(2, "0")
         elif token == _H:
             if token_count == 1:
-                return String(m.hour)
+                return str(m.hour)
             if token_count == 2:
-                return rjust(m.hour, 2, "0")
+                return str(m.hour).rjust(2, "0")
         elif token == _h:
             var h_12 = m.hour
             if m.hour > 12:
                 h_12 -= 12
             if token_count == 1:
-                return String(h_12)
+                return str(h_12)
             if token_count == 2:
-                return rjust(h_12, 2, "0")
+                return str(h_12).rjust(2, "0")
         elif token == _m:
             if token_count == 1:
-                return String(m.minute)
+                return str(m.minute)
             if token_count == 2:
-                return rjust(m.minute, 2, "0")
+                return str(m.minute).rjust(2, "0")
         elif token == _s:
             if token_count == 1:
-                return String(m.second)
+                return str(m.second)
             if token_count == 2:
-                return rjust(m.second, 2, "0")
+                return str(m.second).rjust(2, "0")
         elif token == _S:
             if token_count == 1:
-                return String(m.microsecond // 100000)
+                return str(m.microsecond // 100000)
             if token_count == 2:
-                return rjust(m.microsecond // 10000, 2, "0")
+                return str(m.microsecond // 10000).rjust(2, "0")
             if token_count == 3:
-                return rjust(m.microsecond // 1000, 3, "0")
+                return str(m.microsecond // 1000).rjust(3, "0")
             if token_count == 4:
-                return rjust(m.microsecond // 100, 4, "0")
+                return str(m.microsecond // 100).rjust(4, "0")
             if token_count == 5:
-                return rjust(m.microsecond // 10, 5, "0")
+                return str(m.microsecond // 10).rjust(5, "0")
             if token_count == 6:
-                return rjust(m.microsecond, 6, "0")
+                return str(m.microsecond).rjust(6, "0")
         elif token == _d:
             if token_count == 1:
-                return String(m.isoweekday())
+                return str(m.isoweekday())
             if token_count == 3:
-                return String(DAY_ABBREVIATIONS[m.isoweekday()])
+                return str(DAY_ABBREVIATIONS[m.isoweekday()])
             if token_count == 4:
-                return String(DAY_NAMES[m.isoweekday()])
+                return str(DAY_NAMES[m.isoweekday()])
         elif token == _Z:
             if token_count == 3:
                 return UTC_TZ.name if m.tz.is_none() else m.tz.name
