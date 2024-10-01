@@ -1,9 +1,7 @@
-from .util import rjust
-
 alias SECONDS_OF_DAY = 24 * 3600
 
 
-struct TimeDelta(Stringable):
+struct TimeDelta(Stringable, Formattable):
     var days: Int
     var seconds: Int
     var microseconds: Int
@@ -57,19 +55,22 @@ struct TimeDelta(Stringable):
         self.microseconds = other.microseconds
 
     fn __str__(self) -> String:
+        return String.format_sequence(self)
+
+    fn format_to(self: Self, inout writer: Formatter):
         var mm = self.seconds // 60
         var ss = self.seconds % 60
         var hh = mm // 60
         mm = mm % 60
-        var s = String(hh) + ":" + rjust(mm, 2, "0") + ":" + rjust(ss, 2, "0")
         if self.days:
             if abs(self.days) != 1:
-                s = String(self.days) + " days, " + s
+                writer.write(self.days, " days, ")
             else:
-                s = String(self.days) + " day, " + s
+                writer.write(self.days, " day, ")
+
+        writer.write(hh, ":", str(mm).rjust(2, "0"), ":", str(ss).rjust(2, "0"))
         if self.microseconds:
-            s = s + rjust(self.microseconds, 6, "0")
-        return s
+            writer.write(str(self.microseconds).rjust(6, "0"))
 
     fn total_seconds(self) -> Float64:
         """Total seconds in the duration."""
@@ -126,7 +127,9 @@ struct TimeDelta(Stringable):
         return self.__mul__(other)
 
     fn _to_microseconds(self) -> Int:
-        return (self.days * SECONDS_OF_DAY + self.seconds) * 1000000 + self.microseconds
+        return (
+            self.days * SECONDS_OF_DAY + self.seconds
+        ) * 1000000 + self.microseconds
 
     fn __mod__(self, other: Self) -> Self:
         var r = self._to_microseconds() % other._to_microseconds()
@@ -161,7 +164,8 @@ struct TimeDelta(Stringable):
             if self.seconds < other.seconds:
                 return True
             elif (
-                self.seconds == other.seconds and self.microseconds < other.microseconds
+                self.seconds == other.seconds
+                and self.microseconds < other.microseconds
             ):
                 return True
         return False

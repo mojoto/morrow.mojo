@@ -1,0 +1,12 @@
+[project]
+authors = ["Prodesire <wangbinxin001@126.com>", "Shalei <shalei6698@126.com>"]
+channels = ["conda-forge", "https://conda.modular.com/max"]
+description = "Morrow provides human-friendly method for managing, formatting, and transforming dates, times, and timestamps."
+name = "morrow.mojo"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+max = ">=24.5.0,<25"

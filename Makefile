@@ -1,8 +1,11 @@
+install:
+	magic install
+
 test:
-	mojo run test.mojo
+	magic run mojo run test.mojo
 
 format:
-	mojo format .
+	magic run mojo format morrow test.mojo
 
 build:
-	mojo package morrow -o morrow.mojopkg 
+	magic run mojo package morrow -o morrow.mojopkg

@@ -1,6 +1,7 @@
 from testing import assert_equal, assert_true
+from python import PythonObject
 
-from morrow._libc import c_gettimeofday
+from morrow._libc import c_gettimeofday, c_localtime, c_gmtime
 from morrow._py import py_dt_datetime, py_time
 from morrow import Morrow
 from morrow import TimeZone
@@ -49,7 +50,9 @@ def test_iso_format():
     var d0 = Morrow(2023, 10, 1, 0, 0, 0, 1234)
     assert_equal(d0.isoformat(), "2023-10-01T00:00:00.001234")
     assert_equal(d0.isoformat(timespec="seconds"), "2023-10-01T00:00:00")
-    assert_equal(d0.isoformat(timespec="milliseconds"), "2023-10-01T00:00:00.001")
+    assert_equal(
+        d0.isoformat(timespec="milliseconds"), "2023-10-01T00:00:00.001"
+    )
 
     # with TimeZone
     var d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Beijing"))
@@ -69,7 +72,9 @@ def test_time_zone():
 
 def test_strptime():
     print("Running test_strptime()")
-    m = Morrow.strptime("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", TimeZone.none())
+    m = Morrow.strptime(
+        "20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", TimeZone.none()
+    )
     assert_equal(str(m), "2023-01-20T15:49:10.000000+00:00")
 
     m = Morrow.strptime("2023-10-18 15:49:10 +0800", "%Y-%m-%d %H:%M:%S %z")
@@ -93,7 +98,9 @@ def test_ordinal():
 
 def test_sub():
     print("Running test_sub()")
-    var result = Morrow(2023, 10, 1, 10, 0, 0, 1) - Morrow(2023, 10, 1, 10, 0, 0)
+    var result = Morrow(2023, 10, 1, 10, 0, 0, 1) - Morrow(
+        2023, 10, 1, 10, 0, 0
+    )
     assert_equal(result.microseconds, 1)
     assert_equal(str(result), "0:00:00000001")
 
@@ -118,10 +125,14 @@ def test_timedelta():
     print("Running test_timedelta()")
     assert_equal(TimeDelta(3, 2, 100).total_seconds(), 259202.0001)
     assert_true(
-        TimeDelta(2, 1, 50).__add__(TimeDelta(1, 1, 50)).__eq__(TimeDelta(3, 2, 100))
+        TimeDelta(2, 1, 50)
+        .__add__(TimeDelta(1, 1, 50))
+        .__eq__(TimeDelta(3, 2, 100))
     )
     assert_true(
-        TimeDelta(3, 2, 100).__sub__(TimeDelta(2, 1, 50)).__eq__(TimeDelta(1, 1, 50))
+        TimeDelta(3, 2, 100)
+        .__sub__(TimeDelta(2, 1, 50))
+        .__eq__(TimeDelta(1, 1, 50))
     )
     assert_true(TimeDelta(3, 2, 100).__neg__().__eq__(TimeDelta(-3, -2, -100)))
     assert_true(TimeDelta(-3, -2, -100).__abs__().__eq__(TimeDelta(3, 2, 100)))
@@ -167,7 +178,9 @@ def test_format():
     )
     assert_equal(m.format("Y-YY-YYY-YYYY M-MM D-DD"), "Y-24--2024 2-02 1-01")
     assert_equal(m.format("H-HH-h-hh m-mm s-ss"), "3-03-3-03 4-04 5-05")
-    assert_equal(m.format("S-SS-SSS-SSSS-SSSSS-SSSSSS"), "1-12-123-1234-12345-123456")
+    assert_equal(
+        m.format("S-SS-SSS-SSSS-SSSSS-SSSSSS"), "1-12-123-1234-12345-123456"
+    )
     assert_equal(m.format("d-dd-ddd-dddd"), "4--Thu-Thursday")
     assert_equal(m.format("YYYY[Y] [[]MM[]][M]"), "2024Y [02]M")
 
