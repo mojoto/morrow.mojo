@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install dependencies
         run: |
           curl -ssL https://magic.modular.com | bash
@@ -24,7 +24,7 @@ jobs:
           BASHRC=$( [ -f "$HOME/.bash_profile" ] && echo "$HOME/.bash_profile" || echo "$HOME/.bashrc" )
           source "$BASHRC" &&  magic run mojo package ${{ env.MORROW_SRC }} -o ${{ github.workspace }}/${{ env.PACKAGE_NAME }}
       - name: Upload package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PACKAGE_NAME }}
           path: ${{ github.workspace }}/${{ env.PACKAGE_NAME }}
