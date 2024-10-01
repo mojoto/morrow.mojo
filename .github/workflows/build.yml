@@ -15,25 +15,14 @@ jobs:
         uses: actions/checkout@v2
       - name: Install dependencies
         run: |
-          curl https://get.modular.com | MODULAR_AUTH=${{ secrets.MODULAR_AUTH }} sh - 
-          modular auth ${{ secrets.MODULAR_AUTH }}
-          python3 -m venv ~/max-venv && source ~/max-venv/bin/activate
-          modular install max
-          MAX_PATH=$(modular config max.path) \
-            && python3 -m pip install --find-links $MAX_PATH/wheels max-engine
-          MAX_PATH=$(modular config max.path) \
-            && BASHRC=$( [ -f "$HOME/.bash_profile" ] && echo "$HOME/.bash_profile" || echo "$HOME/.bashrc" ) \
-            && echo 'export MODULAR_HOME="'$HOME'/.modular"' >> "$BASHRC" \
-            && echo 'export PATH="'$MAX_PATH'/bin:$PATH"' >> "$BASHRC" \
-            && source "$BASHRC"
+          curl -ssL https://magic.modular.com | bash
+          BASHRC=$( [ -f "$HOME/.bash_profile" ] && echo "$HOME/.bash_profile" || echo "$HOME/.bashrc" )
+          echo 'export PATH="$PATH:$HOME/.modular/bin"' >> "$BASHRC"
+          source "$BASHRC" && make install
       - name: Build
         run: |
-          MAX_PATH=$(modular config max.path) \
-            && BASHRC=$( [ -f "$HOME/.bash_profile" ] && echo "$HOME/.bash_profile" || echo "$HOME/.bashrc" ) \
-            && echo 'export MODULAR_HOME="'$HOME'/.modular"' >> "$BASHRC" \
-            && echo 'export PATH="'$MAX_PATH'/bin:$PATH"' >> "$BASHRC" \
-            && source "$BASHRC"
-          mojo package ${{ env.MORROW_SRC }} -o ${{ github.workspace }}/${{ env.PACKAGE_NAME }}
+          BASHRC=$( [ -f "$HOME/.bash_profile" ] && echo "$HOME/.bash_profile" || echo "$HOME/.bashrc" )
+          source "$BASHRC" &&  magic run mojo package ${{ env.MORROW_SRC }} -o ${{ github.workspace }}/${{ env.PACKAGE_NAME }}
       - name: Upload package
         uses: actions/upload-artifact@v3
         with:
