@@ -3,12 +3,16 @@ alias SECONDS_OF_DAY = 24 * 3600
 
 @register_passable("trivial")
 struct TimeDelta(Stringable):
+    """Time delta."""
     var days: Int
+    """Days."""
     var seconds: Int
+    """Seconds."""
     var microseconds: Int
+    """Microseconds."""
 
     fn __init__(
-        inout self,
+        out self,
         days: Int = 0,
         seconds: Int = 0,
         microseconds: Int = 0,
@@ -17,6 +21,17 @@ struct TimeDelta(Stringable):
         hours: Int = 0,
         weeks: Int = 0,
     ):
+        """Initializes a new time delta.
+
+        Args:
+            days: Days.
+            seconds: Seconds.
+            microseconds: Microseconds.
+            milliseconds: Milliseconds.
+            minutes: Minutes.
+            hours: Hours.
+            weeks: Weeks.
+        """
         self.days = 0
         self.seconds = 0
         self.microseconds = 0
@@ -51,6 +66,11 @@ struct TimeDelta(Stringable):
         self.days += days_
 
     fn __str__(self) -> String:
+        """String representation of the duration.
+        
+        Returns:
+            String representation of the duration.
+        """
         var mm = self.seconds // 60
         var ss = self.seconds % 60
         var hh = mm // 60
@@ -66,10 +86,22 @@ struct TimeDelta(Stringable):
         return s
 
     fn total_seconds(self) -> Float64:
-        """Total seconds in the duration."""
+        """Total seconds in the duration.
+        
+        Returns:
+            Total seconds in the duration.
+        """
         return ((self.days * 86400 + self.seconds) * 10**6 + self.microseconds) / 10**6
 
     fn __add__(self, other: Self) -> Self:
+        """Adds two time deltas.
+
+        Args:
+            other: Time delta to add.
+        
+        Returns:
+            Sum of the two time deltas.
+        """
         return Self(
             self.days + other.days,
             self.seconds + other.seconds,
@@ -77,9 +109,25 @@ struct TimeDelta(Stringable):
         )
 
     fn __radd__(self, other: Self) -> Self:
+        """Adds two time deltas.
+
+        Args:
+            other: Time delta to add.
+        
+        Returns:
+            Sum of the two time deltas.
+        """
         return self.__add__(other)
 
     fn __sub__(self, other: Self) -> Self:
+        """Subtracts two time deltas.
+
+        Args:
+            other: Time delta to subtract.
+        
+        Returns:
+            Difference of the two time deltas.
+        """
         return Self(
             self.days - other.days,
             self.seconds - other.seconds,
@@ -87,6 +135,14 @@ struct TimeDelta(Stringable):
         )
 
     fn __rsub__(self, other: Self) -> Self:
+        """Subtracts two time deltas.
+
+        Args:
+            other: Time delta to subtract.
+        
+        Returns:
+            Difference of the two time deltas.
+        """
         return Self(
             other.days - self.days,
             other.seconds - self.seconds,
@@ -94,18 +150,41 @@ struct TimeDelta(Stringable):
         )
 
     fn __neg__(self) -> Self:
+        """Negates the time delta.
+
+        Returns:
+            Negated time delta.
+        """
         return Self(-self.days, -self.seconds, -self.microseconds)
 
     fn __pos__(self) -> Self:
+        """Returns the time delta.
+
+        Returns:
+            Time delta.
+        """
         return self
 
     def __abs__(self) -> Self:
+        """Returns the absolute value of the time delta.
+
+        Returns:
+            Absolute value of the time delta.
+        """
         if self.days < 0:
             return -self
         else:
             return self
 
     fn __mul__(self, other: Int) -> Self:
+        """Multiplies the time delta by a scalar.
+
+        Args:
+            other: Scalar to multiply by.
+
+        Returns:
+            Scaled time delta.
+        """
         return Self(
             self.days * other,
             self.seconds * other,
@@ -113,19 +192,55 @@ struct TimeDelta(Stringable):
         )
 
     fn __rmul__(self, other: Int) -> Self:
+        """Multiplies the time delta by a scalar.
+
+        Args:
+            other: Scalar to multiply by.
+        
+        Returns:
+            Scaled time delta.
+        """
         return self.__mul__(other)
 
     fn _to_microseconds(self) -> Int:
+        """Converts the time delta to microseconds.
+
+        Returns:
+            Time delta in microseconds.
+        """
         return (self.days * SECONDS_OF_DAY + self.seconds) * 1000000 + self.microseconds
 
     fn __mod__(self, other: Self) -> Self:
-        var r = self._to_microseconds() % other._to_microseconds()
-        return Self(0, 0, r)
+        """Returns the remainder of the division of two time deltas.
+
+        Args:
+            other: Time delta to divide by.
+        
+        Returns:
+            Remainder of the division of two time deltas.
+        """
+        return Self(0, 0, self._to_microseconds() % other._to_microseconds())
 
     fn __eq__(self, other: Self) -> Bool:
+        """Checks if two time deltas are equal.
+
+        Args:
+            other: Time delta to compare with.
+        
+        Returns:
+            True if the time deltas are equal, False otherwise.
+        """
         return self.days == other.days and self.seconds == other.seconds and self.microseconds == other.microseconds
 
     fn __le__(self, other: Self) -> Bool:
+        """Checks if the time delta is less than or equal to the other time delta.
+
+        Args:
+            other: Time delta to compare with.
+        
+        Returns:
+            True if the time delta is less than or equal to the other time delta, False otherwise.
+        """
         if self.days < other.days:
             return True
         elif self.days == other.days:
@@ -136,6 +251,14 @@ struct TimeDelta(Stringable):
         return False
 
     fn __lt__(self, other: Self) -> Bool:
+        """Checks if the time delta is less than the other time delta.
+
+        Args:
+            other: Time delta to compare with.
+        
+        Returns:
+            True if the time delta is less than the other time delta, False otherwise.
+        """
         if self.days < other.days:
             return True
         elif self.days == other.days:
@@ -146,15 +269,39 @@ struct TimeDelta(Stringable):
         return False
 
     fn __ge__(self, other: Self) -> Bool:
+        """Checks if the time delta is greater than or equal to the other time delta.
+
+        Args:
+            other: Time delta to compare with.
+        
+        Returns:
+            True if the time delta is greater than or equal to the other time delta, False otherwise.
+        """
         return not self.__lt__(other)
 
     fn __gt__(self, other: Self) -> Bool:
+        """Checks if the time delta is greater than the other time delta.
+
+        Args:
+            other: Time delta to compare with.
+        
+        Returns:
+            True if the time delta is greater than the other time delta, False otherwise.
+        """
         return not self.__le__(other)
 
     fn __bool__(self) -> Bool:
+        """Checks if the time delta is non-zero.
+
+        Returns:
+            True if the time delta is non-zero, False otherwise.
+        """
         return self.days != 0 or self.seconds != 0 or self.microseconds != 0
 
 
-alias Min = TimeDelta(-99999999)
-alias Max = TimeDelta(days=99999999)
-alias Resolution = TimeDelta(microseconds=1)
+alias MIN = TimeDelta(-99999999)
+"""Minimum time delta."""
+alias MAX = TimeDelta(days=99999999)
+"""Maximum time delta."""
+alias RESOLUTION = TimeDelta(microseconds=1)
+"""Resolution of the time delta."""

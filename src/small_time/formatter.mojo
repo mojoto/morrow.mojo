@@ -16,6 +16,8 @@ alias MONTH_NAMES = InlineArray[String, 13](
     "November",
     "December",
 )
+"""The full month names."""
+
 alias MONTH_ABBREVIATIONS = InlineArray[String, 13](
     "",
     "Jan",
@@ -31,6 +33,8 @@ alias MONTH_ABBREVIATIONS = InlineArray[String, 13](
     "Nov",
     "Dec",
 )
+"""The month name abbreviations."""
+
 alias DAY_NAMES = InlineArray[String, 8](
     "",
     "Monday",
@@ -41,14 +45,20 @@ alias DAY_NAMES = InlineArray[String, 8](
     "Saturday",
     "Sunday",
 )
+"""The full day names."""
 alias DAY_ABBREVIATIONS = InlineArray[String, 8]("", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+"""The day name abbreviations."""
 alias formatter = _Formatter()
+"""Default formatter instance."""
 
 
 struct _Formatter:
+    """SmallTime formatter."""
     var _sub_chrs: InlineList[Int, 128]
+    """Substitution characters."""
 
-    fn __init__(inout self):
+    fn __init__(out self):
+        """Initializes a new formatter."""
         self._sub_chrs = InlineList[Int, 128]()
         for i in range(128):
             self._sub_chrs[i] = 0
@@ -66,13 +76,20 @@ struct _Formatter:
         self._sub_chrs[_a] = 1
 
     fn format(self, m: SmallTime, fmt: String) -> String:
-        """
+        """Formats the given time value using the specified format string.
         "YYYY[abc]MM" -> replace("YYYY") + "abc" + replace("MM")
+
+        Args:
+            m: Time value.
+            fmt: Format string.
+        
+        Returns:
+            Formatted time string.
         """
         if len(fmt) == 0:
             return ""
 
-        var result: String = ""
+        var result: String = ''
         var in_bracket = False
         var start = 0
 
@@ -101,13 +118,19 @@ struct _Formatter:
         return result
 
     fn replace(self, m: SmallTime, fmt: String) -> String:
-        """
-        split token and replace
+        """Replaces the tokens in the given format string with the corresponding values.
+
+        Args:
+            m: Time value.
+            fmt: Format string.
+        
+        Returns:
+            Formatted time string.
         """
         if len(fmt) == 0:
             return ""
 
-        var result: String = ""
+        var result: String = ''
         var matched_byte = 0
         var matched_count = 0
         for i in range(len(fmt)):

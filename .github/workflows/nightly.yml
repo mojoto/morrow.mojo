@@ -1,9 +1,9 @@
-name: build
+name: Build all packages
 
 on:
   push:
     branches:
-      - main
+      - nightly
     paths:
       - src/**
 
@@ -27,10 +27,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install magic
-        run: |
-          curl -ssL https://magic.modular.com | bash
-
       - name: Build package for target platform
         env:
           TARGET_PLATFORM: ${{ matrix.target }}
@@ -38,6 +34,7 @@ jobs:
           CONDA_BLD_PATH: ${{ runner.workspace }}/.rattler
 
         run: |
+          curl -ssL https://magic.modular.com | bash
           source $HOME/.bash_profile
 
           # Temporary method to fetch the rattler binary.
@@ -48,5 +45,5 @@ jobs:
           export PATH="$PATH:$(pwd)"
 
           # Build and push
-          magic run build
-          magic run publish
+          magic run -e nightly build -m nightly
+          magic run -e nightly publish -c mojo-community-nightly
