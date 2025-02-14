@@ -1,6 +1,7 @@
 from sys import external_call
 from memory import UnsafePointer, Pointer
 
+
 alias void = UInt8
 alias char = UInt8
 alias schar = Int8
