@@ -134,7 +134,8 @@ fn strftime(format: String, owned time: Tm) -> String:
         Formatted time string.
     """
     var buf = String(capacity=26)
-    _ = external_call["strftime", UInt](buf.unsafe_ptr(), len(format), Pointer.address_of(format), Pointer.address_of(time))
+    var buffer_length = external_call["strftime", UInt](buf.unsafe_ptr(), len(format), Pointer.address_of(format), Pointer.address_of(time))
+    buf._buffer.size += buffer_length
     return buf
 
 
@@ -147,5 +148,4 @@ fn gmtime(owned tv_sec: Int) -> Tm:
     Returns:
         Broken down UTC time.
     """
-    var tm = external_call["gmtime", UnsafePointer[Tm]](Pointer.address_of(tv_sec)).take_pointee()
-    return tm
+    return external_call["gmtime", UnsafePointer[Tm]](Pointer.address_of(tv_sec)).take_pointee()

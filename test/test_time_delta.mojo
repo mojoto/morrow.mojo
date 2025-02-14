@@ -17,7 +17,7 @@ def test_timedelta():
     testing.assert_true(not TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 50)))
     testing.assert_true(TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 49)))
     testing.assert_equal(
-        str(
+        String(
             TimeDelta(
                 weeks=100,
                 days=100,

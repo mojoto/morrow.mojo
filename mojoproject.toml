@@ -17,10 +17,10 @@ examples = "python scripts/util.py run examples"
 template = "python scripts/util.py templater"
 build = { cmd = "python scripts/util.py build", env = {MODULAR_MOJO_IMPORT_PATH = "$CONDA_PREFIX/lib/mojo"} }
 publish = { cmd = "python scripts/util.py publish", env = { PREFIX_API_KEY = "$PREFIX_API_KEY" } }
-bp = { depends_on=["build", "publish"] }
+bp = { depends-on=["build", "publish"] }
 
 [dependencies]
-max = ">=24.6.0"
+max = "==25.1.0"
 
 # [feature.nightly]
 # channels = ["conda-forge", "https://conda.modular.com/max-nightly"]

@@ -126,7 +126,7 @@ fn normalize_timestamp(owned timestamp: Float64) raises -> Float64:
         elif timestamp < MAX_TIMESTAMP_US:
             timestamp /= 1_000_000
         else:
-            raise Error("The specified timestamp " + str(timestamp) + "is too large.")
+            raise Error("The specified timestamp " + String(timestamp) + "is too large.")
     return timestamp
 
 
@@ -156,37 +156,37 @@ fn _validate_timestamp(tm: c.Tm, time_val: c.TimeVal, time_zone: TimeZone) raise
     Raises:
         Error: If the timestamp is invalid.
     """
-    var year = int(tm.tm_year) + 1900
+    var year = Int(tm.tm_year) + 1900
     if not -1 < year < 10000:
-        raise Error("The year parsed out from the timestamp is too large or negative. Received: " + str(year))
+        raise Error("The year parsed out from the timestamp is too large or negative. Received: " + String(year))
 
-    var month = int(tm.tm_mon) + 1
+    var month = Int(tm.tm_mon) + 1
     if not -1 < month < 13:
-        raise Error("The month parsed out from the timestamp is too large or negative. Received: " + str(month))
+        raise Error("The month parsed out from the timestamp is too large or negative. Received: " + String(month))
 
-    var day = int(tm.tm_mday)
+    var day = Int(tm.tm_mday)
     if not -1 < day < 32:
         raise Error(
-            "The day of the month parsed out from the timestamp is too large or negative. Received: " + str(day)
+            "The day of the month parsed out from the timestamp is too large or negative. Received: " + String(day)
         )
 
-    var hours = int(tm.tm_hour)
+    var hours = Int(tm.tm_hour)
     if not -1 < hours < 25:
-        raise Error("The hour parsed out from the timestamp is too large or negative. Received: " + str(hours))
+        raise Error("The hour parsed out from the timestamp is too large or negative. Received: " + String(hours))
 
-    var minutes = int(tm.tm_min)
+    var minutes = Int(tm.tm_min)
     if not -1 < minutes < 61:
-        raise Error("The minutes parsed out from the timestamp is too large or negative. Received: " + str(minutes))
+        raise Error("The minutes parsed out from the timestamp is too large or negative. Received: " + String(minutes))
 
-    var seconds = int(tm.tm_sec)
+    var seconds = Int(tm.tm_sec)
     if not -1 < seconds < 61:
         raise Error(
-            "The day of the month parsed out from the timestamp is too large or negative. Received: " + str(seconds)
+            "The day of the month parsed out from the timestamp is too large or negative. Received: " + String(seconds)
         )
 
     var microseconds = time_val.tv_usec
     if microseconds < 0:
-        raise Error("Received negative microseconds. Received: " + str(microseconds))
+        raise Error("Received negative microseconds. Received: " + String(microseconds))
 
     return SmallTime(
         year,
@@ -217,7 +217,7 @@ fn from_timestamp(t: c.TimeVal, utc: Bool) raises -> SmallTime:
         return _validate_timestamp(c.gmtime(t.tv_sec), t, TimeZone(0, String("UTC")))
 
     var tm = c.localtime(t.tv_sec)
-    var tz = TimeZone(int(tm.tm_gmtoff), String("local"))
+    var tz = TimeZone(Int(tm.tm_gmtoff), String("local"))
     return _validate_timestamp(tm, t, tz)
 
 
@@ -235,7 +235,7 @@ fn from_timestamp(timestamp: Float64, *, utc: Bool = False) raises -> SmallTime:
         Error: If the timestamp is invalid.
     """
     var timestamp_ = normalize_timestamp(timestamp)
-    return from_timestamp(c.TimeVal(int(timestamp_)), utc)
+    return from_timestamp(c.TimeVal(Int(timestamp_)), utc)
 
 
 fn strptime(date_str: String, fmt: String, tzinfo: TimeZone = TimeZone()) raises -> SmallTime:
@@ -261,7 +261,7 @@ fn strptime(date_str: String, fmt: String, tzinfo: TimeZone = TimeZone()) raises
     .
     """
     var tm = c.strptime(date_str, fmt)
-    var tz = TimeZone(int(tm.tm_gmtoff)) if not tzinfo else tzinfo
+    var tz = TimeZone(Int(tm.tm_gmtoff)) if not tzinfo else tzinfo
     return _validate_timestamp(tm, c.TimeVal(), tz)
 
 
@@ -352,16 +352,16 @@ fn from_ordinal(ordinal: Int) -> SmallTime:
 
     # Now the year is correct, and n is the offset from January 1.  We find
     # the month via an estimate that's either exact or one too large.
-    var leapyear = n1 == 3 and (n4 != 24 or n100 == 3)
+    var leap_year = n1 == 3 and (n4 != 24 or n100 == 3)
     var month = (n + 50) >> 5
     var preceding: Int
-    if month > 2 and leapyear:
+    if month > 2 and leap_year:
         preceding = _DAYS_BEFORE_MONTH[month] + 1
     else:
         preceding = _DAYS_BEFORE_MONTH[month]
     if preceding > n:  # estimate is too large
         month -= 1
-        if month == 2 and leapyear:
+        if month == 2 and leap_year:
             preceding -= _DAYS_BEFORE_MONTH[month] + 1
         else:
             preceding -= _DAYS_BEFORE_MONTH[month]
@@ -424,7 +424,7 @@ struct SmallTime(Stringable, Writable, Representable):
         self.microsecond = microsecond
         self.tz = tz
 
-    fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") -> String:
+    fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
         """Returns a string representation of the `SmallTime`
         formatted according to the provided format string.
 
@@ -477,44 +477,44 @@ struct SmallTime(Stringable, Writable, Representable):
             timespec in valid,
             msg="timespec must be one of the following: 'auto', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds'",
         ]()
-        var date_str = (
-            str(self.year).rjust(4, "0") + "-" + str(self.month).rjust(2, "0") + "-" + str(self.day).rjust(2, "0")
+        var date_str = String(
+            String(self.year).rjust(4, "0"), "-", String(self.month).rjust(2, "0"), "-" + String(self.day).rjust(2, "0")
         )
         var time_str = String("")
 
         @parameter
         if timespec == "auto" or timespec == "microseconds":
-            time_str = (
-                str(self.hour).rjust(2, "0")
-                + ":"
-                + str(self.minute).rjust(2, "0")
-                + ":"
-                + str(self.second).rjust(2, "0")
-                + "."
-                + str(self.microsecond).rjust(6, "0")
+            time_str = String(
+                String(self.hour).rjust(2, "0"), 
+                ":",
+                String(self.minute).rjust(2, "0"),
+                ":",
+                String(self.second).rjust(2, "0"),
+                ".",
+                String(self.microsecond).rjust(6, "0")
             )
         elif timespec == "milliseconds":
-            time_str = (
-                str(self.hour).rjust(2, "0")
-                + ":"
-                + str(self.minute).rjust(2, "0")
-                + ":"
-                + str(self.second).rjust(2, "0")
-                + "."
-                + str(self.microsecond // 1000).rjust(3, "0")
+            time_str = String(
+                String(self.hour).rjust(2, "0"),
+                ":",
+                String(self.minute).rjust(2, "0"),
+                ":",
+                String(self.second).rjust(2, "0"),
+                ".",
+                String(self.microsecond // 1000).rjust(3, "0")
             )
         elif timespec == "seconds":
-            time_str = (
-                str(self.hour).rjust(2, "0")
-                + ":"
-                + str(self.minute).rjust(2, "0")
-                + ":"
-                + str(self.second).rjust(2, "0")
+            time_str = String(
+                String(self.hour).rjust(2, "0"),
+                ":",
+                String(self.minute).rjust(2, "0"),
+                ":",
+                String(self.second).rjust(2, "0")
             )
         elif timespec == "minutes":
-            time_str = str(self.hour).rjust(2, "0") + ":" + str(self.minute).rjust(2, "0")
+            time_str = String(String(self.hour).rjust(2, "0"), ":", String(self.minute).rjust(2, "0"))
         elif timespec == "hours":
-            time_str = str(self.hour).rjust(2, "0")
+            time_str = String(self.hour).rjust(2, "0")
 
         if not self.tz:
             return sep.join(date_str, time_str)

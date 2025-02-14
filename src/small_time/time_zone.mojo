@@ -1,9 +1,13 @@
 from collections import Optional
 import .c
 
-alias UTC_TZ = TimeZone(0, String("UTC"))
+alias UTC = "UTC"
+alias UTC_TZ = TimeZone(0, UTC)
 """UTC Timezone."""
 
+alias DASH = "-"
+alias PLUS = "+"
+alias COLON = ":"
 
 fn local() -> TimeZone:
     """Returns the local timezone.
@@ -12,8 +16,19 @@ fn local() -> TimeZone:
         Local timezone.
     """
     var local_t = c.localtime(0)
-    return TimeZone(int(local_t.tm_gmtoff), String("local"))
+    return TimeZone(Int(local_t.tm_gmtoff), "local")
 
+
+fn _is_numeric(c: Byte) -> Bool:
+    """Checks if a character is numeric.
+    
+    Args:
+        c: Character.
+    
+    Returns:
+        True if the character is numeric, False otherwise.
+    """
+    return c >= ord("0") and c <= ord("9")
 
 fn from_utc(utc_str: String) raises -> TimeZone:
     """Creates a timezone from a string.
@@ -27,32 +42,38 @@ fn from_utc(utc_str: String) raises -> TimeZone:
     Raises:
         Error: If the UTC string is invalid.
     """
-    if len(utc_str) == 0:
+    var timezone = utc_str.as_string_slice()
+    if len(timezone) == 0:
         raise Error("utc_str is empty")
-    if utc_str == "utc" or utc_str == "UTC" or utc_str == "Z":
+    
+    if timezone == "utc" or timezone == "UTC" or timezone == "Z":
         return TimeZone(0, String("utc"))
-    var p = 3 if len(utc_str) > 3 and utc_str[0:3] == "UTC" else 0
 
-    var sign = -1 if utc_str[p] == "-" else 1
-    if utc_str[p] == "+" or utc_str[p] == "-":
-        p += 1
+    var i = 0
+    # Skip the UTC prefix.
+    if len(timezone) > 3 and timezone[0:3] == UTC:
+        i = 3
+    
+    var sign = -1 if timezone[i] == DASH else 1
+    if timezone[i] == PLUS or timezone[i] == DASH:
+        i += 1
 
-    if len(utc_str) < p + 2 or not isdigit(ord(utc_str[p])) or not isdigit(ord(utc_str[p + 1])):
+    if len(timezone) < i + 2 or not _is_numeric(ord(timezone[i])) or not _is_numeric(ord(timezone[i + 1])):
         raise Error("utc_str format is invalid")
-    var hours: Int = atol(utc_str[p : p + 2])
-    p += 2
+    var hours = atol(timezone[i : i + 2])
+    i += 2
 
     var minutes: Int
-    if len(utc_str) <= p:
+    if len(timezone) <= i:
         minutes = 0
-    elif len(utc_str) == p + 3 and utc_str[p] == ":":
-        minutes = atol(utc_str[p + 1 : p + 3])
-    elif len(utc_str) == p + 2 and isdigit(ord(utc_str[p])):
-        minutes = atol(utc_str[p : p + 2])
+    elif len(timezone) == i + 3 and timezone[i] == COLON:
+        minutes = atol(timezone[i + 1 : i + 3])
+    elif len(timezone) == i + 2 and _is_numeric(ord(timezone[i])):
+        minutes = atol(timezone[i : i + 2])
     else:
-        minutes = 0
         raise Error("utc_str format is invalid")
-    var offset: Int = sign * (hours * 3600 + minutes * 60)
+    
+    var offset = sign * (hours * 3600 + minutes * 60)
     return TimeZone(offset)
 
 
@@ -109,6 +130,6 @@ struct TimeZone(Stringable):
         else:
             sign = "+"
             offset_abs = self.offset
-        var hh = offset_abs // 3600
-        var mm = offset_abs % 3600
-        return sign + str(hh).rjust(2, "0") + sep + str(mm).rjust(2, "0")
+        var hh = String(offset_abs // 3600)
+        var mm = String(offset_abs % 3600)
+        return String(sign, hh.rjust(2, "0"), sep, mm.rjust(2, "0"))
