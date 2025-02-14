@@ -20,7 +20,7 @@ publish = { cmd = "python scripts/util.py publish", env = { PREFIX_API_KEY = "$P
 bp = { depends-on=["build", "publish"] }
 
 [dependencies]
-max = "==25.1.0"
+max = "25.1.0"
 
 # [feature.nightly]
 # channels = ["conda-forge", "https://conda.modular.com/max-nightly"]
