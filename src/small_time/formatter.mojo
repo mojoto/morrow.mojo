@@ -76,7 +76,7 @@ struct _Formatter:
         self._sub_chrs[_A] = 1
         self._sub_chrs[_a] = 1
 
-    fn format(self, m: SmallTime, fmt: String) raises -> String:
+    fn format(self, m: SmallTime, fmt: String) -> String:
         """Formats the given time value using the specified format string.
         "YYYY[abc]MM" -> replace("YYYY") + "abc" + replace("MM")
 
@@ -101,14 +101,27 @@ struct _Formatter:
                     result.write("[")
                 else:
                     in_bracket = True
-                result.write(self.replace(m, format[start:i]))
+                
+                # Not sure why stringslice slicing raises,
+                # but fallback to allocating a string and slicing that if it raises.
+                try:
+                    result.write(self.replace(m, format[start:i]))
+                except:
+                    result.write(self.replace(m, fmt[start:i]))
+
                 start = i + 1
             elif format[i] == "]":
                 if in_bracket:
-                    result.write(format[start:i])
+                    try:
+                        result.write(format[start:i])
+                    except:
+                        result.write(fmt[start:i])
                     in_bracket = False
                 else:
-                    result.write(self.replace(m, format[start:i]))
+                    try:
+                        result.write(format[start:i])
+                    except:
+                        result.write(fmt[start:i])
                     result.write("]")
                 start = i + 1
 
@@ -116,7 +129,10 @@ struct _Formatter:
             result.write("[")
 
         if start < len(format):
-            result.write(self.replace(m, format[start:]))
+            try:
+                result.write(self.replace(m, format[start:]))
+            except:
+                result.write(self.replace(m, fmt[start:]))
         return result
 
     fn replace(self, m: SmallTime, fmt: StringSlice) -> String:

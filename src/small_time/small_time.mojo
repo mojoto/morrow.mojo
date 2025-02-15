@@ -424,7 +424,7 @@ struct SmallTime(Stringable, Writable, Representable):
         self.microsecond = microsecond
         self.tz = tz
 
-    fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
+    fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") -> String:
         """Returns a string representation of the `SmallTime`
         formatted according to the provided format string.
 
