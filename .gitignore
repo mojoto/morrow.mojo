@@ -167,3 +167,5 @@ output
 
 # vscode
 .vscode/
+
+*.dYSM
