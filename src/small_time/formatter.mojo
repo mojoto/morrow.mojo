@@ -2,7 +2,6 @@ from collections import InlineList, InlineArray
 from collections.string import StringSlice
 from .time_zone import UTC_TZ
 
-
 alias MONTH_NAMES = InlineArray[String, 13](
     "",
     "January",
