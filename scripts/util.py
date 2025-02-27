@@ -24,6 +24,8 @@ def build_dependency_list(dependencies: dict[str, str]) -> list[str]:
             else:
                 operator = version[:2]
                 start = 2
+        elif version.startswith("=="):
+            start = 2
 
         deps.append(f"    - {name} {operator} {version[start:]}")
 
