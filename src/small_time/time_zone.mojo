@@ -1,5 +1,5 @@
 from collections import Optional
-import .c
+import small_time.c
 
 alias UTC = "UTC"
 alias UTC_TZ = TimeZone(0, UTC)
@@ -29,6 +29,7 @@ fn _is_numeric(c: Byte) -> Bool:
         True if the character is numeric, False otherwise.
     """
     return c >= ord("0") and c <= ord("9")
+
 
 fn from_utc(utc_str: String) raises -> TimeZone:
     """Creates a timezone from a string.

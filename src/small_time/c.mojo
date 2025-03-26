@@ -1,18 +1,6 @@
 from sys import external_call
-from memory import UnsafePointer, Pointer
-
-alias void = UInt8
-alias char = UInt8
-alias schar = Int8
-alias uchar = UInt8
-alias short = Int16
-alias ushort = UInt16
-alias int = Int32
-alias uint = UInt32
-alias long = Int64
-alias ulong = UInt64
-alias float = Float32
-alias double = Float64
+from sys.ffi import c_uchar
+from memory import UnsafePointer, Pointer, stack_allocation
 
 
 @register_passable("trivial")
@@ -79,9 +67,9 @@ fn gettimeofday() -> TimeVal:
     Returns:
         Current time.
     """
-    var tv = TimeVal()
-    _ = external_call["gettimeofday", NoneType](Pointer.address_of(tv), 0)
-    return tv
+    var tv = stack_allocation[1, TimeVal]()
+    _ = external_call["gettimeofday", Int32](tv, 0)
+    return tv.take_pointee()
 
 
 fn time() -> Int:
@@ -103,9 +91,7 @@ fn localtime(owned tv_sec: Int) -> Tm:
     Returns:
         Broken down local time.
     """
-    var buf = Tm()
-    _ = external_call["localtime_r", UnsafePointer[Tm]](Pointer.address_of(tv_sec), Pointer.address_of(buf))
-    return buf
+    return external_call["localtime", UnsafePointer[Tm]](UnsafePointer.address_of(tv_sec)).take_pointee()
 
 
 fn strptime(time_str: String, time_format: String) -> Tm:
@@ -118,25 +104,15 @@ fn strptime(time_str: String, time_format: String) -> Tm:
     Returns:
         Broken down time.
     """
-    var tm = Tm()
-    _ = external_call["strptime", NoneType](time_str.unsafe_ptr(), time_format.unsafe_ptr(), Pointer.address_of(tm))
-    return tm
-
-
-fn strftime(format: String, owned time: Tm) -> String:
-    """Formats a time value according to a format string.
-
-    Args:
-        format: Format string.
-        time: Time value.
-    
-    Returns:
-        Formatted time string.
-    """
-    var buf = String(capacity=26)
-    var buffer_length = external_call["strftime", UInt](buf.unsafe_ptr(), len(format), Pointer.address_of(format), Pointer.address_of(time))
-    buf._buffer.size += buffer_length
-    return buf
+    var tm = stack_allocation[1, Tm]()
+    _ = external_call[
+        "strptime",
+        NoneType,
+        UnsafePointer[c_uchar],
+        UnsafePointer[c_uchar],
+        UnsafePointer[Tm]
+    ](time_str.unsafe_ptr(), time_format.unsafe_ptr(), tm)
+    return tm.take_pointee()
 
 
 fn gmtime(owned tv_sec: Int) -> Tm:

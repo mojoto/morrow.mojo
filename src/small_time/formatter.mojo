@@ -1,6 +1,7 @@
-from collections import InlineList, InlineArray
+from collections import InlineArray
 from collections.string import StringSlice
-from .time_zone import UTC_TZ
+from utils import StaticTuple
+from small_time.time_zone import UTC_TZ
 
 alias MONTH_NAMES = InlineArray[String, 13](
     "",
@@ -55,12 +56,12 @@ alias formatter = _Formatter()
 
 struct _Formatter:
     """SmallTime formatter."""
-    var _sub_chrs: InlineList[Int, 128]
+    var _sub_chrs: StaticTuple[Int, 128]
     """Substitution characters."""
 
     fn __init__(out self):
         """Initializes a new formatter."""
-        self._sub_chrs = InlineList[Int, 128]()
+        self._sub_chrs = StaticTuple[Int, 128]()
         for i in range(128):
             self._sub_chrs[i] = 0
         self._sub_chrs[_Y] = 4

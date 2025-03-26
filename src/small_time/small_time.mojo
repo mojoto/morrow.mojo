@@ -1,8 +1,8 @@
-from collections import InlineList, InlineArray, Optional
-import .c
-import .time_zone
-from .time_delta import TimeDelta
-from .formatter import formatter
+from collections import InlineArray, Optional
+import small_time.c
+import small_time.time_zone
+from small_time.time_delta import TimeDelta
+from small_time.formatter import formatter
 
 
 alias _DI400Y = 146097
@@ -158,35 +158,35 @@ fn _validate_timestamp(tm: c.Tm, time_val: c.TimeVal, time_zone: TimeZone) raise
     """
     var year = Int(tm.tm_year) + 1900
     if not -1 < year < 10000:
-        raise Error("The year parsed out from the timestamp is too large or negative. Received: " + String(year))
+        raise Error("The year parsed out from the timestamp is too large or negative. Received: ", year)
 
     var month = Int(tm.tm_mon) + 1
     if not -1 < month < 13:
-        raise Error("The month parsed out from the timestamp is too large or negative. Received: " + String(month))
+        raise Error("The month parsed out from the timestamp is too large or negative. Received: ", month)
 
     var day = Int(tm.tm_mday)
     if not -1 < day < 32:
         raise Error(
-            "The day of the month parsed out from the timestamp is too large or negative. Received: " + String(day)
+            "The day of the month parsed out from the timestamp is too large or negative. Received: ", day
         )
 
     var hours = Int(tm.tm_hour)
     if not -1 < hours < 25:
-        raise Error("The hour parsed out from the timestamp is too large or negative. Received: " + String(hours))
+        raise Error("The hour parsed out from the timestamp is too large or negative. Received: ", hours)
 
     var minutes = Int(tm.tm_min)
     if not -1 < minutes < 61:
-        raise Error("The minutes parsed out from the timestamp is too large or negative. Received: " + String(minutes))
+        raise Error("The minutes parsed out from the timestamp is too large or negative. Received: ", minutes)
 
     var seconds = Int(tm.tm_sec)
     if not -1 < seconds < 61:
         raise Error(
-            "The day of the month parsed out from the timestamp is too large or negative. Received: " + String(seconds)
+            "The day of the month parsed out from the timestamp is too large or negative. Received: ", seconds
         )
 
     var microseconds = time_val.tv_usec
     if microseconds < 0:
-        raise Error("Received negative microseconds. Received: " + String(microseconds))
+        raise Error("Received negative microseconds. Received: ", microseconds)
 
     return SmallTime(
         year,
@@ -214,10 +214,10 @@ fn from_timestamp(t: c.TimeVal, utc: Bool) raises -> SmallTime:
         Error: If the timestamp is invalid.
     """
     if utc:
-        return _validate_timestamp(c.gmtime(t.tv_sec), t, TimeZone(0, String("UTC")))
+        return _validate_timestamp(c.gmtime(t.tv_sec), t, TimeZone(0, "UTC"))
 
     var tm = c.localtime(t.tv_sec)
-    var tz = TimeZone(Int(tm.tm_gmtoff), String("local"))
+    var tz = TimeZone(Int(tm.tm_gmtoff), "local")
     return _validate_timestamp(tm, t, tz)
 
 
@@ -471,7 +471,7 @@ struct SmallTime(Stringable, Writable, Representable):
             terms of the time to include. Valid options are 'auto', 'hours',
             'minutes', 'seconds', 'milliseconds' and 'microseconds'.
         """
-        alias valid = InlineList[String, 6]("auto", "hours", "minutes", "seconds", "milliseconds", "microseconds")
+        alias valid = InlineArray[String, 6]("auto", "hours", "minutes", "seconds", "milliseconds", "microseconds")
         """Valid timespec values."""
         constrained[
             timespec in valid,
