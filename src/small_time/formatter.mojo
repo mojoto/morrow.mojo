@@ -1,5 +1,4 @@
 from collections import InlineArray
-from collections.string import StringSlice
 from utils import StaticTuple
 from small_time.time_zone import UTC_TZ
 
@@ -102,38 +101,22 @@ struct _Formatter:
                     result.write("[")
                 else:
                     in_bracket = True
-                
-                # Not sure why stringslice slicing raises,
-                # but fallback to allocating a string and slicing that if it raises.
-                try:
-                    result.write(self.replace(m, format[start:i]))
-                except:
-                    result.write(self.replace(m, fmt[start:i]))
 
+                result.write(self.replace(m, format[start:i]))
                 start = i + 1
             elif format[i] == "]":
                 if in_bracket:
-                    try:
-                        result.write(format[start:i])
-                    except:
-                        result.write(fmt[start:i])
+                    result.write(format[start:i])
                     in_bracket = False
                 else:
-                    try:
-                        result.write(format[start:i])
-                    except:
-                        result.write(fmt[start:i])
-                    result.write("]")
+                    result.write(format[start:i], "]")
                 start = i + 1
 
         if in_bracket:
             result.write("[")
 
         if start < len(format):
-            try:
-                result.write(self.replace(m, format[start:]))
-            except:
-                result.write(self.replace(m, fmt[start:]))
+            result.write(self.replace(m, format[start:]))
         return result
 
     fn replace(self, m: SmallTime, fmt: StringSlice) -> String:

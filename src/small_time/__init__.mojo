@@ -1,3 +1,3 @@
-from .small_time import SmallTime, now
-from .time_zone import TimeZone
-from .time_delta import TimeDelta
+from small_time.small_time import SmallTime, now
+from small_time.time_zone import TimeZone
+from small_time.time_delta import TimeDelta

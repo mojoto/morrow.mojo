@@ -79,7 +79,7 @@ fn time() -> Int:
         Current time in seconds.
     """
     var time = 0
-    return external_call["time", Int](Pointer.address_of(time))
+    return external_call["time", Int](Pointer(to=time))
 
 
 fn localtime(owned tv_sec: Int) -> Tm:
@@ -91,7 +91,7 @@ fn localtime(owned tv_sec: Int) -> Tm:
     Returns:
         Broken down local time.
     """
-    return external_call["localtime", UnsafePointer[Tm]](UnsafePointer.address_of(tv_sec)).take_pointee()
+    return external_call["localtime", UnsafePointer[Tm]](UnsafePointer(to=tv_sec)).take_pointee()
 
 
 fn strptime(time_str: String, time_format: String) -> Tm:
@@ -124,4 +124,4 @@ fn gmtime(owned tv_sec: Int) -> Tm:
     Returns:
         Broken down UTC time.
     """
-    return external_call["gmtime", UnsafePointer[Tm]](Pointer.address_of(tv_sec)).take_pointee()
+    return external_call["gmtime", UnsafePointer[Tm]](Pointer(to=tv_sec)).take_pointee()
