@@ -1,8 +1,4 @@
-from collections import InlineArray
-from utils import StaticTuple
-from small_time.time_zone import UTC_TZ
-
-alias MONTH_NAMES = InlineArray[String, 13](
+alias MONTH_NAMES: InlineArray[String, 13] = [
     "",
     "January",
     "February",
@@ -16,10 +12,10 @@ alias MONTH_NAMES = InlineArray[String, 13](
     "October",
     "November",
     "December",
-)
+]
 """The full month names."""
 
-alias MONTH_ABBREVIATIONS = InlineArray[String, 13](
+alias MONTH_ABBREVIATIONS: InlineArray[String, 13] = [
     "",
     "Jan",
     "Feb",
@@ -33,10 +29,10 @@ alias MONTH_ABBREVIATIONS = InlineArray[String, 13](
     "Oct",
     "Nov",
     "Dec",
-)
+]
 """The month name abbreviations."""
 
-alias DAY_NAMES = InlineArray[String, 8](
+alias DAY_NAMES: InlineArray[String, 8] = [
     "",
     "Monday",
     "Tuesday",
@@ -45,24 +41,31 @@ alias DAY_NAMES = InlineArray[String, 8](
     "Friday",
     "Saturday",
     "Sunday",
-)
+]
 """The full day names."""
-alias DAY_ABBREVIATIONS = InlineArray[String, 8]("", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+alias DAY_ABBREVIATIONS: InlineArray[String, 8] = [
+    "",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun",
+]
 """The day name abbreviations."""
-alias formatter = _Formatter()
+alias FORMATTER = _Formatter()
 """Default formatter instance."""
 
 
 struct _Formatter:
     """SmallTime formatter."""
-    var _sub_chrs: StaticTuple[Int, 128]
+    var _sub_chrs: InlineArray[Int, 128]
     """Substitution characters."""
 
     fn __init__(out self):
         """Initializes a new formatter."""
-        self._sub_chrs = StaticTuple[Int, 128]()
-        for i in range(128):
-            self._sub_chrs[i] = 0
+        self._sub_chrs = InlineArray[Int, 128](fill=0)
         self._sub_chrs[_Y] = 4
         self._sub_chrs[_M] = 4
         self._sub_chrs[_D] = 2
@@ -76,12 +79,12 @@ struct _Formatter:
         self._sub_chrs[_A] = 1
         self._sub_chrs[_a] = 1
 
-    fn format(self, m: SmallTime, fmt: String) -> String:
+    fn format(self, time: SmallTime, fmt: StringSlice) -> String:
         """Formats the given time value using the specified format string.
         "YYYY[abc]MM" -> replace("YYYY") + "abc" + replace("MM")
 
         Args:
-            m: Time value.
+            time: SmallTime datetime to format.
             fmt: Format string.
         
         Returns:
@@ -90,40 +93,39 @@ struct _Formatter:
         if len(fmt) == 0:
             return ""
 
-        var format = fmt.as_string_slice()
-        var result: String = ''
+        var result = String()
         var in_bracket = False
         var start = 0
 
-        for i in range(len(format)):
-            if format[i] == "[":
+        for i in range(len(fmt)):
+            if fmt[i] == "[":
                 if in_bracket:
                     result.write("[")
                 else:
                     in_bracket = True
 
-                result.write(self.replace(m, format[start:i]))
+                result.write(self.replace(time, fmt[start:i]))
                 start = i + 1
-            elif format[i] == "]":
+            elif fmt[i] == "]":
                 if in_bracket:
-                    result.write(format[start:i])
+                    result.write(fmt[start:i])
                     in_bracket = False
                 else:
-                    result.write(format[start:i], "]")
+                    result.write(fmt[start:i], "]")
                 start = i + 1
 
         if in_bracket:
             result.write("[")
 
-        if start < len(format):
-            result.write(self.replace(m, format[start:]))
+        if start < len(fmt):
+            result.write(self.replace(time, fmt[start:]))
         return result
 
-    fn replace(self, m: SmallTime, fmt: StringSlice) -> String:
+    fn replace(self, time: SmallTime, fmt: StringSlice) -> String:
         """Replaces the tokens in the given format string with the corresponding values.
 
         Args:
-            m: Time value.
+            time: SmallTime datetime to replace tokens in.
             fmt: Format string.
         
         Returns:
@@ -132,7 +134,7 @@ struct _Formatter:
         if len(fmt) == 0:
             return ""
 
-        var result: String = ''
+        var result = String()
         var matched_byte = 0
         var matched_count = 0
         for i in range(len(fmt)):
@@ -141,9 +143,9 @@ struct _Formatter:
             # If the current character is not a token, add it to the result.
             if c > 127 or self._sub_chrs[c] == 0:
                 if matched_byte > 0:
-                    result += self.replace_token(m, matched_byte, matched_count)
+                    result.write(self.replace_token(time, matched_byte, matched_count))
                     matched_byte = 0
-                result += fmt[i]
+                result.write(fmt[i])
                 continue
 
             # If the current character is the same as the previous one, increment the count.
@@ -153,45 +155,45 @@ struct _Formatter:
 
             # If the current character is different from the previous one, replace the previous tokens
             # and move onto the next token to track.
-            result += self.replace_token(m, matched_byte, matched_count)
+            result += self.replace_token(time, matched_byte, matched_count)
             matched_byte = c
             matched_count = 1
 
         # If no tokens were found, append an empty string and return the original.
         if matched_byte > 0:
-            result += self.replace_token(m, matched_byte, matched_count)
+            result += self.replace_token(time, matched_byte, matched_count)
         return result
 
-    fn replace_token(self, m: SmallTime, token: Int, token_count: Int) -> String:
+    fn replace_token(self, time: SmallTime, token: Int, token_count: Int) -> String:
         if token == _Y:
             if token_count == 1:
                 return "Y"
             if token_count == 2:
-                return String(m.year).rjust(4, "0")[2:4]
+                return String(time.year).rjust(4, "0")[2:4]
             if token_count == 4:
-                return String(m.year).rjust(4, "0")
+                return String(time.year).rjust(4, "0")
         elif token == _M:
             if token_count == 1:
-                return String(m.month)
+                return String(time.month)
             if token_count == 2:
-                return String(m.month).rjust(2, "0")
+                return String(time.month).rjust(2, "0")
             if token_count == 3:
-                return MONTH_ABBREVIATIONS[m.month]
+                return MONTH_ABBREVIATIONS[time.month]
             if token_count == 4:
-                return MONTH_NAMES[m.month]
+                return MONTH_NAMES[time.month]
         elif token == _D:
             if token_count == 1:
-                return String(m.day)
+                return String(time.day)
             if token_count == 2:
-                return String(m.day).rjust(2, "0")
+                return String(time.day).rjust(2, "0")
         elif token == _H:
             if token_count == 1:
-                return String(m.hour)
+                return String(time.hour)
             if token_count == 2:
-                return String(m.hour).rjust(2, "0")
+                return String(time.hour).rjust(2, "0")
         elif token == _h:
-            var h_12 = m.hour
-            if m.hour > 12:
+            var h_12 = time.hour
+            if time.hour > 12:
                 h_12 -= 12
             if token_count == 1:
                 return String(h_12)
@@ -199,47 +201,44 @@ struct _Formatter:
                 return String(h_12).rjust(2, "0")
         elif token == _m:
             if token_count == 1:
-                return String(m.minute)
+                return String(time.minute)
             if token_count == 2:
-                return String(m.minute).rjust(2, "0")
+                return String(time.minute).rjust(2, "0")
         elif token == _s:
             if token_count == 1:
-                return String(m.second)
+                return String(time.second)
             if token_count == 2:
-                return String(m.second).rjust(2, "0")
+                return String(time.second).rjust(2, "0")
         elif token == _S:
             if token_count == 1:
-                return String(m.microsecond // 100000)
+                return String(time.microsecond // 100000)
             if token_count == 2:
-                return String(m.microsecond // 10000).rjust(2, "0")
+                return String(time.microsecond // 10000).rjust(2, "0")
             if token_count == 3:
-                return String(m.microsecond // 1000).rjust(3, "0")
+                return String(time.microsecond // 1000).rjust(3, "0")
             if token_count == 4:
-                return String(m.microsecond // 100).rjust(4, "0")
+                return String(time.microsecond // 100).rjust(4, "0")
             if token_count == 5:
-                return String(m.microsecond // 10).rjust(5, "0")
+                return String(time.microsecond // 10).rjust(5, "0")
             if token_count == 6:
-                return String(m.microsecond).rjust(6, "0")
+                return String(time.microsecond).rjust(6, "0")
         elif token == _d:
             if token_count == 1:
-                return String(m.iso_weekday())
+                return String(time.iso_weekday())
             if token_count == 3:
-                return DAY_ABBREVIATIONS[m.iso_weekday()]
+                return DAY_ABBREVIATIONS[time.iso_weekday()]
             if token_count == 4:
-                return DAY_NAMES[m.iso_weekday()]
+                return DAY_NAMES[time.iso_weekday()]
         elif token == _Z:
             if token_count == 3:
-                return String(UTC_TZ) if not m.tz else String(m.tz)
+                return time.time_zone.name
             var separator = "" if token_count == 1 else ":"
-            if not m.tz:
-                return UTC_TZ.format(separator)
-            else:
-                return m.tz.format(separator)
+            return time.time_zone.format(separator)
 
         elif token == _a:
-            return "am" if m.hour < 12 else "pm"
+            return "am" if time.hour < 12 else "pm"
         elif token == _A:
-            return "AM" if m.hour < 12 else "PM"
+            return "AM" if time.hour < 12 else "PM"
         return ""
 
 

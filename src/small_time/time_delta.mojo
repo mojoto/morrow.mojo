@@ -2,7 +2,7 @@ alias SECONDS_OF_DAY = 24 * 3600
 
 
 @register_passable("trivial")
-struct TimeDelta(Stringable):
+struct TimeDelta(Copyable, ExplicitlyCopyable, Movable, Stringable):
     """Time delta."""
     var days: Int
     """Days."""
@@ -75,15 +75,15 @@ struct TimeDelta(Stringable):
         var ss = String(self.seconds % 60)
         var hh = String(mm // 60)
         mm = mm % 60
-        var s = String(hh, ":", String(mm).rjust(2, "0"), ":", ss.rjust(2, "0"))
+        var result = String(hh, ":", String(mm).rjust(2, "0"), ":", ss.rjust(2, "0"))
         if self.days:
             if abs(self.days) != 1:
-                s = String(self.days, " days, ", s)
+                result = String(self.days, " days, ", result)
             else:
-                s = String(self.days, " day, ", s)
+                result = String(self.days, " day, ", result)
         if self.microseconds:
-            s.write(String(self.microseconds).rjust(6, "0"))
-        return s^
+            result.write(String(self.microseconds).rjust(6, "0"))
+        return result^
 
     fn total_seconds(self) -> Float64:
         """Total seconds in the duration.

@@ -1,105 +1,16 @@
-from collections import InlineArray, Optional
 import small_time.c
 import small_time.time_zone
 from small_time.time_delta import TimeDelta
-from small_time.formatter import formatter
+from small_time.formatter import FORMATTER
+from small_time.calendar_math import _DAYS_BEFORE_MONTH, ymd_to_ordinal
 
 
-alias _DI400Y = 146097
+alias DAYS_IN_400_YEARS = 146097
 """Number of days in 400 years."""
-alias _DI100Y = 36524
+alias DAYS_IN_100_YEARS = 36524
 """Number of days in 100 years."""
-alias _DI4Y = 1461
+alias DAYS_IN_4_YEARS = 1461
 """Number of days in 4 years."""
-alias _DAYS_IN_MONTH = InlineArray[Int, 13](-1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-"""Number of days in each month, not counting leap years."""
-alias _DAYS_BEFORE_MONTH = InlineArray[Int, 13](
-    -1, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
-)  # -1 is a placeholder for indexing purposes.
-"""Number of days before each month in a common year."""
-
-
-fn _is_leap(year: Int) -> Bool:
-    """If the year is a leap year.
-    
-    Args:
-        year: The year to check.
-    
-    Returns:
-        True if the year is a leap year, False otherwise.
-    
-    Notes:
-        A year is a leap year if it is divisible by 4, but not by 100, unless it is divisible by 400.
-    """
-    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
-
-
-fn _days_before_year(year: Int) -> Int:
-    """Number of days before January 1st of year.
-
-    Args:
-        year: The year to check.
-    
-    Returns:
-        Number of days before January 1st of year.
-    
-    Notes:
-        year -> number of days before January 1st of year.
-    """
-    var y = year - 1
-    return y * 365 + y // 4 - y // 100 + y // 400
-
-
-fn _days_in_month(year: Int, month: Int) -> Int:
-    """Number of days in a month in a year.
-
-    Args:
-        year: The year to check.
-        month: The month to check.
-    
-    Returns:
-        Number of days in that month in that year.
-    
-    Notes:
-        year, month -> number of days in that month in that year.
-    """
-    if month == 2 and _is_leap(year):
-        return 29
-    return _DAYS_IN_MONTH[month]
-
-
-fn _days_before_month(year: Int, month: Int) -> Int:
-    """Number of days in year preceding first day of month.
-
-    Args:
-        year: The year to check.
-        month: The month to check.
-    
-    Returns:
-        Number of days in year preceding first day of month.
-    
-    Notes:
-        year, month -> number of days in year preceding first day of month.
-    """
-    if month > 2 and _is_leap(year):
-        return _DAYS_BEFORE_MONTH[month] + 1
-    return _DAYS_BEFORE_MONTH[month]
-
-
-fn _ymd2ord(year: Int, month: Int, day: Int) -> Int:
-    """Convert year, month, day to ordinal, considering 01-Jan-0001 as day 1.
-    
-    Args:
-        year: The year to check.
-        month: The month to check.
-        day: The day to check.
-    
-    Returns:
-        Ordinal, considering 01-Jan-0001 as day 1.
-    """
-    return _days_before_year(year) + _days_before_month(year, month) + day
-
-
 alias MAX_TIMESTAMP: Int = 32503737600
 """Maximum timestamp."""
 alias MAX_TIMESTAMP_MS = MAX_TIMESTAMP * 1000
@@ -126,7 +37,7 @@ fn normalize_timestamp(owned timestamp: Float64) raises -> Float64:
         elif timestamp < MAX_TIMESTAMP_US:
             timestamp /= 1_000_000
         else:
-            raise Error("The specified timestamp " + String(timestamp) + "is too large.")
+            raise Error("The specified timestamp ", timestamp, " is too large.")
     return timestamp
 
 
@@ -139,10 +50,10 @@ fn now(*, utc: Bool = False) raises -> SmallTime:
     Returns:
         The current time.
     """
-    return from_timestamp(c.gettimeofday(), utc)
+    return from_timestamp(c.get_time_of_day(), utc=utc)
 
 
-fn _validate_timestamp(tm: c.Tm, time_val: c.TimeVal, time_zone: TimeZone) raises -> SmallTime:
+fn _validate_timestamp(tm: c._Time, time_val: c._TimeValue, time_zone: TimeZone) raises -> SmallTime:
     """Validate the timestamp.
 
     Args:
@@ -156,37 +67,36 @@ fn _validate_timestamp(tm: c.Tm, time_val: c.TimeVal, time_zone: TimeZone) raise
     Raises:
         Error: If the timestamp is invalid.
     """
-    var year = Int(tm.tm_year) + 1900
+    var year = Int(tm.year) + 1900
     if not -1 < year < 10000:
         raise Error("The year parsed out from the timestamp is too large or negative. Received: ", year)
 
-    var month = Int(tm.tm_mon) + 1
+    var month = Int(tm.month) + 1
     if not -1 < month < 13:
         raise Error("The month parsed out from the timestamp is too large or negative. Received: ", month)
 
-    var day = Int(tm.tm_mday)
+    var day = Int(tm.day_of_month)
     if not -1 < day < 32:
         raise Error(
             "The day of the month parsed out from the timestamp is too large or negative. Received: ", day
         )
 
-    var hours = Int(tm.tm_hour)
+    var hours = Int(tm.hours)
     if not -1 < hours < 25:
         raise Error("The hour parsed out from the timestamp is too large or negative. Received: ", hours)
 
-    var minutes = Int(tm.tm_min)
+    var minutes = Int(tm.minutes)
     if not -1 < minutes < 61:
         raise Error("The minutes parsed out from the timestamp is too large or negative. Received: ", minutes)
 
-    var seconds = Int(tm.tm_sec)
+    var seconds = Int(tm.seconds)
     if not -1 < seconds < 61:
         raise Error(
             "The day of the month parsed out from the timestamp is too large or negative. Received: ", seconds
         )
 
-    var microseconds = time_val.tv_usec
-    if microseconds < 0:
-        raise Error("Received negative microseconds. Received: ", microseconds)
+    if time_val.microseconds < 0:
+        raise Error("Received negative microseconds. Received: ", time_val.microseconds)
 
     return SmallTime(
         year,
@@ -195,12 +105,12 @@ fn _validate_timestamp(tm: c.Tm, time_val: c.TimeVal, time_zone: TimeZone) raise
         hours,
         minutes,
         seconds,
-        microseconds,
+        Int(time_val.microseconds),
         time_zone,
     )
 
 
-fn from_timestamp(t: c.TimeVal, utc: Bool) raises -> SmallTime:
+fn from_timestamp(t: c._TimeValue, *, utc: Bool) raises -> SmallTime:
     """Create a SmallTime instance from a timestamp.
 
     Args:
@@ -214,10 +124,10 @@ fn from_timestamp(t: c.TimeVal, utc: Bool) raises -> SmallTime:
         Error: If the timestamp is invalid.
     """
     if utc:
-        return _validate_timestamp(c.gmtime(t.tv_sec), t, TimeZone(0, "UTC"))
+        return _validate_timestamp(c.get_gm_time(t.seconds), t, TimeZone.UTC)
 
-    var tm = c.localtime(t.tv_sec)
-    var tz = TimeZone(Int(tm.tm_gmtoff), "local")
+    var tm = c.get_local_time(t.seconds)
+    var tz = TimeZone.from_utc_offset(Int(tm.time_zone_offset))
     return _validate_timestamp(tm, t, tz)
 
 
@@ -234,17 +144,18 @@ fn from_timestamp(timestamp: Float64, *, utc: Bool = False) raises -> SmallTime:
     Raises:
         Error: If the timestamp is invalid.
     """
-    var timestamp_ = normalize_timestamp(timestamp)
-    return from_timestamp(c.TimeVal(Int(timestamp_)), utc)
+    return from_timestamp(c._TimeValue(Int(normalize_timestamp(timestamp)), 0), utc=utc)
 
 
-fn strptime(date_str: String, fmt: String, tzinfo: TimeZone = TimeZone()) raises -> SmallTime:
-    """Create a SmallTime instance from a date string and format,
-    in the style of `datetime.strptime`.  Optionally replaces the parsed time_zone.
+fn parse_time_with_format(date: StringSlice, format: StringSlice, tzinfo: Optional[TimeZone] = None) raises -> SmallTime:
+    """Create a `SmallTime` instance from a date string and format,
+    in the style of `datetime.strptime`. Optionally replaces the parsed time_zone.
+    Due to cstr pointer creation requiring a mutable reference to `date` and `format` to null terminate them,
+    this function will allocate owned copies of the strings.
 
     Args:
-        date_str: The date string.
-        fmt: The format string.
+        date: The date string.
+        format: The format string.
         tzinfo: The time zone.
     
     Returns:
@@ -253,26 +164,30 @@ fn strptime(date_str: String, fmt: String, tzinfo: TimeZone = TimeZone()) raises
     Raises:
         Error: If the timestamp is invalid.
 
-    Examples:
+    #### Examples:
     ```mojo
-    from small_time.small_time import strptime
-    print(strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S'))
+    from small_time.small_time import parse_time_with_format
+    print(parse_time_with_format('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S'))
     ```
-    .
     """
-    var tm = c.strptime(date_str, fmt)
-    var tz = TimeZone(Int(tm.tm_gmtoff)) if not tzinfo else tzinfo
-    return _validate_timestamp(tm, c.TimeVal(), tz)
+    var date_str = String(date)
+    var fmt_str = String(format)
+    var tm = c.parse_time_with_format(date_str, fmt_str)
+    # If no provided timezone, generate a UTC +/- offset timezone.
+    var tz = TimeZone.from_utc_offset(Int(tm.time_zone_offset)) if not tzinfo else tzinfo
+    return _validate_timestamp(tm, c._TimeValue(0, 0), tz.value())
 
 
-fn strptime(date_str: String, fmt: String, tz_str: String) raises -> SmallTime:
-    """Create a SmallTime instance from a date string and format,
-    in the style of `datetime.strptime`.  Optionally replaces the parsed time_zone.
+fn parse_time_with_format(date: StringSlice, format: StringSlice, tz: StringSlice) raises -> SmallTime:
+    """Create a `SmallTime` instance from a date string and format,
+    in the style of `datetime.strptime`. Optionally replaces the parsed time_zone.
+    Due to cstr pointer creation requiring a mutable reference to `date` and `format` to null terminate them,
+    this function will allocate owned copies of the strings.
 
     Args:
-        date_str: The date string.
-        fmt: The format string.
-        tz_str: The time zone.
+        date: The date string.
+        format: The format string.
+        tz: The time zone.
     
     Returns:
         The SmallTime instance.
@@ -282,12 +197,12 @@ fn strptime(date_str: String, fmt: String, tz_str: String) raises -> SmallTime:
 
     Examples:
     ```mojo
-    from small_time.small_time import strptime
-    print(strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S'))
+    from small_time.small_time import parse_time_with_format
+    print(parse_time_with_format('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S'))
     ```
     .
     """
-    return strptime(date_str, fmt, time_zone.from_utc(tz_str))
+    return parse_time_with_format(date, format, time_zone.from_utc(tz))
 
 
 fn from_ordinal(ordinal: Int) -> SmallTime:
@@ -309,12 +224,12 @@ fn from_ordinal(ordinal: Int) -> SmallTime:
     # closest 400-year boundary at or before n, then work with the offset
     # from that boundary to n.  Life is much clearer if we subtract 1 from
     # n first -- then the values of n at 400-year boundaries are exactly
-    # those divisible by _DI400Y:
+    # those divisible by DAYS_IN_400_YEARS:
     #
     #     D  M   Y            n              n-1
     #     -- --- ----        ----------     ----------------
-    #     31 Dec -400        -_DI400Y       -_DI400Y -1
-    #      1 Jan -399         -_DI400Y +1   -_DI400Y      400-year boundary
+    #     31 Dec -400        -DAYS_IN_400_YEARS       -DAYS_IN_400_YEARS -1
+    #      1 Jan -399         -DAYS_IN_400_YEARS +1   -DAYS_IN_400_YEARS      400-year boundary
     #     ...
     #     30 Dec  000        -1             -2
     #     31 Dec  000         0             -1
@@ -322,11 +237,11 @@ fn from_ordinal(ordinal: Int) -> SmallTime:
     #      2 Jan  001         2              1
     #      3 Jan  001         3              2
     #     ...
-    #     31 Dec  400         _DI400Y        _DI400Y -1
-    #      1 Jan  401         _DI400Y +1     _DI400Y      400-year boundary
+    #     31 Dec  400         DAYS_IN_400_YEARS        DAYS_IN_400_YEARS -1
+    #      1 Jan  401         DAYS_IN_400_YEARS +1     DAYS_IN_400_YEARS      400-year boundary
     n -= 1
-    var n400 = n // _DI400Y
-    n = n % _DI400Y
+    var n400 = n // DAYS_IN_400_YEARS
+    n = n % DAYS_IN_400_YEARS
     var year = n400 * 400 + 1  # ..., -399, 1, 401, ...
 
     # Now n is the (non-negative) offset, in days, from January 1 of year, to
@@ -334,12 +249,12 @@ fn from_ordinal(ordinal: Int) -> SmallTime:
     # Note that it's possible for n100 to equal 4!  In that case 4 full
     # 100-year cycles precede the desired day, which implies the desired
     # day is December 31 at the end of a 400-year cycle.
-    var n100 = n // _DI100Y
-    n = n % _DI100Y
+    var n100 = n // DAYS_IN_100_YEARS
+    n = n % DAYS_IN_100_YEARS
 
     # Now compute how many 4-year cycles precede it.
-    var n4 = n // _DI4Y
-    n = n % _DI4Y
+    var n4 = n // DAYS_IN_4_YEARS
+    n = n % DAYS_IN_4_YEARS
 
     # And now how many single years.  Again n1 can be 4, and again meaning
     # that the desired day is December 31 at the end of the 4-year cycle.
@@ -372,8 +287,49 @@ fn from_ordinal(ordinal: Int) -> SmallTime:
     return SmallTime(year, month, n + 1)
 
 
-@value
-struct SmallTime(Stringable, Writable, Representable):
+@fieldwise_init
+@register_passable("trivial")
+struct Specification(Copyable, ExplicitlyCopyable, Movable, EqualityComparable):
+    """Time specification for the `SmallTime.isoformat` method."""
+    var value: Int
+    """Internal enum value."""
+    alias AUTO = Self(0)
+    """Auto specification."""
+    alias HOURS = Self(1)
+    """Hours specification."""
+    alias MINUTES = Self(2)
+    """Minutes specification."""
+    alias SECONDS = Self(3)
+    """Seconds specification."""
+    alias MILLISECONDS = Self(4)
+    """Milliseconds specification."""
+    alias MICROSECONDS = Self(5)
+    """Microseconds specification."""
+
+    fn __eq__(self, other: Self) -> Bool:
+        """Check if two specifications are equal.
+
+        Args:
+            other: The other specification to compare with.
+        
+        Returns:
+            True if the specifications are equal, False otherwise.
+        """
+        return self.value == other.value
+    
+    fn __ne__(self, other: Self) -> Bool:
+        """Check if two specifications are not equal.
+
+        Args:
+            other: The other specification to compare with.
+        
+        Returns:
+            True if the specifications are not equal, False otherwise.
+        """
+        return self.value != other.value
+
+
+struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Representable):
     """Datetime representation."""
     var year: Int
     """Year."""
@@ -389,7 +345,7 @@ struct SmallTime(Stringable, Writable, Representable):
     """Second."""
     var microsecond: Int
     """Microsecond."""
-    var tz: TimeZone
+    var time_zone: TimeZone
     """Time zone."""
 
     fn __init__(
@@ -401,7 +357,7 @@ struct SmallTime(Stringable, Writable, Representable):
         minute: Int = 0,
         second: Int = 0,
         microsecond: Int = 0,
-        tz: TimeZone = TimeZone(),
+        tz: TimeZone = TimeZone.UTC,
     ):
         """Initializes a new SmallTime instance.
 
@@ -422,7 +378,7 @@ struct SmallTime(Stringable, Writable, Representable):
         self.minute = minute
         self.second = second
         self.microsecond = microsecond
-        self.tz = tz
+        self.time_zone = tz
 
     fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") -> String:
         """Returns a string representation of the `SmallTime`
@@ -444,16 +400,16 @@ struct SmallTime(Stringable, Writable, Representable):
         ```
         .
         """
-        return formatter.format(self, fmt)
+        return FORMATTER.format(self, fmt)
 
-    fn isoformat[timespec: String = "auto"](self, sep: String = "T") -> String:
+    fn isoformat[specification: Specification = Specification.AUTO](self, separator: String = "T") -> String:
         """Return the time formatted according to ISO.
 
         Parameters:
-            timespec: The number of additional terms of the time to include.
+            specification: The number of additional terms of the time to include.
 
         Args:
-            sep: The separator between date and time.
+            separator: The separator between date and time.
         
         Returns:
             The formatted string.
@@ -471,20 +427,14 @@ struct SmallTime(Stringable, Writable, Representable):
             terms of the time to include. Valid options are 'auto', 'hours',
             'minutes', 'seconds', 'milliseconds' and 'microseconds'.
         """
-        alias valid = InlineArray[String, 6]("auto", "hours", "minutes", "seconds", "milliseconds", "microseconds")
-        """Valid timespec values."""
-        constrained[
-            timespec in valid,
-            msg="timespec must be one of the following: 'auto', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds'",
-        ]()
-        var date_str = String(
-            String(self.year).rjust(4, "0"), "-", String(self.month).rjust(2, "0"), "-" + String(self.day).rjust(2, "0")
+        var date = String(
+            String(self.year).rjust(4, "0"), "-", String(self.month).rjust(2, "0"), "-", String(self.day).rjust(2, "0")
         )
-        var time_str = String("")
+        var time = String("")
 
         @parameter
-        if timespec == "auto" or timespec == "microseconds":
-            time_str = String(
+        if specification == Specification.AUTO or specification == Specification.MICROSECONDS:
+            time = String(
                 String(self.hour).rjust(2, "0"), 
                 ":",
                 String(self.minute).rjust(2, "0"),
@@ -493,8 +443,8 @@ struct SmallTime(Stringable, Writable, Representable):
                 ".",
                 String(self.microsecond).rjust(6, "0")
             )
-        elif timespec == "milliseconds":
-            time_str = String(
+        elif specification == Specification.MILLISECONDS:
+            time = String(
                 String(self.hour).rjust(2, "0"),
                 ":",
                 String(self.minute).rjust(2, "0"),
@@ -503,23 +453,20 @@ struct SmallTime(Stringable, Writable, Representable):
                 ".",
                 String(self.microsecond // 1000).rjust(3, "0")
             )
-        elif timespec == "seconds":
-            time_str = String(
+        elif specification == Specification.SECONDS:
+            time = String(
                 String(self.hour).rjust(2, "0"),
                 ":",
                 String(self.minute).rjust(2, "0"),
                 ":",
                 String(self.second).rjust(2, "0")
             )
-        elif timespec == "minutes":
-            time_str = String(String(self.hour).rjust(2, "0"), ":", String(self.minute).rjust(2, "0"))
-        elif timespec == "hours":
-            time_str = String(self.hour).rjust(2, "0")
+        elif specification == Specification.MINUTES:
+            time = String(String(self.hour).rjust(2, "0"), ":", String(self.minute).rjust(2, "0"))
+        elif specification == Specification.HOURS:
+            time = String(self.hour).rjust(2, "0")
 
-        if not self.tz:
-            return sep.join(date_str, time_str)
-        else:
-            return sep.join(date_str, time_str) + self.tz.format()
+        return separator.join(date, time) + self.time_zone.format()
 
     fn to_ordinal(self) -> Int:
         """Return proleptic Gregorian ordinal for the year, month and day.
@@ -531,7 +478,7 @@ struct SmallTime(Stringable, Writable, Representable):
             January 1 of year 1 is day 1.  Only the year, month and day values
             contribute to the result.
         """
-        return _ymd2ord(self.year, self.month, self.day)
+        return ymd_to_ordinal(self.year, self.month, self.day)
 
     fn iso_weekday(self) -> Int:
         """Returns day of the week.
@@ -599,8 +546,8 @@ struct SmallTime(Stringable, Writable, Representable):
         ", microsecond=", self.microsecond,
         )
         writer.write(", tz=", "TimeZone(",
-        "offset=", self.tz.offset,
+        "offset=", self.time_zone.offset,
         ", name=")
-        write_optional(self.tz.name)
+        write_optional(self.time_zone.name)
         writer.write(")")
         writer.write(")")

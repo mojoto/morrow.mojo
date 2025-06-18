@@ -169,3 +169,4 @@ output
 .vscode/
 
 *.dYSM
+.pixi

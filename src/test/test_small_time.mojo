@@ -3,8 +3,9 @@ from python import PythonObject
 from _py import py_dt_datetime, py_time
 
 import small_time.c
-from small_time.small_time import SmallTime, now, strptime, from_timestamp, from_ordinal
+from small_time.small_time import SmallTime, now, parse_time_with_format, from_timestamp, from_ordinal, Specification
 from small_time.time_zone import TimeZone, from_utc
+import small_time.time_zone
 
 
 # TODO: Need a better way to test this, since it's not deterministic.
@@ -28,31 +29,32 @@ def test_utc_now():
 
 
 def test_from_timestamp():
-    assert_datetime_equal(from_timestamp(c.gettimeofday().tv_sec), py_dt_datetime().now())
-    assert_datetime_equal(from_timestamp(c.gettimeofday().tv_sec, utc=True), py_dt_datetime().utcnow())
+    assert_datetime_equal(from_timestamp(Float64(c.get_time_of_day().seconds)), py_dt_datetime().now())
+    assert_datetime_equal(from_timestamp(Float64(c.get_time_of_day().seconds), utc=True), py_dt_datetime().utcnow())
 
 
 def test_iso_format():
     var d0 = SmallTime(2023, 10, 1, 0, 0, 0, 1234)
     testing.assert_equal(d0.isoformat(), "2023-10-01T00:00:00.001234+00:00")
-    testing.assert_equal(d0.isoformat["seconds"](), "2023-10-01T00:00:00+00:00")
-    testing.assert_equal(d0.isoformat["milliseconds"](), "2023-10-01T00:00:00.001+00:00")
+    testing.assert_equal(d0.isoformat[Specification.SECONDS](), "2023-10-01T00:00:00+00:00")
+    testing.assert_equal(d0.isoformat[Specification.MILLISECONDS](), "2023-10-01T00:00:00.001+00:00")
 
     # with TimeZone
-    var d1 = SmallTime(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Beijing"))
-    testing.assert_equal(d1.isoformat["seconds"](), "2023-10-01T00:00:00+08:00")
+    # var d1 = SmallTime(2023, 10, 1, 0, 0, 0, 1234, TimeZone.from_name("Asia/Shanghai"))
+    var d1 = SmallTime(2023, 10, 1, 0, 0, 0, 1234, TimeZone.ASIA_SHANGHAI)
+    testing.assert_equal(d1.isoformat[Specification.SECONDS](), "2023-10-01T00:00:00+08:00")
 
 
 def test_strptime():
-    m = strptime("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", TimeZone())
+    m = parse_time_with_format("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", None)
     testing.assert_equal(String(m), "2023-01-20T15:49:10.000000+00:00")
 
     # TODO: Need to add more tests for different types of timestamps to parse.
     # Not sure if this is a valid timestamp? Python can parse it so...
-    # m = strptime("2023-10-18 15:49:10 +0800", "%Y-%m-%d %H:%M:%S %z")
+    # m = parse_time_with_format("2023-10-18 15:49:10 +0800", "%Y-%m-%d %H:%M:%S %z")
     # testing.assert_equal(String(m), "2023-10-18T15:49:10.000000+00:00")
 
-    m = strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", String("+09:00"))
+    m = parse_time_with_format("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", String("+09:00"))
     testing.assert_equal(String(m), "2023-10-18T15:49:10.000000+09:00")
 
 

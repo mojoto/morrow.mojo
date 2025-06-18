@@ -28,13 +28,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install magic
+      - name: Install pixi
         run: |
-          if [[ ${{ matrix.target }} == "linux-aarch64" ]]; then
-            bash scripts/install_magic_aarch64.sh
-          else
-            curl -ssL https://magic.modular.com | bash
-          fi
+          curl -ssL https://pixi.sh/install.sh | bash
 
       - name: Build package for target platform
         env:
@@ -45,17 +41,6 @@ jobs:
         run: |
           source $HOME/.bash_profile
 
-          # Temporary method to fetch the rattler binary.
-          RATTLER_BINARY="rattler-build-aarch64-apple-darwin"
-          if [[ $TARGET_PLATFORM == "linux-64" ]]; then 
-            RATTLER_BINARY="rattler-build-x86_64-unknown-linux-musl"
-          elif [[ $TARGET_PLATFORM == "linux-aarch64" ]]; then
-            RATTLER_BINARY="rattler-build-aarch64-unknown-linux-musl"
-          fi
-          curl -SL --progress-bar https://github.com/prefix-dev/rattler-build/releases/latest/download/${RATTLER_BINARY} -o rattler-build
-          chmod +x rattler-build
-          export PATH="$PATH:$(pwd)"
-
           # Build and push
-          magic run build
-          magic run publish
+          pixi run build
+          pixi run publish
