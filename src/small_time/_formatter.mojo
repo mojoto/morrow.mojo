@@ -155,7 +155,6 @@ struct _Formatter:
         Returns:
             Formatted time string.
         """
-        print("Formatting template:", template)
         @parameter
         if len(template) == 0:
             return String()
