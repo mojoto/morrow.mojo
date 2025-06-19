@@ -1,6 +1,4 @@
 # TODO (Mikhail): Time zones are very hacky right now. Eventually, I will try adopting Martin's datetime module in `forge-tools` instead.
-import small_time.c
-
 alias UTC = "UTC"
 alias DASH = "-"
 alias PLUS = "+"
