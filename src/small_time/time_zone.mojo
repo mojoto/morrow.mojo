@@ -732,6 +732,7 @@ struct TimeZone(Movable, Copyable, ExplicitlyCopyable):
         Returns:
             A new timezone instance.
         """
+        print("Creating timezone from UTC offset: ", offset)
         if offset == 0:
             return Self.UTC
         elif offset == 3600:
