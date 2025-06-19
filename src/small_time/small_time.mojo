@@ -1,7 +1,7 @@
-import small_time.c
+import small_time._libc as libc
 import small_time.time_zone
+from small_time._formatter import FORMATTER
 from small_time.time_delta import TimeDelta
-from small_time.formatter import FORMATTER
 from small_time.calendar_math import _DAYS_BEFORE_MONTH, ymd_to_ordinal
 
 
@@ -50,10 +50,10 @@ fn now(*, utc: Bool = False) raises -> SmallTime:
     Returns:
         The current time.
     """
-    return from_timestamp(c.get_time_of_day(), utc=utc)
+    return from_timestamp(libc.get_time_of_day(), utc=utc)
 
 
-fn _validate_timestamp(tm: c._Time, time_val: c._TimeValue, time_zone: TimeZone) raises -> SmallTime:
+fn _validate_timestamp(tm: libc._CTime, time_val: libc._CTimeValue, time_zone: TimeZone) raises -> SmallTime:
     """Validate the timestamp.
 
     Args:
@@ -110,7 +110,7 @@ fn _validate_timestamp(tm: c._Time, time_val: c._TimeValue, time_zone: TimeZone)
     )
 
 
-fn from_timestamp(t: c._TimeValue, *, utc: Bool) raises -> SmallTime:
+fn from_timestamp(t: libc._CTimeValue, *, utc: Bool) raises -> SmallTime:
     """Create a SmallTime instance from a timestamp.
 
     Args:
@@ -124,9 +124,9 @@ fn from_timestamp(t: c._TimeValue, *, utc: Bool) raises -> SmallTime:
         Error: If the timestamp is invalid.
     """
     if utc:
-        return _validate_timestamp(c.get_gm_time(t.seconds), t, TimeZone.UTC)
+        return _validate_timestamp(libc.get_gm_time(t.seconds), t, TimeZone.UTC)
 
-    var tm = c.get_local_time(t.seconds)
+    var tm = libc.get_local_time(t.seconds)
     var tz = TimeZone.from_utc_offset(Int(tm.time_zone_offset))
     return _validate_timestamp(tm, t, tz)
 
@@ -144,7 +144,7 @@ fn from_timestamp(timestamp: Float64, *, utc: Bool = False) raises -> SmallTime:
     Raises:
         Error: If the timestamp is invalid.
     """
-    return from_timestamp(c._TimeValue(Int(normalize_timestamp(timestamp)), 0), utc=utc)
+    return from_timestamp(libc._CTimeValue(Int(normalize_timestamp(timestamp)), 0), utc=utc)
 
 
 fn parse_time_with_format(date: StringSlice, format: StringSlice, tzinfo: Optional[TimeZone] = None) raises -> SmallTime:
@@ -172,10 +172,10 @@ fn parse_time_with_format(date: StringSlice, format: StringSlice, tzinfo: Option
     """
     var date_str = String(date)
     var fmt_str = String(format)
-    var tm = c.parse_time_with_format(date_str, fmt_str)
+    var tm = libc.parse_time_with_format(date_str, fmt_str)
     # If no provided timezone, generate a UTC +/- offset timezone.
     var tz = TimeZone.from_utc_offset(Int(tm.time_zone_offset)) if not tzinfo else tzinfo
-    return _validate_timestamp(tm, c._TimeValue(0, 0), tz.value())
+    return _validate_timestamp(tm, libc._CTimeValue(0, 0), tz.value())
 
 
 fn parse_time_with_format(date: StringSlice, format: StringSlice, tz: StringSlice) raises -> SmallTime:
@@ -380,12 +380,12 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
         self.microsecond = microsecond
         self.time_zone = tz
 
-    fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") -> String:
+    fn format[template: String = "YYYY-MM-DD HH:mm:ss ZZ"](self) -> String:
         """Returns a string representation of the `SmallTime`
         formatted according to the provided format string.
 
-        Args:
-            fmt: The format string.
+        Parameters:
+            template: The format string.
 
         Returns:
             The formatted string.
@@ -394,13 +394,12 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
         ```mojo
         import small_time
         var m = small_time.now()
-        print(m.format('YYYY-MM-DD HH:mm:ss ZZ')) #'2013-05-09 03:56:47 -00:00'
-        print(m.format('MMMM DD, YYYY')) #'May 09, 2013'
+        print(m.format['YYYY-MM-DD HH:mm:ss ZZ']()) #'2013-05-09 03:56:47 -00:00'
+        print(m.format['MMMM DD, YYYY']()) #'May 09, 2013'
         print(m.format()) #'2013-05-09 03:56:47 -00:00'
         ```
-        .
         """
-        return FORMATTER.format(self, fmt)
+        return FORMATTER.format[template](self)
 
     fn isoformat[specification: Specification = Specification.AUTO](self, separator: String = "T") -> String:
         """Return the time formatted according to ISO.

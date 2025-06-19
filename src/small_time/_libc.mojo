@@ -5,13 +5,16 @@ from memory import UnsafePointer
 
 
 alias time_t = Int64
+"""C `time_t` type, representing time in seconds since the Epoch (1970-01-01 00:00:00 UTC)."""
 alias suseconds_t = time_t
+"""C `suseconds_t` type, representing microseconds. It is typically the same as `time_t`."""
 alias c_void = UInt8
+"""C `void` type, used for generic pointers."""
 
 
 @fieldwise_init
 @register_passable("trivial")
-struct _TimeValue(Copyable, ExplicitlyCopyable, Movable):
+struct _CTimeValue(Copyable, ExplicitlyCopyable, Movable):
     """C `TimeValue` struct."""
     var seconds: time_t
     """Seconds to wait. Corresponds to `tv_sec` in C."""
@@ -21,7 +24,7 @@ struct _TimeValue(Copyable, ExplicitlyCopyable, Movable):
 
 @fieldwise_init
 @register_passable("trivial")
-struct _TimeZone(Copyable, ExplicitlyCopyable, Movable):
+struct _CTimeZone(Copyable, ExplicitlyCopyable, Movable):
     """C `timezone` struct."""
     var minutes_west: c_int
     """Minutes west of Greenwich."""
@@ -31,8 +34,8 @@ struct _TimeZone(Copyable, ExplicitlyCopyable, Movable):
 
 @fieldwise_init
 @register_passable("trivial")
-struct _Time(Copyable, ExplicitlyCopyable, Movable):
-    """C `_Time` struct."""
+struct _CTime(Copyable, ExplicitlyCopyable, Movable):
+    """C `time` struct."""
 
     var seconds: c_int
     """Seconds."""
@@ -71,7 +74,7 @@ struct _Time(Copyable, ExplicitlyCopyable, Movable):
         self.time_zone_offset = 0
 
 
-fn _gettimeofday(tv: UnsafePointer[_TimeValue], tz: UnsafePointer[_TimeZone]) -> Int32:
+fn _gettimeofday(tv: UnsafePointer[_CTimeValue], tz: UnsafePointer[_CTimeZone]) -> Int32:
     """Gets the current time. It's a wrapper around libc `gettimeofday`.
     The `tv` parameter is a pointer to a `struct timeval` that will be filled.
 
@@ -88,10 +91,10 @@ fn _gettimeofday(tv: UnsafePointer[_TimeValue], tz: UnsafePointer[_TimeZone]) ->
     int gettimeofday(struct timeval *restrict tv, struct timezone *_Nullable restrict tz);
     ```
     """
-    return external_call["gettimeofday", Int32, UnsafePointer[_TimeValue], UnsafePointer[_TimeZone]](tv, tz)
+    return external_call["gettimeofday", Int32, UnsafePointer[_CTimeValue], UnsafePointer[_CTimeZone]](tv, tz)
 
 
-fn get_time_of_day() raises -> _TimeValue:
+fn get_time_of_day() raises -> _CTimeValue:
     """Gets the current time. Wrapper around libc `gettimeofday`.
     
     Returns:
@@ -102,8 +105,8 @@ fn get_time_of_day() raises -> _TimeValue:
     int gettimeofday(struct timeval *restrict tv, struct timezone *restrict tz);
     ```
     """
-    var tv = InlineArray[_TimeValue, 1](uninitialized=True)
-    var tz = InlineArray[_TimeZone, 1](uninitialized=True)
+    var tv = InlineArray[_CTimeValue, 1](uninitialized=True)
+    var tz = InlineArray[_CTimeZone, 1](uninitialized=True)
     var result = _gettimeofday(tv.unsafe_ptr(), tz.unsafe_ptr())
     if result != 0:
         var errno = get_errno()
@@ -111,15 +114,15 @@ fn get_time_of_day() raises -> _TimeValue:
             raise Error("[EFAULT] gettimeofday failed: One of `tv` or `tz` pointed outside the accessible address space.")
         else:
             raise Error("[UNKNOWN] gettimeofday failed with unknown errno code: ", errno)
-    return tv[0]
+    return tv[0].copy()
 
 
-fn _localtime_r(timep: UnsafePointer[time_t, mut=False], result: UnsafePointer[_Time]) -> None:
+fn _localtime_r(timep: UnsafePointer[time_t, mut=False], result: UnsafePointer[_CTime]) -> None:
     """Converts a time value to a broken-down local time.
 
     Args:
         timep: UnsafePointer to a time value in seconds since the Epoch.
-        result: UnsafePointer to a `_Time` struct where the broken-down local time will be stored.
+        result: UnsafePointer to a `_CTime` struct where the broken-down local time will be stored.
     
     #### C Function:
     ```c
@@ -128,13 +131,13 @@ fn _localtime_r(timep: UnsafePointer[time_t, mut=False], result: UnsafePointer[_
     """
     _ = external_call[
         "localtime_r",
-        UnsafePointer[_Time],
+        UnsafePointer[_CTime],
         UnsafePointer[time_t, mut=False],
-        UnsafePointer[_Time]
+        UnsafePointer[_CTime]
     ](timep, result)
 
 
-fn get_local_time(seconds_since_epoch: Int64) raises -> _Time:
+fn get_local_time(seconds_since_epoch: time_t) raises -> _CTime:
     """Converts a time value to a broken-down local time.
 
     Args:
@@ -145,7 +148,7 @@ fn get_local_time(seconds_since_epoch: Int64) raises -> _Time:
     struct tm *localtime_r(const time_t *timep, struct tm *result);
     ```
     """
-    var result = InlineArray[_Time, 1](uninitialized=True)
+    var result = InlineArray[_CTime, 1](uninitialized=True)
     _localtime_r(UnsafePointer[mut=False](to=seconds_since_epoch), result.unsafe_ptr())
     if not result.unsafe_ptr():
         raise Error("get_local_time failed: The pointer to the result is still null, which indicates the conversion failed.")
@@ -155,14 +158,14 @@ fn get_local_time(seconds_since_epoch: Int64) raises -> _Time:
 fn _strptime(
     s: UnsafePointer[c_char, mut=False],
     format: UnsafePointer[c_char, mut=False],
-    tm: UnsafePointer[_Time]
+    tm: UnsafePointer[_CTime]
 ) -> UnsafePointer[c_char]:
     """Parses a time string according to a format string.
 
     Args:
         s: Time string to parse.
         format: Time format string.
-        tm: UnsafePointer to a `_Time` struct where the broken-down time will be stored.
+        tm: UnsafePointer to a `_CTime` struct where the broken-down time will be stored.
     
     Returns:
         Broken down time.
@@ -179,16 +182,16 @@ fn _strptime(
         UnsafePointer[c_char],
         UnsafePointer[c_char, mut=False],
         UnsafePointer[c_char, mut=False],
-        UnsafePointer[_Time]
+        UnsafePointer[_CTime]
     ](s, format, tm)
 
 
-fn parse_time_with_format(owned time: String, owned format: String) raises -> _Time:
+fn parse_time_with_format(mut time: String, mut format: String) raises -> _CTime:
     """Parses a time string according to a format string.
 
     Args:
-        time: Time string to parse.
-        format: Time format string.
+        time: Time string to parse. This must be mutable so it can be null terminated for C interop.
+        format: Time format string. This must be mutable so it can be null terminated for C interop.
     
     Returns:
         Broken down time.
@@ -200,7 +203,7 @@ fn parse_time_with_format(owned time: String, owned format: String) raises -> _T
     );
     ```
     """
-    var tm = InlineArray[_Time, 1](uninitialized=True)
+    var tm = InlineArray[_CTime, 1](uninitialized=True)
     _ = _strptime(
         time.unsafe_cstr_ptr().origin_cast[mut=False](),
         format.unsafe_cstr_ptr().origin_cast[mut=False](),
@@ -208,10 +211,10 @@ fn parse_time_with_format(owned time: String, owned format: String) raises -> _T
     )
     if not tm.unsafe_ptr():
         raise Error("parse_time_with_format failed: The pointer to the result is still null, which indicates the parsing failed.")
-    return tm[0]
+    return tm[0].copy()
 
 
-fn _gmtime(timep: UnsafePointer[time_t, mut=False]) -> UnsafePointer[_Time]:
+fn _gmtime(timep: UnsafePointer[time_t, mut=False]) -> UnsafePointer[_CTime]:
     """Converts a time value to a broken-down UTC time.
     
     Args:
@@ -225,10 +228,10 @@ fn _gmtime(timep: UnsafePointer[time_t, mut=False]) -> UnsafePointer[_Time]:
     struct tm *gmtime(const time_t *timep);
     ```
     """
-    return external_call["gmtime", UnsafePointer[_Time], UnsafePointer[time_t, mut=False]](timep)
+    return external_call["gmtime", UnsafePointer[_CTime], UnsafePointer[time_t, mut=False]](timep)
 
 
-fn get_gm_time(time: time_t) raises -> _Time:
+fn get_gm_time(time: time_t) raises -> _CTime:
     """Converts a time value to a broken-down UTC time.
     
     Args:

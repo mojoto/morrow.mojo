@@ -693,14 +693,15 @@ struct TimeZone(Movable, Copyable, ExplicitlyCopyable):
     alias ASIA_ADEN = Self(name="Asia/Aden", offset=0)
     alias EUROPE_ISLE_OF_MAN = Self(name="Europe/Isle_of_Man", offset=0)
 
-    @implicit
-    fn __init__(out self, name: StringLiteral):
+    fn __init__(out self, name: StringLiteral, offset: Int):
         """Initializes a new timezone.
 
         Args:
             name: Time zone name.
+            offset: UTC offset in seconds.
         """
         self.name = String(name)
+        self.offset = offset
     
     fn format(self, separator: String = ":") -> String:
         """Formats the timezone.
@@ -786,1261 +787,627 @@ struct TimeZone(Movable, Copyable, ExplicitlyCopyable):
         
         raise Error("Unsupported UTC offset, must be a multiple of 3600 seconds. +-12 hours are supported.")
 
-    @staticmethod
-    fn from_name(name: String) raises -> Self:
-        """Creates a new timezone from its name.
 
-        Args:
-            name: Time zone name.
-
-        Returns:
-            A new timezone instance.
-        """
-        # TODO (Mikhail): Incoming big if statement of doom. We don't have
-        # proper enums with pattern matching yet. So this is just going to be
-        # a big if statement for now.
-        if name == "Asia/Jakarta":
-            return Self.ASIA_JAKARTA
-        elif name == "Libya":
-            return Self.LIBYA
-        elif name == "America/Iqaluit":
-            return Self.AMERICA_IQALUIT
-        elif name == "America/Indiana/Vevay":
-            return Self.AMERICA_INDIANA_VEVAY
-        elif name == "Atlantic/South_Georgia":
-            return Self.ATLANTIC_SOUTH_GEORGIA
-        elif name == "America/Cuiaba":
-            return Self.AMERICA_CUIABA
-        elif name == "Europe/Tallinn":
-            return Self.EUROPE_TALLINN
-        elif name == "America/Ensenada":
-            return Self.AMERICA_ENSENADA
-        elif name == "Africa/Abidjan":
-            return Self.AFRICA_ABIDJAN
-        elif name == "Pacific/Saipan":
-            return Self.PACIFIC_SAIPAN
-        elif name == "Mexico/General":
-            return Self.MEXICO_GENERAL
-        elif name == "Europe/Rome":
-            return Self.EUROPE_ROME
-        elif name == "Asia/Seoul":
-            return Self.ASIA_SEOUL
-        elif name == "US/Michigan":
-            return Self.US_MICHIGAN
-        elif name == "America/New_York":
-            return Self.AMERICA_NEW_YORK
-        elif name == "Europe/Athens":
-            return Self.EUROPE_ATHENS
-        elif name == "Europe/Lisbon":
-            return Self.EUROPE_LISBON
-        elif name == "America/St_Thomas":
-            return Self.AMERICA_ST_THOMAS
-        elif name == "Europe/Moscow":
-            return Self.EUROPE_MOSCOW
-        elif name == "Pacific/Easter":
-            return Self.PACIFIC_EASTER
-        elif name == "America/Porto_Acre":
-            return Self.AMERICA_PORTO_ACRE
-        elif name == "America/Creston":
-            return Self.AMERICA_CRESTON
-        elif name == "Pacific/Norfolk":
-            return Self.PACIFIC_NORFOLK
-        elif name == "America/Argentina/Cordoba":
-            return Self.AMERICA_ARGENTINA_CORDOBA
-        elif name == "America/Atka":
-            return Self.AMERICA_ATKA
-        elif name == "Pacific/Niue":
-            return Self.PACIFIC_NIUE
-        elif name == "Asia/Ulan_Bator":
-            return Self.ASIA_ULAN_BATOR
-        elif name == "Europe/Simferopol":
-            return Self.EUROPE_SIMFEROPOL
-        elif name == "Asia/Dili":
-            return Self.ASIA_DILI
-        elif name == "Europe/Zagreb":
-            return Self.EUROPE_ZAGREB
-        elif name == "Antarctica/Palmer":
-            return Self.ANTARCTICA_PALMER
-        elif name == "America/Cayenne":
-            return Self.AMERICA_CAYENNE
-        elif name == "Asia/Tel_Aviv":
-            return Self.ASIA_TEL_AVIV
-        elif name == "Asia/Urumqi":
-            return Self.ASIA_URUMQI
-        elif name == "Asia/Beirut":
-            return Self.ASIA_BEIRUT
-        elif name == "Asia/Kuala_Lumpur":
-            return Self.ASIA_KUALA_LUMPUR
-        elif name == "America/Belem":
-            return Self.AMERICA_BELEM
-        elif name == "Pacific/Honolulu":
-            return Self.PACIFIC_HONOLULU
-        elif name == "America/Santa_Isabel":
-            return Self.AMERICA_SANTA_ISABEL
-        elif name == "Pacific/Kwajalein":
-            return Self.PACIFIC_KWAJALEIN
-        elif name == "Africa/Luanda":
-            return Self.AFRICA_LUANDA
-        elif name == "America/Chicago":
-            return Self.AMERICA_CHICAGO
-        elif name == "Asia/Harbin":
-            return Self.ASIA_HARBIN
-        elif name == "Europe/Paris":
-            return Self.EUROPE_PARIS
-        elif name == "Pacific/Wallis":
-            return Self.PACIFIC_WALLIS
-        elif name == "America/Argentina/Ushuaia":
-            return Self.AMERICA_ARGENTINA_USHUAIA
-        elif name == "Australia/Adelaide":
-            return Self.AUSTRALIA_ADelaide
-        elif name == "Asia/Singapore":
-            return Self.ASIA_SINGAPORE
-        elif name == "America/Kralendijk":
-            return Self.AMERICA_KRALENDIJK
-        elif name == "America/Moncton":
-            return Self.AMERICA_MONCTON
-        elif name == "America/Aruba":
-            return Self.AMERICA_ARUBA
-        elif name == "America/Noronha":
-            return Self.AMERICA_NORONHA
-        elif name == "Etc/UTC":
-            return Self.ETC_UTC
-        elif name == "Africa/Lusaka":
-            return Self.AFRICA_LUSAKA
-        elif name == "Asia/Tomsk":
-            return Self.ASIA_TOMSK
-        elif name == "Asia/Phnom_Penh":
-            return Self.ASIA_PHNOM_PENH
-        elif name == "Asia/Samarkand":
-            return Self.ASIA_SAMARKAND
-        elif name == "Europe/Luxembourg":
-            return Self.EUROPE_LUXEMBOURG
-        elif name == "Indian/Antananarivo":
-            return Self.INDIAN_ANTANANARIVO
-        elif name == "Etc/GMT+1":
-            return Self.ETC_GMT_PLUS_1
-        elif name == "America/Porto_Velho":
-            return Self.AMERICA_PORTO_VELHO
-        elif name == "GB":
-            return Self.GB
-        elif name == "America/Barbados":
-            return Self.AMERICA_BARbADOS
-        elif name == "Asia/Chungking":
-            return Self.ASIA_CHUNGKING
-        elif name == "Asia/Shanghai":
-            return Self.ASIA_SHANGHAI
-        elif name == "Etc/GMT-13":
-            return Self.ETC_GMT_13
-        elif name == "America/Indiana/Indianapolis":
-            return Self.AMERICA_INDIANA_INDIANAPOLIS
-        elif name == "America/Argentina/Mendoza":
-            return Self.AMERICA_ARGENTINA_MENDOZA
-        elif name == "America/Jamaica":
-            return Self.AMERICA_JAMAICA
-        elif name == "Canada/Newfoundland":
-            return Self.CANADA_NEWFOUNDLAND
-        elif name == "America/Cordoba":
-            return Self.AMERICA_CORDOBA
-        elif name == "Africa/Niamey":
-            return Self.AFRICA_NIAMEY
-        elif name == "America/Halifax":
-            return Self.AMERICA_HALIFAX
-        elif name == "Antarctica/South_Pole":
-            return Self.ANTARCTICA_SOUTH_POLE
-        elif name == "Africa/Ouagadougou":
-            return Self.AFRICA_OUAGADOUGOU
-        elif name == "CET":
-            return Self.CET
-        elif name == "America/Argentina/San_Juan":
-            return Self.AMERICA_ARGENTINA_SAN_JUAN
-        elif name == "Asia/Almaty":
-            return Self.ASIA_ALMATY
-        elif name == "Antarctica/Vostok":
-            return Self.ANTARCTICA_VOSTOK
-        elif name == "Canada/Atlantic":
-            return Self.CANADA_ATLANTIC
-        elif name == "Europe/Amsterdam":
-            return Self.EUROPE_AMSTERDAM
-        elif name == "America/Costa_Rica":
-            return Self.AMERICA_COSTA_RICA
-        elif name == "America/Knox_IN":
-            return Self.AMERICA_KNOX_IN
-        elif name == "Asia/Pontianak":
-            return Self.ASIA_PONTIANAK
-        elif name == "America/Punta_Arenas":
-            return Self.AMERICA_PUNTA_ARENAS
-        elif name == "Indian/Mahe":
-            return Self.INDIAN_MAHE
-        elif name == "Africa/Timbuktu":
-            return Self.AFRICA_TIMBUKTU
-        elif name == "Atlantic/Madeira":
-            return Self.ATLANTIC_MADEIRA
-        elif name == "Chile/EasterIsland":
-            return Self.CHILE_EASTERISLAND
-        elif name == "Atlantic/Stanley":
-            return Self.ATLANTIC_STANLEY
-        elif name == "America/Cancun":
-            return Self.AMERICA_CANCUN
-        elif name == "Europe/Minsk":
-            return Self.EUROPE_MINSK
-        elif name == "US/Eastern":
-            return Self.US_EASTERN
-        elif name == "HST":
-            return Self.HST
-        elif name == "America/Boise":
-            return Self.AMERICA_BOISE
-        elif name == "Brazil/West":
-            return Self.BRAZIL_WEST
-        elif name == "America/Catamarca":
-            return Self.AMERICA_CATAMARCA
-        elif name == "America/Port_of_Spain":
-            return Self.AMERICA_PORT_OF_SPAIN
-        elif name == "Asia/Katmandu":
-            return Self.ASIA_KATMANDU
-        elif name == "Etc/GMT-14":
-            return Self.ETC_GMT_MINUS_14
-        elif name == "America/Guayaquil":
-            return Self.AMERICA_GUAYAQUIL
-        elif name == "Australia/Canberra":
-            return Self.AUSTRALIA_CANBERRA
-        elif name == "America/Ojinaga":
-            return Self.AMERICA_OJINAGA
-        elif name == "Europe/Kyiv":
-            return Self.EUROPE_KYIV
-        elif name == "Africa/Kinshasa":
-            return Self.AFRICA_KINSHASA
-        elif name == "Pacific/Pohnpei":
-            return Self.PACIFIC_POHNPEI
-        elif name == "America/Indiana/Winamac":
-            return Self.AMERICA_INDIANA_WINAMAC
-        elif name == "Etc/GMT-11":
-            return Self.ETC_GMT_MINUS_11
-        elif name == "Asia/Dhaka":
-            return Self.ASIA_DHAKA
-        elif name == "Australia/Perth":
-            return Self.AUSTRALIA_PERTH
-        elif name == "America/Whitehorse":
-            return Self.AMERICA_WHITEHORSE
-        elif name == "Indian/Reunion":
-            return Self.INDIAN_REUNION
-        elif name == "Europe/London":
-            return Self.EUROPE_LONDON
-        elif name == "Navajo":
-            return Self.NAVAJO
-        elif name == "America/Manaus":
-            return Self.AMERICA_MANAUS
-        elif name == "Asia/Chita":
-            return Self.ASIA_CHITA
-        elif name == "Hongkong":
-            return Self.HONGKONG
-        elif name == "Africa/Bissau":
-            return Self.AFRICA_BISSAU
-        elif name == "America/Tortola":
-            return Self.AMERICA_TORTOLA
-        elif name == "America/Juneau":
-            return Self.AMERICA_JUNEAU
-        elif name == "Europe/Malta":
-            return Self.EUROPE_MALTA
-        elif name == "Pacific/Ponape":
-            return Self.PACIFIC_PONAPE
-        elif name == "Africa/Asmara":
-            return Self.AFRICA_ASMARA
-        elif name == "Asia/Kamchatka":
-            return Self.ASIA_KAMCHATKA
-        elif name == "Europe/Helsinki":
-            return Self.EUROPE_HELSINKI
-        elif name == "America/Los_Angeles":
-            return Self.AMERICA_LOS_ANGELES
-        elif name == "Etc/GMT-4":
-            return Self.ETC_GMT_MINUS_4
-        elif name == "America/Bahia":
-            return Self.AMERICA_BAHIA
-        elif name == "America/Port-au-Prince":
-            return Self.AMERICA_PORT_AU_PRINCE
-        elif name == "Europe/Vilnius":
-            return Self.EUROPE_VILNIUS
-        elif name == "Etc/GMT-1":
-            return Self.ETC_GMT_MINUS_1
-        elif name == "Europe/Jersey":
-            return Self.EUROPE_JERSEY
-        elif name == "Africa/Tunis":
-            return Self.AFRICA_TUNIS
-        elif name == "Mexico/BajaSur":
-            return Self.MEXICO_BAJASUR
-        elif name == "Pacific/Tarawa":
-            return Self.PACIFIC_TARAWA
-        elif name == "Canada/Yukon":
-            return Self.CANADA_YUKON
-        elif name == "America/Virgin":
-            return Self.AMERICA_VIRGIN
-        elif name == "Europe/Budapest":
-            return Self.EUROPE_BUDAPEST
-        elif name == "America/Jujuy":
-            return Self.AMERICA_JUJUY
-        elif name == "Africa/Juba":
-            return Self.AFRICA_JUBA
-        elif name == "America/Indiana/Tell_City":
-            return Self.AMERICA_INDiana_TELL_CITY
-        elif name == "Pacific/Kanton":
-            return Self.PACIFIC_KANTON
-        elif name == "America/Nassau":
-            return Self.AMERICA_NASSAU
-        elif name == "America/Rio_Branco":
-            return Self.AMERICA_RIO_BRANCO
-        elif name == "GMT-0":
-            return Self.GMT_MINUS_0
-        elif name == "Australia/Tasmania":
-            return Self.AUSTRALIA_TASMANIA
-        elif name == "Pacific/Kosrae":
-            return Self.PACIFIC_KOSRAE
-        elif name == "US/Hawaii":
-            return Self.US_HAWAII
-        elif name == "Asia/Tbilisi":
-            return Self.ASIA_TBILISI
-        elif name == "Pacific/Bougainville":
-            return Self.PACIFIC_BOUGAINVILLE
-        elif name == "Europe/Vaduz":
-            return Self.EUROPE_VADUZ
-        elif name == "Etc/GMT+11":
-            return Self.ETC_GMT_PLUS_11
-        elif name == "Africa/Windhoek":
-            return Self.AFRICA_WINDHOEK
-        elif name == "Atlantic/Jan_Mayen":
-            return Self.ATLANTIC_JAN_MAYEN
-        elif name == "Africa/Ndjamena":
-            return Self.AFRICA_NDJAMENA
-        elif name == "America/Adak":
-            return Self.AMERICA_ADAK
-        elif name == "Israel":
-            return Self.ISRAEL
-        elif name == "US/Indiana-Starke":
-            return Self.US_INDiana_STARKE
-        elif name == "America/North_Dakota/New_Salem":
-            return Self.AMERICA_NORTH_DAKOTA_NEW_SALEM
-        elif name == "Pacific/Palau":
-            return Self.PACIFIC_PALAU
-        elif name == "GMT+0":
-            return Self.GMT_PLUS_0
-        elif name == "America/Rainy_River":
-            return Self.AMERICA_RAINY_RIVER
-        elif name == "America/Winnipeg":
-            return Self.AMERICA_WINNIPEG
-        elif name == "Etc/Greenwich":
-            return Self.ETC_GREENWICH
-        elif name == "America/Pangnirtung":
-            return Self.AMERICA_PANGNIRTUNG
-        elif name == "Africa/Tripoli":
-            return Self.AFRICA_TRIPOLI
-        elif name == "America/Guatemala":
-            return Self.AMERICA_GUATEMALA
-        elif name == "Asia/Nicosia":
-            return Self.ASIA_NICOSIA
-        elif name == "America/Belize":
-            return Self.AMERICA_BELIZE
-        elif name == "America/Resolute":
-            return Self.AMERICA_RESOLUTE
-        elif name == "Asia/Hebron":
-            return Self.ASIA_HEBRON
-        elif name == "America/Caracas":
-            return Self.AMERICA_CARACAS
-        elif name == "Asia/Novosibirsk":
-            return Self.ASIA_NOVOSIBIRSK
-        elif name == "Europe/Podgorica":
-            return Self.EUROPE_PODGORICA
-        elif name == "PRC":
-            return Self.PRC
-        elif name == "Europe/Kaliningrad":
-            return Self.EUROPE_KALININGRAD
-        elif name == "Europe/Zurich":
-            return Self.EUROPE_ZURICH
-        elif name == "America/St_Barthelemy":
-            return Self.AMERICA_ST_BARTHELEMY
-        elif name == "America/Nuuk":
-            return Self.AMERICA_NUUK
-        elif name == "Etc/GMT+12":
-            return Self.ETC_GMT_PLUS_12
-        elif name == "Asia/Hong_Kong":
-            return Self.ASIA_HONG_KONG
-        elif name == "Etc/GMT-3":
-            return Self.ETC_GMT_MINUS_3
-        elif name == "America/Miquelon":
-            return Self.AMERICA_MIQUELON
-        elif name == "Europe/Volgograd":
-            return Self.EUROPE_VOLGOGRAD
-        elif name == "Europe/Madrid":
-            return Self.EUROPE_MADRID
-        elif name == "America/Monterrey":
-            return Self.AMERICA_MONTERREY
-        elif name == "America/Anchorage":
-            return Self.AMERICA_ANCHORAGE
-        elif name == "America/Argentina/San_Luis":
-            return Self.AMERICA_ARGENTINA_SAN_LUIS
-        elif name == "America/Eirunepe":
-            return Self.AMERICA_EIRUNEPE
-        elif name == "America/St_Kitts":
-            return Self.AMERICA_ST_KITTS
-        elif name == "America/Bahia_Banderas":
-            return Self.AMERICA_BAHIA_BANDERAS
-        elif name == "Etc/GMT+2":
-            return Self.ETC_GMT_PLUS_2
-        elif name == "Zulu":
-            return Self.ZULU
-        elif name == "Africa/Gaborone":
-            return Self.AFRICA_GABORONE
-        elif name == "Antarctica/McMurdo":
-            return Self.ANTARCTICA_MCMURDO
-        elif name == "Europe/Guernsey":
-            return Self.EUROPE_GUERNSEY
-        elif name == "Europe/Andorra":
-            return Self.EUROPE_ANDORRA
-        elif name == "America/Paramaribo":
-            return Self.AMERICA_PARAMARIBO
-        elif name == "America/Fort_Nelson":
-            return Self.AMERICA_FORT_NELSON
-        elif name == "Antarctica/Troll":
-            return Self.ANTARCTICA_TROLL
-        elif name == "Europe/Uzhgorod":
-            return Self.EUROPE_UZHGOROD
-        elif name == "Atlantic/Cape_Verde":
-            return Self.ATLANTIC_CAPE_VERDE
-        elif name == "UCT":
-            return Self.UCT
-        elif name == "Etc/GMT-6":
-            return Self.ETC_GMT_MINUS_6
-        elif name == "Asia/Srednekolymsk":
-            return Self.ASIA_SREDNEKOLYMSK
-        elif name == "Asia/Ujung_Pandang":
-            return Self.ASIA_UJUNG_PANDANG
-        elif name == "America/Thunder_Bay":
-            return Self.AMERICA_THUNDER_BAY
-        elif name == "Africa/Khartoum":
-            return Self.AFRICA_KHARTOUM
-        elif name == "Africa/Douala":
-            return Self.AFRICA_DOUALA
-        elif name == "America/Cayman":
-            return Self.AMERICA_CAYMAN
-        elif name == "Brazil/Acre":
-            return Self.BRAZIL_ACRE
-        elif name == "America/Indiana/Knox":
-            return Self.AMERICA_INDIANA_KNOX
-        elif name == "Australia/Yancowinna":
-            return Self.AUSTRALIA_YANCOWINNA
-        elif name == "America/Chihuahua":
-            return Self.AMERICA_CHIHUAHUA
-        elif name == "America/Recife":
-            return Self.AMERICA_RECIFE
-        elif name == "America/Indiana/Marengo":
-            return Self.AMERICA_INDIANA_MARENGO
-        elif name == "Asia/Yangon":
-            return Self.ASIA_YANGON
-        elif name == "Europe/Astrakhan":
-            return Self.EUROPE_ASTRAKHAN
-        elif name == "Asia/Rangoon":
-            return Self.ASIA_RANGOON
-        elif name == "America/Vancouver":
-            return Self.AMERICA_VANCOUVER
-        elif name == "NZ-CHAT":
-            return Self.NZ_CHAT
-        elif name == "America/Montserrat":
-            return Self.AMERICA_MONTERRAT
-        elif name == "America/Merida":
-            return Self.AMERICA_MERIDA
-        elif name == "America/Puerto_Rico":
-            return Self.AMERICA_PUERTO_RICO
-        elif name == "America/Maceio":
-            return Self.AMERICA_MACEIO
-        elif name == "America/Panama":
-            return Self.AMERICA_PANAMA
-        elif name == "Brazil/East":
-            return Self.BRAZIL_EAST
-        elif name == "Japan":
-            return Self.JAPAN
-        elif name == "Australia/Victoria":
-            return Self.AUSTRALIA_VICTORIA
-        elif name == "America/Indiana/Petersburg":
-            return Self.AMERICA_INDIANA_PETERSBURG
-        elif name == "Asia/Dushanbe":
-            return Self.ASIA_DUSHANBE
-        elif name == "Africa/Asmera":
-            return Self.AFRICA_ASMERA
-        elif name == "Etc/Zulu":
-            return Self.ETC_ZULU
-        elif name == "Europe/Monaco":
-            return Self.EUROPE_MONACO
-        elif name == "Asia/Amman":
-            return Self.ASIA_AMMAN
-        elif name == "Asia/Kuwait":
-            return Self.ASIA_KUWAIT
-        elif name == "Asia/Sakhalin":
-            return Self.ASIA_SAKHALIN
-        elif name == "Europe/Gibraltar":
-            return Self.EUROPE_GIBRALTAR
-        elif name == "America/Havana":
-            return Self.AMERICA_HAVANA
-        elif name == "Etc/GMT+0":
-            return Self.ETC_GMT_PLUS_0
-        elif name == "Asia/Choibalsan":
-            return Self.ASIA_CHOIBALSAN
-        elif name == "Asia/Vientiane":
-            return Self.ASIA_VIENTIANE
-        elif name == "Africa/Monrovia":
-            return Self.AFRICA_MONROVIA
-        elif name == "Africa/Lagos":
-            return Self.AFRICA_LAGOS
-        elif name == "America/Argentina/Buenos_Aires":
-            return Self.AMERICA_ARGENTINA_BUENOS_AIRES
-        elif name == "Australia/Melbourne":
-            return Self.AUSTRALIA_MELBOURNE
-        elif name == "Etc/GMT+6":
-            return Self.ETC_GMT_PLUS_6
-        elif name == "PST8PDT":
-            return Self.PST8PDT
-        elif name == "America/Scoresbysund":
-            return Self.AMERICA_SCORESBYSUND
-        elif name == "Australia/ACT":
-            return Self.AUSTRALIA_ACT
-        elif name == "Africa/Blantyre":
-            return Self.AFRICA_BLANTYRE
-        elif name == "Asia/Saigon":
-            return Self.ASIA_SAIGON
-        elif name == "Asia/Chongqing":
-            return Self.ASIA_CHONGQING
-        elif name == "GB-Eire":
-            return Self.GB_EIRE
-        elif name == "US/Samoa":
-            return Self.US_SAMOA
-        elif name == "Arctic/Longyearbyen":
-            return Self.ARCTIC_LONGYEARBYEN
-        elif name == "America/Curacao":
-            return Self.AMERICA_CURACAO
-        elif name == "America/Mexico_City":
-            return Self.AMERICA_MEXICO_CITY
-        elif name == "Asia/Kabul":
-            return Self.ASIA_KABUL
-        elif name == "America/Indianapolis":
-            return Self.AMERICA_INDIANAPOLIS
-        elif name == "Asia/Macao":
-            return Self.ASIA_MACAO
-        elif name == "Canada/Central":
-            return Self.CANADA_CENTRAL
-        elif name == "Asia/Famagusta":
-            return Self.ASIA_FAMAGUSTA
-        elif name == "America/Atikokan":
-            return Self.AMERICA_ATIKOKAN
-        elif name == "Asia/Brunei":
-            return Self.ASIA_BRUNEI
-        elif name == "Asia/Ust-Nera":
-            return Self.ASIA_UST_NERA
-        elif name == "Brazil/DeNoronha":
-            return Self.BRAZIL_DE_NORONHA
-        elif name == "Indian/Chagos":
-            return Self.INDIAN_CHAGOS
-        elif name == "Asia/Kathmandu":
-            return Self.ASIA_KATHMANDU
-        elif name == "Asia/Tehran":
-            return Self.ASIA_TEHRAN
-        elif name == "Africa/Dar_es_Salaam":
-            return Self.AFRICA_DAR_ES_SALAAM
-        elif name == "America/Managua":
-            return Self.AMERICA_MANAGUA
-        elif name == "Africa/Cairo":
-            return Self.AFRICA_CAIRO
-        elif name == "Pacific/Nauru":
-            return Self.PACIFIC_NAURU
-        elif name == "Europe/Saratov":
-            return Self.EUROPE_SARATOV
-        elif name == "Indian/Maldives":
-            return Self.INDIAN_MALDIVES
-        elif name == "Asia/Makassar":
-            return Self.ASIA_MAKASSAR
-        elif name == "America/Sao_Paulo":
-            return Self.AMERICA_SAO_PAULO
-        elif name == "America/St_Johns":
-            return Self.AMERICA_ST_JOHNS
-        elif name == "Etc/GMT+9":
-            return Self.ETC_GMT_PLUS_9
-        elif name == "Asia/Qyzylorda":
-            return Self.ASIA_QYZYLORDA
-        elif name == "Australia/North":
-            return Self.AUSTRALIA_NORTH
-        elif name == "America/Montevideo":
-            return Self.AMERICA_MONTEVIDEO
-        elif name == "Australia/West":
-            return Self.AUSTRALIA_WEST
-        elif name == "Europe/Oslo":
-            return Self.EUROPE_OSLO
-        elif name == "Turkey":
-            return Self.TURKEY
-        elif name == "US/Central":
-            return Self.US_CENTRAL
-        elif name == "Europe/Berlin":
-            return Self.EUROPE_BERLIN
-        elif name == "Europe/Bratislava":
-            return Self.EUROPE_BRATISLAVA
-        elif name == "America/El_Salvador":
-            return Self.AMERICA_EL_SALVADOR
-        elif name == "Africa/Kampala":
-            return Self.AFRICA_KAMPALA
-        elif name == "America/Dawson":
-            return Self.AMERICA_DAWSON
-        elif name == "America/La_Paz":
-            return Self.AMERICA_LA_PAZ
-        elif name == "US/Aleutian":
-            return Self.US_ALEUTIAN
-        elif name == "Asia/Kolkata":
-            return Self.ASIA_KOLKATA
-        elif name == "Asia/Oral":
-            return Self.ASIA_ORAL
-        elif name == "Asia/Omsk":
-            return Self.ASIA_OMSK
-        elif name == "America/Santiago":
-            return Self.AMERICA_SANTIAGO
-        elif name == "America/Detroit":
-            return Self.AMERICA_DETROIT
-        elif name == "America/Anguilla":
-            return Self.AMERICA_ANGUILLA
-        elif name == "America/Nome":
-            return Self.AMERICA_NOME
-        elif name == "Singapore":
-            return Self.SINGAPORE
-        elif name == "Africa/Conakry":
-            return Self.AFRICA_CONAKRY
-        elif name == "Africa/Maputo":
-            return Self.AFRICA_MAPUTO
-        elif name == "Antarctica/Davis":
-            return Self.ANTARCTICA_DAVIS
-        elif name == "Asia/Manila":
-            return Self.ASIA_MANILA
-        elif name == "Pacific/Majuro":
-            return Self.PACIFIC_MAJURO
-        elif name == "Africa/Lubumbashi":
-            return Self.AFRICA_LUBUMBASHI
-        elif name == "Portugal":
-            return Self.PORTUGAL
-        elif name == "Pacific/Port_Moresby":
-            return Self.PACIFIC_PORT_MORESBY
-        elif name == "Etc/GMT+3":
-            return Self.ETC_GMT_PLUS_3
-        elif name == "Chile/Continental":
-            return Self.CHILE_CONTINENTAL
-        elif name == "GMT":
-            return Self.GMT
-        elif name == "America/Martinique":
-            return Self.AMERICA_MARTINIQUE
-        elif name == "Africa/Sao_Tome":
-            return Self.AFRICA_SAO_TOME
-        elif name == "America/Sitka":
-            return Self.AMERICA_SITKA
-        elif name == "Asia/Taipei":
-            return Self.ASIA_TAIPEI
-        elif name == "Indian/Mayotte":
-            return Self.INDIAN_MAYOTTE
-        elif name == "America/Argentina/Rio_Gallegos":
-            return Self.AMERICA_ARGENTINA_RIO_GALLEGOS
-        elif name == "America/Menominee":
-            return Self.AMERICA_MENOMINEE
-        elif name == "Canada/Pacific":
-            return Self.CANADA_PACIFIC
-        elif name == "MET":
-            return Self.MET
-        elif name == "Asia/Thimbu":
-            return Self.ASIA_THIMBU
-        elif name == "America/Campo_Grande":
-            return Self.AMERICA_CAMPO_GRANDE
-        elif name == "Asia/Magadan":
-            return Self.ASIA_MAGADAN
-        elif name == "Africa/Casablanca":
-            return Self.AFRICA_CASABLANCA
-        elif name == "America/Guadeloupe":
-            return Self.AMERICA_GUADELOUPE
-        elif name == "Atlantic/Faroe":
-            return Self.ATLANTIC_FAROE
-        elif name == "Asia/Anadyr":
-            return Self.ASIA_ANADYR
-        elif name == "Africa/Porto-Novo":
-            return Self.AFRICA_PORTO_NOVO
-        elif name == "Africa/Banjul":
-            return Self.AFRICA_BANJUL
-        elif name == "Indian/Comoro":
-            return Self.INDIAN_COMORO
-        elif name == "America/Yakutat":
-            return Self.AMERICA_YAKUTAT
-        elif name == "Pacific/Gambier":
-            return Self.PACIFIC_GAMBIER
-        elif name == "Asia/Ashgabat":
-            return Self.ASIA_ASHGABAT
-        elif name == "Antarctica/DumontDUrville":
-            return Self.ANTARCTICA_DUMONT_DURVILLE
-        elif name == "US/East-Indiana":
-            return Self.US_EAST_IND
-        elif name == "Asia/Irkutsk":
-            return Self.ASIA_IRKUTSK
-        elif name == "America/Mazatlan":
-            return Self.AMERICA_MAZATLAN
-        elif name == "Pacific/Apia":
-            return Self.PACIFIC_APIA
-        elif name == "America/Boa_Vista":
-            return Self.AMERICA_BOA_VISTA
-        elif name == "Etc/GMT":
-            return Self.ETC_GMT
-        elif name == "America/Guyana":
-            return Self.AMERICA_GUYANA
-        elif name == "Australia/Currie":
-            return Self.AUSTRALIA_CURRIE
-        elif name == "Europe/Ulyanovsk":
-            return Self.EUROPE_ULYANOVSK
-        elif name == "Pacific/Fakaofo":
-            return Self.PACIFIC_FAKAOFO
-        elif name == "America/North_Dakota/Beulah":
-            return Self.AMERICA_NORTH_DAKOTA_BEULAH
-        elif name == "Europe/Prague":
-            return Self.EUROPE_PRAGUE
-        elif name == "Asia/Qatar":
-            return Self.ASIA_QATAR
-        elif name == "Pacific/Funafuti":
-            return Self.PACIFIC_FUNAFUTI
-        elif name == "Jamaica":
-            return Self.JAMAICA
-        elif name == "Canada/Eastern":
-            return Self.CANADA_EASTERN
-        elif name == "Pacific/Guam":
-            return Self.PACIFIC_GUAM
-        elif name == "Pacific/Fiji":
-            return Self.PACIFIC_FIJI
-        elif name == "Africa/Kigali":
-            return Self.AFRICA_KIGALI
-        elif name == "Pacific/Tongatapu":
-            return Self.PACIFIC_TONGATAPU
-        elif name == "America/Lima":
-            return Self.AMERICA_LIMA
-        elif name == "Asia/Muscat":
-            return Self.ASIA_MUSCAT
-        elif name == "Antarctica/Macquarie":
-            return Self.ANTARCTICA_MACQUARIE
-        elif name == "Etc/GMT-2":
-            return Self.ETC_GMT_MINUS_2
-        elif name == "Pacific/Pitcairn":
-            return Self.PACIFIC_PITCAIRN
-        elif name == "Canada/Mountain":
-            return Self.CANADA_MOUNTAIN
-        elif name == "Asia/Yekaterinburg":
-            return Self.ASIA_YEKATERINBURG
-        elif name == "Pacific/Johnston":
-            return Self.PACIFIC_JOHNSTON
-        elif name == "Europe/Vatican":
-            return Self.EUROPE_VATICAN
-        elif name == "Atlantic/Bermuda":
-            return Self.ATLANTIC_BERMUDA
-        elif name == "Asia/Jerusalem":
-            return Self.ASIA_JERUSALEM
-        elif name == "America/Ciudad_Juarez":
-            return Self.AMERICA_CIUDAD_JUAREZ
-        elif name == "Pacific/Galapagos":
-            return Self.PACIFIC_GALAPAGOS
-        elif name == "America/Montreal":
-            return Self.AMERICA_MONTREAL
-        elif name == "Africa/Nouakchott":
-            return Self.AFRICA_NOUAKCHOTT
-        elif name == "US/Arizona":
-            return Self.US_ARIZONA
-        elif name == "Asia/Kuching":
-            return Self.ASIA_KUCHING
-        elif name == "Etc/GMT+4":
-            return Self.ETC_GMT_PLUS_4
-        elif name == "Australia/Brisbane":
-            return Self.AUSTRALIA_BRISBANE
-        elif name == "Canada/Saskatchewan":
-            return Self.CANADA_SASKATCHEWAN
-        elif name == "Europe/Dublin":
-            return Self.EUROPE_DUBLIN
-        elif name == "Asia/Qostanay":
-            return Self.ASIA_QOSTANAY
-        elif name == "America/Edmonton":
-            return Self.AMERICA_EDMONTON
-        elif name == "Atlantic/Reykjavik":
-            return Self.ATLANTIC_REYKJAVIK
-        elif name == "America/Fortaleza":
-            return Self.AMERICA_FORTALEZA
-        elif name == "Pacific/Kiritimati":
-            return Self.PACIFIC_KIRITIMATI
-        elif name == "Etc/Universal":
-            return Self.ETC_UNIVERSAL
-        elif name == "GMT0":
-            return Self.GMT0
-        elif name == "Europe/Belfast":
-            return Self.EUROPE_BELFAST
-        elif name == "Pacific/Yap":
-            return Self.PACIFIC_YAP
-        elif name == "America/Santo_Domingo":
-            return Self.AMERICA_SANTO_DOMINGO
-        elif name == "Iceland":
-            return Self.ICELAND
-        elif name == "America/Araguaina":
-            return Self.AMERICA_ARAGUAINA
-        elif name == "Asia/Karachi":
-            return Self.ASIA_KARACHI
-        elif name == "Etc/GMT+7":
-            return Self.ETC_GMT_PLUS_7
-        elif name == "Africa/Bujumbura":
-            return Self.AFRICA_BUJUMBURA
-        elif name == "America/Dawson_Creek":
-            return Self.AMERICA_DAWSON_CREEK
-        elif name == "Europe/Zaporozhye":
-            return Self.EUROPE_ZAPOROZHYE
-        elif name == "Asia/Ulaanbaatar":
-            return Self.ASIA_ULAANBAATAR
-        elif name == "Pacific/Samoa":
-            return Self.PACIFIC_SAMOA
-        elif name == "Australia/Darwin":
-            return Self.AUSTRALIA_DARWIN
-        elif name == "Etc/GMT0":
-            return Self.ETC_GMT0
-        elif name == "Pacific/Tahiti":
-            return Self.PACIFIC_TAHITI
-        elif name == "Etc/GMT-8":
-            return Self.ETC_GMT_MINUS_8
-        elif name == "Atlantic/Faeroe":
-            return Self.ATLANTIC_FAEROE
-        elif name == "Africa/Libreville":
-            return Self.AFRICA_LIBREVILLE
-        elif name == "Asia/Barnaul":
-            return Self.ASIA_BARNAUL
-        elif name == "America/Coral_Harbour":
-            return Self.AMERICA_CORAL_HARBOUR
-        elif name == "Antarctica/Syowa":
-            return Self.ANTARCTICA_SYOWA
-        elif name == "America/Buenos_Aires":
-            return Self.AMERICA_BUENOS_AIRES
-        elif name == "Europe/Vienna":
-            return Self.EUROPE_VIENNA
-        elif name == "America/Fort_Wayne":
-            return Self.AMERICA_FORT_WAYNE
-        elif name == "NZ":
-            return Self.NZ
-        elif name == "Atlantic/Azores":
-            return Self.ATLANTIC_AZORES
-        elif name == "America/Coyhaique":
-            return Self.AMERICA_COYHAIQUE
-        elif name == "Asia/Pyongyang":
-            return Self.ASIA_PYONGYANG
-        elif name == "Etc/GMT-10":
-            return Self.ETC_GMT_MINUS_10
-        elif name == "MST":
-            return Self.MST
-        elif name == "America/Argentina/Jujuy":
-            return Self.AMERICA_ARGENTINA_JUJUY
-        elif name == "America/Tijuana":
-            return Self.AMERICA_TIJUANA
-        elif name == "Pacific/Guadalcanal":
-            return Self.PACIFIC_GUADALCANAL
-        elif name == "Europe/Stockholm":
-            return Self.EUROPE_STOCKHOLM
-        elif name == "US/Alaska":
-            return Self.US_ALASKA
-        elif name == "Europe/Tiraspol":
-            return Self.EUROPE_TIRASPOL
-        elif name == "Europe/Samara":
-            return Self.EUROPE_SAMARA
-        elif name == "Etc/GMT-12":
-            return Self.ETC_GMT_MINUS_12
-        elif name == "Kwajalein":
-            return Self.KWAJALEIN
-        elif name == "Asia/Macau":
-            return Self.ASIA_MACAU
-        elif name == "Pacific/Truk":
-            return Self.PACIFIC_TRUK
-        elif name == "Asia/Bangkok":
-            return Self.ASIA_BANGKOK
-        elif name == "America/Antigua":
-            return Self.AMERICA_ANTIGUA
-        elif name == "Africa/El_Aaiun":
-            return Self.AFRICA_EL_AAIUN
-        elif name == "Europe/Mariehamn":
-            return Self.EUROPE_MARIEHAMN
-        elif name == "Asia/Jayapura":
-            return Self.ASIA_JAYAPURA
-        elif name == "Europe/San_Marino":
-            return Self.EUROPE_SAN_MARINO
-        elif name == "US/Pacific":
-            return Self.US_PACIFIC
-        elif name == "Africa/Johannesburg":
-            return Self.AFRICA_JOHANNESBURG
-        elif name == "Australia/Eucla":
-            return Self.AUSTRALIA_EUCLA
-        elif name == "Africa/Nairobi":
-            return Self.AFRICA_NAIROBI
-        elif name == "Etc/GMT-7":
-            return Self.ETC_GMT_MINUS_7
-        elif name == "America/Inuvik":
-            return Self.AMERICA_INUVIK
-        elif name == "Asia/Tokyo":
-            return Self.ASIA_TOKYO
-        elif name == "Asia/Atyrau":
-            return Self.ASIA_ATYRAU
-        elif name == "Asia/Kashgar":
-            return Self.ASIA_KASHGAR
-        elif name == "W-SU":
-            return Self.W_SU
-        elif name == "Asia/Tashkent":
-            return Self.ASIA_TASHKENT
-        elif name == "Africa/Freetown":
-            return Self.AFRICA_FREETOWN
-        elif name == "Pacific/Pago_Pago":
-            return Self.PACIFIC_PAGO_PAGO
-        elif name == "America/Denver":
-            return Self.AMERICA_DENVER
-        elif name == "Australia/LHI":
-            return Self.AUSTRALIA_LHI
-        elif name == "Pacific/Rarotonga":
-            return Self.PACIFIC_RAROTONGA
-        elif name == "MST7MDT":
-            return Self.MST7MDT
-        elif name == "Pacific/Noumea":
-            return Self.PACIFIC_NOUMEA
-        elif name == "Etc/UCT":
-            return Self.ETC_UCT
-        elif name == "Etc/GMT+10":
-            return Self.ETC_GMT_PLUS_10
-        elif name == "ROK":
-            return Self.ROK
-        elif name == "Pacific/Auckland":
-            return Self.PACIFIC_AUCKLAND
-        elif name == "Asia/Novokuznetsk":
-            return Self.ASIA_NOVOKUZNETSK
-        elif name == "America/Hermosillo":
-            return Self.AMERICA_HERMOSILLO
-        elif name == "America/Louisville":
-            return Self.AMERICA_LOUISVILLE
-        elif name == "Asia/Ho_Chi_Minh":
-            return Self.ASIA_HO_CHI_MINH
-        elif name == "Asia/Yerevan":
-            return Self.ASIA_YEREVAN
-        elif name == "Asia/Yakutsk":
-            return Self.ASIA_YAKUTSK
-        elif name == "Universal":
-            return Self.UNIVERSAL
-        elif name == "America/Tegucigalpa":
-            return Self.AMERICA_TEGUCIGALPA
-        elif name == "Mexico/BajaNorte":
-            return Self.MEXICO_BAJANORTE
-        elif name == "Europe/Sarajevo":
-            return Self.EUROPE_SARAJEVO
-        elif name == "America/Argentina/Catamarca":
-            return Self.AMERICA_ARGENTINA_CATAMARCA
-        elif name == "Cuba":
-            return Self.CUBA
-        elif name == "Asia/Khandyga":
-            return Self.ASIA_KHANDYGA
-        elif name == "America/Lower_Princes":
-            return Self.AMERICA_LOWER_PRINCES
-        elif name == "America/Blanc-Sablon":
-            return Self.AMERICA_BLANC_SABLON
-        elif name == "America/Bogota":
-            return Self.AMERICA_BOGOTA
-        elif name == "Africa/Lome":
-            return Self.AFRICA_LOME
-        elif name == "America/Toronto":
-            return Self.AMERICA_TORONTO
-        elif name == "Europe/Warsaw":
-            return Self.EUROPE_WARSAW
-        elif name == "America/Yellowknife":
-            return Self.AMERICA_YELLOWKNIFE
-        elif name == "America/Swift_Current":
-            return Self.AMERICA_SWIFT_CURRENT
-        elif name == "EST":
-            return Self.EST
-        elif name == "Europe/Sofia":
-            return Self.EUROPE_SOFIA
-        elif name == "Africa/Ceuta":
-            return Self.AFRICA_CEUTA
-        elif name == "America/Marigot":
-            return Self.AMERICA_MARIGOT
-        elif name == "America/Danmarkshavn":
-            return Self.AMERICA_DANMARKSHAVN
-        elif name == "Africa/Harare":
-            return Self.AFRICA_HARARE
-        elif name == "UTC":
-            return Self.UTC
-        elif name == "UTC+1":
-            return Self.UTC_PLUS_1
-        elif name == "UTC+2":
-            return Self.UTC_PLUS_2
-        elif name == "UTC+3":
-            return Self.UTC_PLUS_3
-        elif name == "UTC+4":
-            return Self.UTC_PLUS_4
-        elif name == "UTC+5":
-            return Self.UTC_PLUS_5
-        elif name == "UTC+6":
-            return Self.UTC_PLUS_6
-        elif name == "UTC+7":
-            return Self.UTC_PLUS_7
-        elif name == "UTC+8":
-            return Self.UTC_PLUS_8
-        elif name == "UTC+9":
-            return Self.UTC_PLUS_9
-        elif name == "UTC+10":
-            return Self.UTC_PLUS_10
-        elif name == "UTC+11":
-            return Self.UTC_PLUS_11
-        elif name == "UTC+12":
-            return Self.UTC_PLUS_12
-        elif name == "UTC-1":
-            return Self.UTC_MINUS_1
-        elif name == "UTC-2":
-            return Self.UTC_MINUS_2
-        elif name == "UTC-3":
-            return Self.UTC_MINUS_3
-        elif name == "UTC-4":
-            return Self.UTC_MINUS_4
-        elif name == "UTC-5":
-            return Self.UTC_MINUS_5
-        elif name == "UTC-6":
-            return Self.UTC_MINUS_6
-        elif name == "UTC-7":
-            return Self.UTC_MINUS_7
-        elif name == "UTC-8":
-            return Self.UTC_MINUS_8
-        elif name == "UTC-9":
-            return Self.UTC_MINUS_9
-        elif name == "UTC-10":
-            return Self.UTC_MINUS_10
-        elif name == "UTC-11":
-            return Self.UTC_MINUS_11
-        elif name == "UTC-12":
-            return Self.UTC_MINUS_12
-        elif name == "EST5EDT":
-            return Self.EST5EDT
-        elif name == "Pacific/Midway":
-            return Self.PACIFIC_MIDWAY
-        elif name == "Asia/Istanbul":
-            return Self.ASIA_ISTANBUL
-        elif name == "America/Argentina/ComodRivadavia":
-            return Self.AMERICA_ARGENTINA_COMODRIVADAVIA
-        elif name == "Asia/Baku":
-            return Self.ASIA_BAKU
-        elif name == "Australia/NSW":
-            return Self.AUSTRALIA_NSW
-        elif name == "Europe/Busingen":
-            return Self.EUROPE_BUSINGEN
-        elif name == "America/Regina":
-            return Self.AMERICA_REGINA
-        elif name == "Africa/Bangui":
-            return Self.AFRICA_BANGUI
-        elif name == "Poland":
-            return Self.POLAND
-        elif name == "Indian/Christmas":
-            return Self.INDIAN_CHRISTMAS
-        elif name == "Australia/Queensland":
-            return Self.AUSTRALIA_QUEENSLAND
-        elif name == "Asia/Bishkek":
-            return Self.ASIA_BISHKEK
-        elif name == "Asia/Dubai":
-            return Self.ASIA_DUBAI
-        elif name == "Africa/Mbabane":
-            return Self.AFRICA_MBABANE
-        elif name == "America/Grand_Turk":
-            return Self.AMERICA_GRAND_TURK
-        elif name == "America/Glace_Bay":
-            return Self.AMERICA_GLACE_BAY
-        elif name == "Pacific/Enderbury":
-            return Self.PACIFIC_ENDERBURY
-        elif name == "Africa/Dakar":
-            return Self.AFRICA_DAKAR
-        elif name == "Africa/Algiers":
-            return Self.AFRICA_ALGIERS
-        elif name == "Asia/Damascus":
-            return Self.ASIA_DAMASCUS
-        elif name == "America/Rankin_Inlet":
-            return Self.AMERICA_RANKIN_INLET
-        elif name == "Europe/Brussels":
-            return Self.EUROPE_BRUSSELS
-        elif name == "Asia/Hovd":
-            return Self.ASIA_HOVD
-        elif name == "Australia/Hobart":
-            return Self.AUSTRALIA_HOBART
-        elif name == "Europe/Bucharest":
-            return Self.EUROPE_BUCHAREST
-        elif name == "Asia/Gaza":
-            return Self.ASIA_GAZA
-        elif name == "Iran":
-            return Self.IRAN
-        elif name == "Africa/Djibouti":
-            return Self.AFRICA_DJIBOUTI
-        elif name == "America/Rosario":
-            return Self.AMERICA_ROSARIO
-        elif name == "Europe/Belgrade":
-            return Self.EUROPE_BELGRADE
-        elif name == "Antarctica/Rothera":
-            return Self.ANTARCTICA_ROTHERA
-        elif name == "Africa/Addis_Ababa":
-            return Self.AFRICA_ADDIS_ABABA
-        elif name == "Asia/Dacca":
-            return Self.ASIA_DACCA
-        elif name == "Asia/Krasnoyarsk":
-            return Self.ASIA_KRASNOYARSK
-        elif name == "Europe/Chisinau":
-            return Self.EUROPE_CHISINAU
-        elif name == "Indian/Cocos":
-            return Self.INDIAN_COCOS
-        elif name == "America/Indiana/Vincennes":
-            return Self.AMERICA_INDiana_VINCENNES
-        elif name == "America/Cambridge_Bay":
-            return Self.AMERICA_CAMBRIDGE_BAY
-        elif name == "Asia/Thimphu":
-            return Self.ASIA_THIMPHU
-        elif name == "Europe/Riga":
-            return Self.EUROPE_RIGA
-        elif name == "US/Mountain":
-            return Self.US_MOUNTAIN
-        elif name == "Egypt":
-            return Self.EGYPT
-        elif name == "America/Argentina/Tucuman":
-            return Self.AMERICA_ARGENTINA_TUCUMAN
-        elif name == "Atlantic/St_Helena":
-            return Self.ATLANTIC_ST_HELENA
-        elif name == "Greenwich":
-            return Self.GREENWICH
-        elif name == "Asia/Ashkhabad":
-            return Self.ASIA_ASHKHABAD
-        elif name == "Europe/Nicosia":
-            return Self.EUROPE_NICOSIA
-        elif name == "Asia/Aqtau":
-            return Self.ASIA_AQTAU
-        elif name == "Antarctica/Mawson":
-            return Self.ANTARCTICA_MAWSON
-        elif name == "America/North_Dakota/Center":
-            return Self.AMERICA_NORTH_DAKOTA_CENTER
-        elif name == "EET":
-            return Self.EET
-        elif name == "ROC":
-            return Self.ROC
-        elif name == "America/Mendoza":
-            return Self.AMERICA_MENDOZA
-        elif name == "America/St_Vincent":
-            return Self.AMERICA_ST_VINCENT
-        elif name == "CST6CDT":
-            return Self.CST6CDT
-        elif name == "Asia/Bahrain":
-            return Self.ASIA_BAHRAIN
-        elif name == "Asia/Riyadh":
-            return Self.ASIA_RIYADH
-        elif name == "Pacific/Efate":
-            return Self.PACIFIC_EFATE
-        elif name == "Indian/Mauritius":
-            return Self.INDIAN_MAURITIUS
-        elif name == "Indian/Kerguelen":
-            return Self.INDIAN_KERGULEN
-        elif name == "Asia/Colombo":
-            return Self.ASIA_COLOMBO
-        elif name == "Africa/Maseru":
-            return Self.AFRICA_MASERU
-        elif name == "America/Asuncion":
-            return Self.AMERICA_ASUNCION
-        elif name == "Europe/Copenhagen":
-            return Self.EUROPE_COPENHAGEN
-        elif name == "America/Argentina/Salta":
-            return Self.AMERICA_ARGENTINA_SALTA
-        elif name == "Africa/Malabo":
-            return Self.AFRICA_MALABO
-        elif name == "America/Matamoros":
-            return Self.AMERICA_MATAMOROS
-        elif name == "America/Argentina/La_Rioja":
-            return Self.AMERICA_ARGENTINA_LA_RIOJA
-        elif name == "Africa/Accra":
-            return Self.AFRICA_ACCRA
-        elif name == "Eire":
-            return Self.EIRE
-        elif name == "America/Kentucky/Louisville":
-            return Self.AMERICA_KENTUCKY_LOUISVILLE
-        elif name == "Africa/Bamako":
-            return Self.AFRICA_BAMAKO
-        elif name == "Etc/GMT-5":
-            return Self.ETC_GMT_5
-        elif name == "Pacific/Chatham":
-            return Self.PACIFIC_CHATHAM
-        elif name == "WET":
-            return Self.WET
-        elif name == "Etc/GMT+5":
-            return Self.ETC_GMT_PLUS_5
-        elif name == "Africa/Mogadishu":
-            return Self.AFRICA_MOGADISHU
-        elif name == "America/Thule":
-            return Self.AMERICA_THULE
-        elif name == "America/Phoenix":
-            return Self.AMERICA_PHOENIX
-        elif name == "Australia/Lord_Howe":
-            return Self.AUSTRALIA_LORD_HOWE
-        elif name == "Pacific/Chuuk":
-            return Self.PACIFIC_CHUUK
-        elif name == "Pacific/Marquesas":
-            return Self.PACIFIC_MARQUESAS
-        elif name == "Pacific/Wake":
-            return Self.PACIFIC_WAKE
-        elif name == "Africa/Brazzaville":
-            return Self.AFRICA_BRAZZAVILLE
-        elif name == "Australia/Broken_Hill":
-            return Self.AUSTRALIA_BROKEN_HILL
-        elif name == "Australia/South":
-            return Self.AUSTRALIA_SOUTH
-        elif name == "America/Kentucky/Monticello":
-            return Self.AMERICA_KENTUCKY_MONTICELLO
-        elif name == "Europe/Kiev":
-            return Self.EUROPE_KIEV
-        elif name == "Etc/GMT-9":
-            return Self.ETC_GMT_9
-        elif name == "Australia/Lindeman":
-            return Self.AUSTRALIA_LINDEMAN
-        elif name == "America/Metlakatla":
-            return Self.AMERICA_METLAKATLA
-        elif name == "America/Goose_Bay":
-            return Self.AMERICA_GOOSE_BAY
-        elif name == "America/St_Lucia":
-            return Self.AMERICA_ST_LUCIA
-        elif name == "Europe/Ljubljana":
-            return Self.EUROPE_LJUBLJANA
-        elif name == "Europe/Tirane":
-            return Self.EUROPE_TIRANE
-        elif name == "America/Santarem":
-            return Self.AMERICA_SANTAREM
-        elif name == "Atlantic/Canary":
-            return Self.ATLANTIC_CANARY
-        elif name == "America/Grenada":
-            return Self.AMERICA_GRENADA
-        elif name == "America/Shiprock":
-            return Self.AMERICA_SHIPROCK
-        elif name == "Europe/Skopje":
-            return Self.EUROPE_SKOPJE
-        elif name == "Etc/GMT+8":
-            return Self.ETC_GMT_PLUS_8
-        elif name == "Asia/Baghdad":
-            return Self.ASIA_BAGHDAD
-        elif name == "Australia/Sydney":
-            return Self.AUSTRALIA_SYDNEY
-        elif name == "Europe/Istanbul":
-            return Self.EUROPE_ISTANBUL
-        elif name == "America/Dominica":
-            return Self.AMERICA_DOMINICA
-        elif name == "America/Nipigon":
-            return Self.AMERICA_NIPIGON
-        elif name == "Asia/Calcutta":
-            return Self.ASIA_CALCUTTA
-        elif name == "Etc/GMT-0":
-            return Self.ETC_GMT_0
-        elif name == "Antarctica/Casey":
-            return Self.ANTARCTICA_CASEY
-        elif name == "Asia/Vladivostok":
-            return Self.ASIA_VLADIVOSTOK
-        elif name == "America/Godthab":
-            return Self.AMERICA_GODTHAB
-        elif name == "Asia/Aqtube":
-            return Self.ASIA_AQTUBE
-        elif name == "Europe/Kirov":
-            return Self.EUROPE_KIROV
-        elif name == "Asia/Aden":
-            return Self.ASIA_ADEN
-        elif name == "Europe/Isle_of_Man":
-            return Self.EUROPE_ISLE_OF_MAN
-
-        # If no match is found, raise an error.
-        raise Error("Unknown time zone: ", name)
+alias TIMEZONE_MAP: Dict[String, TimeZone] = {
+    "Asia/Jakarta": TimeZone.ASIA_JAKARTA,
+    "Libya": TimeZone.LIBYA,
+    "America/Iqaluit": TimeZone.AMERICA_IQALUIT,
+    "America/Indiana/Vevay": TimeZone.AMERICA_INDIANA_VEVAY,
+    "Atlantic/South_Georgia": TimeZone.ATLANTIC_SOUTH_GEORGIA,
+    "America/Cuiaba": TimeZone.AMERICA_CUIABA,
+    "Europe/Tallinn": TimeZone.EUROPE_TALLINN,
+    "America/Ensenada": TimeZone.AMERICA_ENSENADA,
+    "Africa/Abidjan": TimeZone.AFRICA_ABIDJAN,
+    "Pacific/Saipan": TimeZone.PACIFIC_SAIPAN,
+    "Mexico/General": TimeZone.MEXICO_GENERAL,
+    "Europe/Rome": TimeZone.EUROPE_ROME,
+    "Asia/Seoul": TimeZone.ASIA_SEOUL,
+    "US/Michigan": TimeZone.US_MICHIGAN,
+    "America/New_York": TimeZone.AMERICA_NEW_YORK,
+    "Europe/Athens": TimeZone.EUROPE_ATHENS,
+    "Europe/Lisbon": TimeZone.EUROPE_LISBON,
+    "America/St_Thomas": TimeZone.AMERICA_ST_THOMAS,
+    "Europe/Moscow": TimeZone.EUROPE_MOSCOW,
+    "Pacific/Easter": TimeZone.PACIFIC_EASTER,
+    "America/Porto_Acre": TimeZone.AMERICA_PORTO_ACRE,
+    "America/Creston": TimeZone.AMERICA_CRESTON,
+    "Pacific/Norfolk": TimeZone.PACIFIC_NORFOLK,
+    "America/Argentina/Cordoba": TimeZone.AMERICA_ARGENTINA_CORDOBA,
+    "America/Atka": TimeZone.AMERICA_ATKA,
+    "Pacific/Niue": TimeZone.PACIFIC_NIUE,
+    "Asia/Ulan_Bator": TimeZone.ASIA_ULAN_BATOR,
+    "Europe/Simferopol": TimeZone.EUROPE_SIMFEROPOL,
+    "Asia/Dili": TimeZone.ASIA_DILI,
+    "Europe/Zagreb": TimeZone.EUROPE_ZAGREB,
+    "Antarctica/Palmer": TimeZone.ANTARCTICA_PALMER,
+    "America/Cayenne": TimeZone.AMERICA_CAYENNE,
+    "Asia/Tel_Aviv": TimeZone.ASIA_TEL_AVIV,
+    "Asia/Urumqi": TimeZone.ASIA_URUMQI,
+    "Asia/Beirut": TimeZone.ASIA_BEIRUT,
+    "Asia/Kuala_Lumpur": TimeZone.ASIA_KUALA_LUMPUR,
+    "America/Belem": TimeZone.AMERICA_BELEM,
+    "Pacific/Honolulu": TimeZone.PACIFIC_HONOLULU,
+    "America/Santa_Isabel": TimeZone.AMERICA_SANTA_ISABEL,
+    "Pacific/Kwajalein": TimeZone.PACIFIC_KWAJALEIN,
+    "Africa/Luanda": TimeZone.AFRICA_LUANDA,
+    "America/Chicago": TimeZone.AMERICA_CHICAGO,
+    "Asia/Harbin": TimeZone.ASIA_HARBIN,
+    "Europe/Paris": TimeZone.EUROPE_PARIS,
+    "Pacific/Wallis": TimeZone.PACIFIC_WALLIS,
+    "America/Argentina/Ushuaia": TimeZone.AMERICA_ARGENTINA_USHUAIA,
+    "Australia/Adelaide": TimeZone.AUSTRALIA_ADelaide,
+    "Asia/Singapore": TimeZone.ASIA_SINGAPORE,
+    "America/Kralendijk": TimeZone.AMERICA_KRALENDIJK,
+    "America/Moncton": TimeZone.AMERICA_MONCTON,
+    "America/Aruba": TimeZone.AMERICA_ARUBA,
+    "America/Noronha": TimeZone.AMERICA_NORONHA,
+    "Etc/UTC": TimeZone.ETC_UTC,
+    "Africa/Lusaka": TimeZone.AFRICA_LUSAKA,
+    "Asia/Tomsk": TimeZone.ASIA_TOMSK,
+    "Asia/Phnom_Penh": TimeZone.ASIA_PHNOM_PENH,
+    "Asia/Samarkand": TimeZone.ASIA_SAMARKAND,
+    "Europe/Luxembourg": TimeZone.EUROPE_LUXEMBOURG,
+    "Indian/Antananarivo": TimeZone.INDIAN_ANTANANARIVO,
+    "Etc/GMT+1": TimeZone.ETC_GMT_PLUS_1,
+    "America/Porto_Velho": TimeZone.AMERICA_PORTO_VELHO,
+    "GB": TimeZone.GB,
+    "America/Barbados": TimeZone.AMERICA_BARbADOS,
+    "Asia/Chungking": TimeZone.ASIA_CHUNGKING,
+    "Asia/Shanghai": TimeZone.ASIA_SHANGHAI,
+    "Etc/GMT-13": TimeZone.ETC_GMT_13,
+    "America/Indiana/Indianapolis": TimeZone.AMERICA_INDIANA_INDIANAPOLIS,
+    "America/Argentina/Mendoza": TimeZone.AMERICA_ARGENTINA_MENDOZA,
+    "America/Jamaica": TimeZone.AMERICA_JAMAICA,
+    "Canada/Newfoundland": TimeZone.CANADA_NEWFOUNDLAND,
+    "America/Cordoba": TimeZone.AMERICA_CORDOBA,
+    "Africa/Niamey": TimeZone.AFRICA_NIAMEY,
+    "America/Halifax": TimeZone.AMERICA_HALIFAX,
+    "Antarctica/South_Pole": TimeZone.ANTARCTICA_SOUTH_POLE,
+    "Africa/Ouagadougou": TimeZone.AFRICA_OUAGADOUGOU,
+    "CET": TimeZone.CET,
+    "America/Argentina/San_Juan": TimeZone.AMERICA_ARGENTINA_SAN_JUAN,
+    "Asia/Almaty": TimeZone.ASIA_ALMATY,
+    "Antarctica/Vostok": TimeZone.ANTARCTICA_VOSTOK,
+    "Canada/Atlantic": TimeZone.CANADA_ATLANTIC,
+    "Europe/Amsterdam": TimeZone.EUROPE_AMSTERDAM,
+    "America/Costa_Rica": TimeZone.AMERICA_COSTA_RICA,
+    "America/Knox_IN": TimeZone.AMERICA_KNOX_IN,
+    "Asia/Pontianak": TimeZone.ASIA_PONTIANAK,
+    "America/Punta_Arenas": TimeZone.AMERICA_PUNTA_ARENAS,
+    "Indian/Mahe": TimeZone.INDIAN_MAHE,
+    "Africa/Timbuktu": TimeZone.AFRICA_TIMBUKTU,
+    "Atlantic/Madeira": TimeZone.ATLANTIC_MADEIRA,
+    "Chile/EasterIsland": TimeZone.CHILE_EASTERISLAND,
+    "Atlantic/Stanley": TimeZone.ATLANTIC_STANLEY,
+    "America/Cancun": TimeZone.AMERICA_CANCUN,
+    "Europe/Minsk": TimeZone.EUROPE_MINSK,
+    "US/Eastern": TimeZone.US_EASTERN,
+    "HST": TimeZone.HST,
+    "America/Boise": TimeZone.AMERICA_BOISE,
+    "Brazil/West": TimeZone.BRAZIL_WEST,
+    "America/Catamarca": TimeZone.AMERICA_CATAMARCA,
+    "America/Port_of_Spain": TimeZone.AMERICA_PORT_OF_SPAIN,
+    "Asia/Katmandu": TimeZone.ASIA_KATMANDU,
+    "Etc/GMT-14": TimeZone.ETC_GMT_MINUS_14,
+    "America/Guayaquil": TimeZone.AMERICA_GUAYAQUIL,
+    "Australia/Canberra": TimeZone.AUSTRALIA_CANBERRA,
+    "America/Ojinaga": TimeZone.AMERICA_OJINAGA,
+    "Europe/Kyiv": TimeZone.EUROPE_KYIV,
+    "Africa/Kinshasa": TimeZone.AFRICA_KINSHASA,
+    "Pacific/Pohnpei": TimeZone.PACIFIC_POHNPEI,
+    "America/Indiana/Winamac": TimeZone.AMERICA_INDIANA_WINAMAC,
+    "Etc/GMT-11": TimeZone.ETC_GMT_MINUS_11,
+    "Asia/Dhaka": TimeZone.ASIA_DHAKA,
+    "Australia/Perth": TimeZone.AUSTRALIA_PERTH,
+    "America/Whitehorse": TimeZone.AMERICA_WHITEHORSE,
+    "Indian/Reunion": TimeZone.INDIAN_REUNION,
+    "Europe/London": TimeZone.EUROPE_LONDON,
+    "Navajo": TimeZone.NAVAJO,
+    "America/Manaus": TimeZone.AMERICA_MANAUS,
+    "Asia/Chita": TimeZone.ASIA_CHITA,
+    "Hongkong": TimeZone.HONGKONG,
+    "Africa/Bissau": TimeZone.AFRICA_BISSAU,
+    "America/Tortola": TimeZone.AMERICA_TORTOLA,
+    "America/Juneau": TimeZone.AMERICA_JUNEAU,
+    "Europe/Malta": TimeZone.EUROPE_MALTA,
+    "Pacific/Ponape": TimeZone.PACIFIC_PONAPE,
+    "Africa/Asmara": TimeZone.AFRICA_ASMARA,
+    "Asia/Kamchatka": TimeZone.ASIA_KAMCHATKA,
+    "Europe/Helsinki": TimeZone.EUROPE_HELSINKI,
+    "America/Los_Angeles": TimeZone.AMERICA_LOS_ANGELES,
+    "Etc/GMT-4": TimeZone.ETC_GMT_MINUS_4,
+    "America/Bahia": TimeZone.AMERICA_BAHIA,
+    "America/Port-au-Prince": TimeZone.AMERICA_PORT_AU_PRINCE,
+    "Europe/Vilnius": TimeZone.EUROPE_VILNIUS,
+    "Etc/GMT-1": TimeZone.ETC_GMT_MINUS_1,
+    "Europe/Jersey": TimeZone.EUROPE_JERSEY,
+    "Africa/Tunis": TimeZone.AFRICA_TUNIS,
+    "Mexico/BajaSur": TimeZone.MEXICO_BAJASUR,
+    "Pacific/Tarawa": TimeZone.PACIFIC_TARAWA,
+    "Canada/Yukon": TimeZone.CANADA_YUKON,
+    "America/Virgin": TimeZone.AMERICA_VIRGIN,
+    "Europe/Budapest": TimeZone.EUROPE_BUDAPEST,
+    "America/Jujuy": TimeZone.AMERICA_JUJUY,
+    "Africa/Juba": TimeZone.AFRICA_JUBA,
+    "America/Indiana/Tell_City": TimeZone.AMERICA_INDiana_TELL_CITY,
+    "Pacific/Kanton": TimeZone.PACIFIC_KANTON,
+    "America/Nassau": TimeZone.AMERICA_NASSAU,
+    "America/Rio_Branco": TimeZone.AMERICA_RIO_BRANCO,
+    "GMT-0": TimeZone.GMT_MINUS_0,
+    "Australia/Tasmania": TimeZone.AUSTRALIA_TASMANIA,
+    "Pacific/Kosrae": TimeZone.PACIFIC_KOSRAE,
+    "US/Hawaii": TimeZone.US_HAWAII,
+    "Asia/Tbilisi": TimeZone.ASIA_TBILISI,
+    "Pacific/Bougainville": TimeZone.PACIFIC_BOUGAINVILLE,
+    "Europe/Vaduz": TimeZone.EUROPE_VADUZ,
+    "Etc/GMT+11": TimeZone.ETC_GMT_PLUS_11,
+    "Africa/Windhoek": TimeZone.AFRICA_WINDHOEK,
+    "Atlantic/Jan_Mayen": TimeZone.ATLANTIC_JAN_MAYEN,
+    "Africa/Ndjamena": TimeZone.AFRICA_NDJAMENA,
+    "America/Adak": TimeZone.AMERICA_ADAK,
+    "Israel": TimeZone.ISRAEL,
+    "US/Indiana-Starke": TimeZone.US_INDiana_STARKE,
+    "America/North_Dakota/New_Salem": TimeZone.AMERICA_NORTH_DAKOTA_NEW_SALEM,
+    "Pacific/Palau": TimeZone.PACIFIC_PALAU,
+    "GMT+0": TimeZone.GMT_PLUS_0,
+    "America/Rainy_River": TimeZone.AMERICA_RAINY_RIVER,
+    "America/Winnipeg": TimeZone.AMERICA_WINNIPEG,
+    "Etc/Greenwich": TimeZone.ETC_GREENWICH,
+    "America/Pangnirtung": TimeZone.AMERICA_PANGNIRTUNG,
+    "Africa/Tripoli": TimeZone.AFRICA_TRIPOLI,
+    "America/Guatemala": TimeZone.AMERICA_GUATEMALA,
+    "Asia/Nicosia": TimeZone.ASIA_NICOSIA,
+    "America/Belize": TimeZone.AMERICA_BELIZE,
+    "America/Resolute": TimeZone.AMERICA_RESOLUTE,
+    "Asia/Hebron": TimeZone.ASIA_HEBRON,
+    "America/Caracas": TimeZone.AMERICA_CARACAS,
+    "Asia/Novosibirsk": TimeZone.ASIA_NOVOSIBIRSK,
+    "Europe/Podgorica": TimeZone.EUROPE_PODGORICA,
+    "PRC": TimeZone.PRC,
+    "Europe/Kaliningrad": TimeZone.EUROPE_KALININGRAD,
+    "Europe/Zurich": TimeZone.EUROPE_ZURICH,
+    "America/St_Barthelemy": TimeZone.AMERICA_ST_BARTHELEMY,
+    "America/Nuuk": TimeZone.AMERICA_NUUK,
+    "Etc/GMT+12": TimeZone.ETC_GMT_PLUS_12,
+    "Asia/Hong_Kong": TimeZone.ASIA_HONG_KONG,
+    "Etc/GMT-3": TimeZone.ETC_GMT_MINUS_3,
+    "America/Miquelon": TimeZone.AMERICA_MIQUELON,
+    "Europe/Volgograd": TimeZone.EUROPE_VOLGOGRAD,
+    "Europe/Madrid": TimeZone.EUROPE_MADRID,
+    "America/Monterrey": TimeZone.AMERICA_MONTERREY,
+    "America/Anchorage": TimeZone.AMERICA_ANCHORAGE,
+    "America/Argentina/San_Luis": TimeZone.AMERICA_ARGENTINA_SAN_LUIS,
+    "America/Eirunepe": TimeZone.AMERICA_EIRUNEPE,
+    "America/St_Kitts": TimeZone.AMERICA_ST_KITTS,
+    "America/Bahia_Banderas": TimeZone.AMERICA_BAHIA_BANDERAS,
+    "Etc/GMT+2": TimeZone.ETC_GMT_PLUS_2,
+    "Zulu": TimeZone.ZULU,
+    "Africa/Gaborone": TimeZone.AFRICA_GABORONE,
+    "Antarctica/McMurdo": TimeZone.ANTARCTICA_MCMURDO,
+    "Europe/Guernsey": TimeZone.EUROPE_GUERNSEY,
+    "Europe/Andorra": TimeZone.EUROPE_ANDORRA,
+    "America/Paramaribo": TimeZone.AMERICA_PARAMARIBO,
+    "America/Fort_Nelson": TimeZone.AMERICA_FORT_NELSON,
+    "Antarctica/Troll": TimeZone.ANTARCTICA_TROLL,
+    "Europe/Uzhgorod": TimeZone.EUROPE_UZHGOROD,
+    "Atlantic/Cape_Verde": TimeZone.ATLANTIC_CAPE_VERDE,
+    "UCT": TimeZone.UCT,
+    "Etc/GMT-6": TimeZone.ETC_GMT_MINUS_6,
+    "Asia/Srednekolymsk": TimeZone.ASIA_SREDNEKOLYMSK,
+    "Asia/Ujung_Pandang": TimeZone.ASIA_UJUNG_PANDANG,
+    "America/Thunder_Bay": TimeZone.AMERICA_THUNDER_BAY,
+    "Africa/Khartoum": TimeZone.AFRICA_KHARTOUM,
+    "Africa/Douala": TimeZone.AFRICA_DOUALA,
+    "America/Cayman": TimeZone.AMERICA_CAYMAN,
+    "Brazil/Acre": TimeZone.BRAZIL_ACRE,
+    "America/Indiana/Knox": TimeZone.AMERICA_INDIANA_KNOX,
+    "Australia/Yancowinna": TimeZone.AUSTRALIA_YANCOWINNA,
+    "America/Chihuahua": TimeZone.AMERICA_CHIHUAHUA,
+    "America/Recife": TimeZone.AMERICA_RECIFE,
+    "America/Indiana/Marengo": TimeZone.AMERICA_INDIANA_MARENGO,
+    "Asia/Yangon": TimeZone.ASIA_YANGON,
+    "Europe/Astrakhan": TimeZone.EUROPE_ASTRAKHAN,
+    "Asia/Rangoon": TimeZone.ASIA_RANGOON,
+    "America/Vancouver": TimeZone.AMERICA_VANCOUVER,
+    "NZ-CHAT": TimeZone.NZ_CHAT,
+    "America/Montserrat": TimeZone.AMERICA_MONTERRAT,
+    "America/Merida": TimeZone.AMERICA_MERIDA,
+    "America/Puerto_Rico": TimeZone.AMERICA_PUERTO_RICO,
+    "America/Maceio": TimeZone.AMERICA_MACEIO,
+    "America/Panama": TimeZone.AMERICA_PANAMA,
+    "Brazil/East": TimeZone.BRAZIL_EAST,
+    "Japan": TimeZone.JAPAN,
+    "Australia/Victoria": TimeZone.AUSTRALIA_VICTORIA,
+    "America/Indiana/Petersburg": TimeZone.AMERICA_INDIANA_PETERSBURG,
+    "Asia/Dushanbe": TimeZone.ASIA_DUSHANBE,
+    "Africa/Asmera": TimeZone.AFRICA_ASMERA,
+    "Etc/Zulu": TimeZone.ETC_ZULU,
+    "Europe/Monaco": TimeZone.EUROPE_MONACO,
+    "Asia/Amman": TimeZone.ASIA_AMMAN,
+    "Asia/Kuwait": TimeZone.ASIA_KUWAIT,
+    "Asia/Sakhalin": TimeZone.ASIA_SAKHALIN,
+    "Europe/Gibraltar": TimeZone.EUROPE_GIBRALTAR,
+    "America/Havana": TimeZone.AMERICA_HAVANA,
+    "Etc/GMT+0": TimeZone.ETC_GMT_PLUS_0,
+    "Asia/Choibalsan": TimeZone.ASIA_CHOIBALSAN,
+    "Asia/Vientiane": TimeZone.ASIA_VIENTIANE,
+    "Africa/Monrovia": TimeZone.AFRICA_MONROVIA,
+    "Africa/Lagos": TimeZone.AFRICA_LAGOS,
+    "America/Argentina/Buenos_Aires": TimeZone.AMERICA_ARGENTINA_BUENOS_AIRES,
+    "Australia/Melbourne": TimeZone.AUSTRALIA_MELBOURNE,
+    "Etc/GMT+6": TimeZone.ETC_GMT_PLUS_6,
+    "PST8PDT": TimeZone.PST8PDT,
+    "America/Scoresbysund": TimeZone.AMERICA_SCORESBYSUND,
+    "Australia/ACT": TimeZone.AUSTRALIA_ACT,
+    "Africa/Blantyre": TimeZone.AFRICA_BLANTYRE,
+    "Asia/Saigon": TimeZone.ASIA_SAIGON,
+    "Asia/Chongqing": TimeZone.ASIA_CHONGQING,
+    "GB-Eire": TimeZone.GB_EIRE,
+    "US/Samoa": TimeZone.US_SAMOA,
+    "Arctic/Longyearbyen": TimeZone.ARCTIC_LONGYEARBYEN,
+    "America/Curacao": TimeZone.AMERICA_CURACAO,
+    "America/Mexico_City": TimeZone.AMERICA_MEXICO_CITY,
+    "Asia/Kabul": TimeZone.ASIA_KABUL,
+    "America/Indianapolis": TimeZone.AMERICA_INDIANAPOLIS,
+    "Asia/Macao": TimeZone.ASIA_MACAO,
+    "Canada/Central": TimeZone.CANADA_CENTRAL,
+    "Asia/Famagusta": TimeZone.ASIA_FAMAGUSTA,
+    "America/Atikokan": TimeZone.AMERICA_ATIKOKAN,
+    "Asia/Brunei": TimeZone.ASIA_BRUNEI,
+    "Asia/Ust-Nera": TimeZone.ASIA_UST_NERA,
+    "Brazil/DeNoronha": TimeZone.BRAZIL_DE_NORONHA,
+    "Indian/Chagos": TimeZone.INDIAN_CHAGOS,
+    "Asia/Kathmandu": TimeZone.ASIA_KATHMANDU,
+    "Asia/Tehran": TimeZone.ASIA_TEHRAN,
+    "Africa/Dar_es_Salaam": TimeZone.AFRICA_DAR_ES_SALAAM,
+    "America/Managua": TimeZone.AMERICA_MANAGUA,
+    "Africa/Cairo": TimeZone.AFRICA_CAIRO,
+    "Pacific/Nauru": TimeZone.PACIFIC_NAURU,
+    "Europe/Saratov": TimeZone.EUROPE_SARATOV,
+    "Indian/Maldives": TimeZone.INDIAN_MALDIVES,
+    "Asia/Makassar": TimeZone.ASIA_MAKASSAR,
+    "America/Sao_Paulo": TimeZone.AMERICA_SAO_PAULO,
+    "America/St_Johns": TimeZone.AMERICA_ST_JOHNS,
+    "Etc/GMT+9": TimeZone.ETC_GMT_PLUS_9,
+    "Asia/Qyzylorda": TimeZone.ASIA_QYZYLORDA,
+    "Australia/North": TimeZone.AUSTRALIA_NORTH,
+    "America/Montevideo": TimeZone.AMERICA_MONTEVIDEO,
+    "Australia/West": TimeZone.AUSTRALIA_WEST,
+    "Europe/Oslo": TimeZone.EUROPE_OSLO,
+    "Turkey": TimeZone.TURKEY,
+    "US/Central": TimeZone.US_CENTRAL,
+    "Europe/Berlin": TimeZone.EUROPE_BERLIN,
+    "Europe/Bratislava": TimeZone.EUROPE_BRATISLAVA,
+    "America/El_Salvador": TimeZone.AMERICA_EL_SALVADOR,
+    "Africa/Kampala": TimeZone.AFRICA_KAMPALA,
+    "America/Dawson": TimeZone.AMERICA_DAWSON,
+    "America/La_Paz": TimeZone.AMERICA_LA_PAZ,
+    "US/Aleutian": TimeZone.US_ALEUTIAN,
+    "Asia/Kolkata": TimeZone.ASIA_KOLKATA,
+    "Asia/Oral": TimeZone.ASIA_ORAL,
+    "Asia/Omsk": TimeZone.ASIA_OMSK,
+    "America/Santiago": TimeZone.AMERICA_SANTIAGO,
+    "America/Detroit": TimeZone.AMERICA_DETROIT,
+    "America/Anguilla": TimeZone.AMERICA_ANGUILLA,
+    "America/Nome": TimeZone.AMERICA_NOME,
+    "Singapore": TimeZone.SINGAPORE,
+    "Africa/Conakry": TimeZone.AFRICA_CONAKRY,
+    "Africa/Maputo": TimeZone.AFRICA_MAPUTO,
+    "Antarctica/Davis": TimeZone.ANTARCTICA_DAVIS,
+    "Asia/Manila": TimeZone.ASIA_MANILA,
+    "Pacific/Majuro": TimeZone.PACIFIC_MAJURO,
+    "Africa/Lubumbashi": TimeZone.AFRICA_LUBUMBASHI,
+    "Portugal": TimeZone.PORTUGAL,
+    "Pacific/Port_Moresby": TimeZone.PACIFIC_PORT_MORESBY,
+    "Etc/GMT+3": TimeZone.ETC_GMT_PLUS_3,
+    "Chile/Continental": TimeZone.CHILE_CONTINENTAL,
+    "GMT": TimeZone.GMT,
+    "America/Martinique": TimeZone.AMERICA_MARTINIQUE,
+    "Africa/Sao_Tome": TimeZone.AFRICA_SAO_TOME,
+    "America/Sitka": TimeZone.AMERICA_SITKA,
+    "Asia/Taipei": TimeZone.ASIA_TAIPEI,
+    "Indian/Mayotte": TimeZone.INDIAN_MAYOTTE,
+    "America/Argentina/Rio_Gallegos": TimeZone.AMERICA_ARGENTINA_RIO_GALLEGOS,
+    "America/Menominee": TimeZone.AMERICA_MENOMINEE,
+    "Canada/Pacific": TimeZone.CANADA_PACIFIC,
+    "MET": TimeZone.MET,
+    "Asia/Thimbu": TimeZone.ASIA_THIMBU,
+    "America/Campo_Grande": TimeZone.AMERICA_CAMPO_GRANDE,
+    "Asia/Magadan": TimeZone.ASIA_MAGADAN,
+    "Africa/Casablanca": TimeZone.AFRICA_CASABLANCA,
+    "America/Guadeloupe": TimeZone.AMERICA_GUADELOUPE,
+    "Atlantic/Faroe": TimeZone.ATLANTIC_FAROE,
+    "Asia/Anadyr": TimeZone.ASIA_ANADYR,
+    "Africa/Porto-Novo": TimeZone.AFRICA_PORTO_NOVO,
+    "Africa/Banjul": TimeZone.AFRICA_BANJUL,
+    "Indian/Comoro": TimeZone.INDIAN_COMORO,
+    "America/Yakutat": TimeZone.AMERICA_YAKUTAT,
+    "Pacific/Gambier": TimeZone.PACIFIC_GAMBIER,
+    "Asia/Ashgabat": TimeZone.ASIA_ASHGABAT,
+    "Antarctica/DumontDUrville": TimeZone.ANTARCTICA_DUMONT_DURVILLE,
+    "US/East-Indiana": TimeZone.US_EAST_IND,
+    "Asia/Irkutsk": TimeZone.ASIA_IRKUTSK,
+    "America/Mazatlan": TimeZone.AMERICA_MAZATLAN,
+    "Pacific/Apia": TimeZone.PACIFIC_APIA,
+    "America/Boa_Vista": TimeZone.AMERICA_BOA_VISTA,
+    "Etc/GMT": TimeZone.ETC_GMT,
+    "America/Guyana": TimeZone.AMERICA_GUYANA,
+    "Australia/Currie": TimeZone.AUSTRALIA_CURRIE,
+    "Europe/Ulyanovsk": TimeZone.EUROPE_ULYANOVSK,
+    "Pacific/Fakaofo": TimeZone.PACIFIC_FAKAOFO,
+    "America/North_Dakota/Beulah": TimeZone.AMERICA_NORTH_DAKOTA_BEULAH,
+    "Europe/Prague": TimeZone.EUROPE_PRAGUE,
+    "Asia/Qatar": TimeZone.ASIA_QATAR,
+    "Pacific/Funafuti": TimeZone.PACIFIC_FUNAFUTI,
+    "Jamaica": TimeZone.JAMAICA,
+    "Canada/Eastern": TimeZone.CANADA_EASTERN,
+    "Pacific/Guam": TimeZone.PACIFIC_GUAM,
+    "Pacific/Fiji": TimeZone.PACIFIC_FIJI,
+    "Africa/Kigali": TimeZone.AFRICA_KIGALI,
+    "Pacific/Tongatapu": TimeZone.PACIFIC_TONGATAPU,
+    "America/Lima": TimeZone.AMERICA_LIMA,
+    "Asia/Muscat": TimeZone.ASIA_MUSCAT,
+    "Antarctica/Macquarie": TimeZone.ANTARCTICA_MACQUARIE,
+    "Etc/GMT-2": TimeZone.ETC_GMT_MINUS_2,
+    "Pacific/Pitcairn": TimeZone.PACIFIC_PITCAIRN,
+    "Canada/Mountain": TimeZone.CANADA_MOUNTAIN,
+    "Asia/Yekaterinburg": TimeZone.ASIA_YEKATERINBURG,
+    "Pacific/Johnston": TimeZone.PACIFIC_JOHNSTON,
+    "Europe/Vatican": TimeZone.EUROPE_VATICAN,
+    "Atlantic/Bermuda": TimeZone.ATLANTIC_BERMUDA,
+    "Asia/Jerusalem": TimeZone.ASIA_JERUSALEM,
+    "America/Ciudad_Juarez": TimeZone.AMERICA_CIUDAD_JUAREZ,
+    "Pacific/Galapagos": TimeZone.PACIFIC_GALAPAGOS,
+    "America/Montreal": TimeZone.AMERICA_MONTREAL,
+    "Africa/Nouakchott": TimeZone.AFRICA_NOUAKCHOTT,
+    "US/Arizona": TimeZone.US_ARIZONA,
+    "Asia/Kuching": TimeZone.ASIA_KUCHING,
+    "Etc/GMT+4": TimeZone.ETC_GMT_PLUS_4,
+    "Australia/Brisbane": TimeZone.AUSTRALIA_BRISBANE,
+    "Canada/Saskatchewan": TimeZone.CANADA_SASKATCHEWAN,
+    "Europe/Dublin": TimeZone.EUROPE_DUBLIN,
+    "Asia/Qostanay": TimeZone.ASIA_QOSTANAY,
+    "America/Edmonton": TimeZone.AMERICA_EDMONTON,
+    "Atlantic/Reykjavik": TimeZone.ATLANTIC_REYKJAVIK,
+    "America/Fortaleza": TimeZone.AMERICA_FORTALEZA,
+    "Pacific/Kiritimati": TimeZone.PACIFIC_KIRITIMATI,
+    "Etc/Universal": TimeZone.ETC_UNIVERSAL,
+    "GMT0": TimeZone.GMT0,
+    "Europe/Belfast": TimeZone.EUROPE_BELFAST,
+    "Pacific/Yap": TimeZone.PACIFIC_YAP,
+    "America/Santo_Domingo": TimeZone.AMERICA_SANTO_DOMINGO,
+    "Iceland": TimeZone.ICELAND,
+    "America/Araguaina": TimeZone.AMERICA_ARAGUAINA,
+    "Asia/Karachi": TimeZone.ASIA_KARACHI,
+    "Etc/GMT+7": TimeZone.ETC_GMT_PLUS_7,
+    "Africa/Bujumbura": TimeZone.AFRICA_BUJUMBURA,
+    "America/Dawson_Creek": TimeZone.AMERICA_DAWSON_CREEK,
+    "Europe/Zaporozhye": TimeZone.EUROPE_ZAPOROZHYE,
+    "Asia/Ulaanbaatar": TimeZone.ASIA_ULAANBAATAR,
+    "Pacific/Samoa": TimeZone.PACIFIC_SAMOA,
+    "Australia/Darwin": TimeZone.AUSTRALIA_DARWIN,
+    "Etc/GMT0": TimeZone.ETC_GMT0,
+    "Pacific/Tahiti": TimeZone.PACIFIC_TAHITI,
+    "Etc/GMT-8": TimeZone.ETC_GMT_MINUS_8,
+    "Atlantic/Faeroe": TimeZone.ATLANTIC_FAEROE,
+    "Africa/Libreville": TimeZone.AFRICA_LIBREVILLE,
+    "Asia/Barnaul": TimeZone.ASIA_BARNAUL,
+    "America/Coral_Harbour": TimeZone.AMERICA_CORAL_HARBOUR,
+    "Antarctica/Syowa": TimeZone.ANTARCTICA_SYOWA,
+    "America/Buenos_Aires": TimeZone.AMERICA_BUENOS_AIRES,
+    "Europe/Vienna": TimeZone.EUROPE_VIENNA,
+    "America/Fort_Wayne": TimeZone.AMERICA_FORT_WAYNE,
+    "NZ": TimeZone.NZ,
+    "Atlantic/Azores": TimeZone.ATLANTIC_AZORES,
+    "America/Coyhaique": TimeZone.AMERICA_COYHAIQUE,
+    "Asia/Pyongyang": TimeZone.ASIA_PYONGYANG,
+    "Etc/GMT-10": TimeZone.ETC_GMT_MINUS_10,
+    "MST": TimeZone.MST,
+    "America/Argentina/Jujuy": TimeZone.AMERICA_ARGENTINA_JUJUY,
+    "America/Tijuana": TimeZone.AMERICA_TIJUANA,
+    "Pacific/Guadalcanal": TimeZone.PACIFIC_GUADALCANAL,
+    "Europe/Stockholm": TimeZone.EUROPE_STOCKHOLM,
+    "US/Alaska": TimeZone.US_ALASKA,
+    "Europe/Tiraspol": TimeZone.EUROPE_TIRASPOL,
+    "Europe/Samara": TimeZone.EUROPE_SAMARA,
+    "Etc/GMT-12": TimeZone.ETC_GMT_MINUS_12,
+    "Kwajalein": TimeZone.KWAJALEIN,
+    "Asia/Macau": TimeZone.ASIA_MACAU,
+    "Pacific/Truk": TimeZone.PACIFIC_TRUK,
+    "Asia/Bangkok": TimeZone.ASIA_BANGKOK,
+    "America/Antigua": TimeZone.AMERICA_ANTIGUA,
+    "Africa/El_Aaiun": TimeZone.AFRICA_EL_AAIUN,
+    "Europe/Mariehamn": TimeZone.EUROPE_MARIEHAMN,
+    "Asia/Jayapura": TimeZone.ASIA_JAYAPURA,
+    "Europe/San_Marino": TimeZone.EUROPE_SAN_MARINO,
+    "US/Pacific": TimeZone.US_PACIFIC,
+    "Africa/Johannesburg": TimeZone.AFRICA_JOHANNESBURG,
+    "Australia/Eucla": TimeZone.AUSTRALIA_EUCLA,
+    "Africa/Nairobi": TimeZone.AFRICA_NAIROBI,
+    "Etc/GMT-7": TimeZone.ETC_GMT_MINUS_7,
+    "America/Inuvik": TimeZone.AMERICA_INUVIK,
+    "Asia/Tokyo": TimeZone.ASIA_TOKYO,
+    "Asia/Atyrau": TimeZone.ASIA_ATYRAU,
+    "Asia/Kashgar": TimeZone.ASIA_KASHGAR,
+    "W-SU": TimeZone.W_SU,
+    "Asia/Tashkent": TimeZone.ASIA_TASHKENT,
+    "Africa/Freetown": TimeZone.AFRICA_FREETOWN,
+    "Pacific/Pago_Pago": TimeZone.PACIFIC_PAGO_PAGO,
+    "America/Denver": TimeZone.AMERICA_DENVER,
+    "Australia/LHI": TimeZone.AUSTRALIA_LHI,
+    "Pacific/Rarotonga": TimeZone.PACIFIC_RAROTONGA,
+    "MST7MDT": TimeZone.MST7MDT,
+    "Pacific/Noumea": TimeZone.PACIFIC_NOUMEA,
+    "Etc/UCT": TimeZone.ETC_UCT,
+    "Etc/GMT+10": TimeZone.ETC_GMT_PLUS_10,
+    "ROK": TimeZone.ROK,
+    "Pacific/Auckland": TimeZone.PACIFIC_AUCKLAND,
+    "Asia/Novokuznetsk": TimeZone.ASIA_NOVOKUZNETSK,
+    "America/Hermosillo": TimeZone.AMERICA_HERMOSILLO,
+    "America/Louisville": TimeZone.AMERICA_LOUISVILLE,
+    "Asia/Ho_Chi_Minh": TimeZone.ASIA_HO_CHI_MINH,
+    "Asia/Yerevan": TimeZone.ASIA_YEREVAN,
+    "Asia/Yakutsk": TimeZone.ASIA_YAKUTSK,
+    "Universal": TimeZone.UNIVERSAL,
+    "America/Tegucigalpa": TimeZone.AMERICA_TEGUCIGALPA,
+    "Mexico/BajaNorte": TimeZone.MEXICO_BAJANORTE,
+    "Europe/Sarajevo": TimeZone.EUROPE_SARAJEVO,
+    "America/Argentina/Catamarca": TimeZone.AMERICA_ARGENTINA_CATAMARCA,
+    "Cuba": TimeZone.CUBA,
+    "Asia/Khandyga": TimeZone.ASIA_KHANDYGA,
+    "America/Lower_Princes": TimeZone.AMERICA_LOWER_PRINCES,
+    "America/Blanc-Sablon": TimeZone.AMERICA_BLANC_SABLON,
+    "America/Bogota": TimeZone.AMERICA_BOGOTA,
+    "Africa/Lome": TimeZone.AFRICA_LOME,
+    "America/Toronto": TimeZone.AMERICA_TORONTO,
+    "Europe/Warsaw": TimeZone.EUROPE_WARSAW,
+    "America/Yellowknife": TimeZone.AMERICA_YELLOWKNIFE,
+    "America/Swift_Current": TimeZone.AMERICA_SWIFT_CURRENT,
+    "EST": TimeZone.EST,
+    "Europe/Sofia": TimeZone.EUROPE_SOFIA,
+    "Africa/Ceuta": TimeZone.AFRICA_CEUTA,
+    "America/Marigot": TimeZone.AMERICA_MARIGOT,
+    "America/Danmarkshavn": TimeZone.AMERICA_DANMARKSHAVN,
+    "Africa/Harare": TimeZone.AFRICA_HARARE,
+    "UTC": TimeZone.UTC,
+    "UTC+1": TimeZone.UTC_PLUS_1,
+    "UTC+2": TimeZone.UTC_PLUS_2,
+    "UTC+3": TimeZone.UTC_PLUS_3,
+    "UTC+4": TimeZone.UTC_PLUS_4,
+    "UTC+5": TimeZone.UTC_PLUS_5,
+    "UTC+6": TimeZone.UTC_PLUS_6,
+    "UTC+7": TimeZone.UTC_PLUS_7,
+    "UTC+8": TimeZone.UTC_PLUS_8,
+    "UTC+9": TimeZone.UTC_PLUS_9,
+    "UTC+10": TimeZone.UTC_PLUS_10,
+    "UTC+11": TimeZone.UTC_PLUS_11,
+    "UTC+12": TimeZone.UTC_PLUS_12,
+    "UTC-1": TimeZone.UTC_MINUS_1,
+    "UTC-2": TimeZone.UTC_MINUS_2,
+    "UTC-3": TimeZone.UTC_MINUS_3,
+    "UTC-4": TimeZone.UTC_MINUS_4,
+    "UTC-5": TimeZone.UTC_MINUS_5,
+    "UTC-6": TimeZone.UTC_MINUS_6,
+    "UTC-7": TimeZone.UTC_MINUS_7,
+    "UTC-8": TimeZone.UTC_MINUS_8,
+    "UTC-9": TimeZone.UTC_MINUS_9,
+    "UTC-10": TimeZone.UTC_MINUS_10,
+    "UTC-11": TimeZone.UTC_MINUS_11,
+    "UTC-12": TimeZone.UTC_MINUS_12,
+    "EST5EDT": TimeZone.EST5EDT,
+    "Pacific/Midway": TimeZone.PACIFIC_MIDWAY,
+    "Asia/Istanbul": TimeZone.ASIA_ISTANBUL,
+    "America/Argentina/ComodRivadavia": TimeZone.AMERICA_ARGENTINA_COMODRIVADAVIA,
+    "Asia/Baku": TimeZone.ASIA_BAKU,
+    "Australia/NSW": TimeZone.AUSTRALIA_NSW,
+    "Europe/Busingen": TimeZone.EUROPE_BUSINGEN,
+    "America/Regina": TimeZone.AMERICA_REGINA,
+    "Africa/Bangui": TimeZone.AFRICA_BANGUI,
+    "Poland": TimeZone.POLAND,
+    "Indian/Christmas": TimeZone.INDIAN_CHRISTMAS,
+    "Australia/Queensland": TimeZone.AUSTRALIA_QUEENSLAND,
+    "Asia/Bishkek": TimeZone.ASIA_BISHKEK,
+    "Asia/Dubai": TimeZone.ASIA_DUBAI,
+    "Africa/Mbabane": TimeZone.AFRICA_MBABANE,
+    "America/Grand_Turk": TimeZone.AMERICA_GRAND_TURK,
+    "America/Glace_Bay": TimeZone.AMERICA_GLACE_BAY,
+    "Pacific/Enderbury": TimeZone.PACIFIC_ENDERBURY,
+    "Africa/Dakar": TimeZone.AFRICA_DAKAR,
+    "Africa/Algiers": TimeZone.AFRICA_ALGIERS,
+    "Asia/Damascus": TimeZone.ASIA_DAMASCUS,
+    "America/Rankin_Inlet": TimeZone.AMERICA_RANKIN_INLET,
+    "Europe/Brussels": TimeZone.EUROPE_BRUSSELS,
+    "Asia/Hovd": TimeZone.ASIA_HOVD,
+    "Australia/Hobart": TimeZone.AUSTRALIA_HOBART,
+    "Europe/Bucharest": TimeZone.EUROPE_BUCHAREST,
+    "Asia/Gaza": TimeZone.ASIA_GAZA,
+    "Iran": TimeZone.IRAN,
+    "Africa/Djibouti": TimeZone.AFRICA_DJIBOUTI,
+    "America/Rosario": TimeZone.AMERICA_ROSARIO,
+    "Europe/Belgrade": TimeZone.EUROPE_BELGRADE,
+    "Antarctica/Rothera": TimeZone.ANTARCTICA_ROTHERA,
+    "Africa/Addis_Ababa": TimeZone.AFRICA_ADDIS_ABABA,
+    "Asia/Dacca": TimeZone.ASIA_DACCA,
+    "Asia/Krasnoyarsk": TimeZone.ASIA_KRASNOYARSK,
+    "Europe/Chisinau": TimeZone.EUROPE_CHISINAU,
+    "Indian/Cocos": TimeZone.INDIAN_COCOS,
+    "America/Indiana/Vincennes": TimeZone.AMERICA_INDiana_VINCENNES,
+    "America/Cambridge_Bay": TimeZone.AMERICA_CAMBRIDGE_BAY,
+    "Asia/Thimphu": TimeZone.ASIA_THIMPHU,
+    "Europe/Riga": TimeZone.EUROPE_RIGA,
+    "US/Mountain": TimeZone.US_MOUNTAIN,
+    "Egypt": TimeZone.EGYPT,
+    "America/Argentina/Tucuman": TimeZone.AMERICA_ARGENTINA_TUCUMAN,
+    "Atlantic/St_Helena": TimeZone.ATLANTIC_ST_HELENA,
+    "Greenwich": TimeZone.GREENWICH,
+    "Asia/Ashkhabad": TimeZone.ASIA_ASHKHABAD,
+    "Europe/Nicosia": TimeZone.EUROPE_NICOSIA,
+    "Asia/Aqtau": TimeZone.ASIA_AQTAU,
+    "Antarctica/Mawson": TimeZone.ANTARCTICA_MAWSON,
+    "America/North_Dakota/Center": TimeZone.AMERICA_NORTH_DAKOTA_CENTER,
+    "EET": TimeZone.EET,
+    "ROC": TimeZone.ROC,
+    "America/Mendoza": TimeZone.AMERICA_MENDOZA,
+    "America/St_Vincent": TimeZone.AMERICA_ST_VINCENT,
+    "CST6CDT": TimeZone.CST6CDT,
+    "Asia/Bahrain": TimeZone.ASIA_BAHRAIN,
+    "Asia/Riyadh": TimeZone.ASIA_RIYADH,
+    "Pacific/Efate": TimeZone.PACIFIC_EFATE,
+    "Indian/Mauritius": TimeZone.INDIAN_MAURITIUS,
+    "Indian/Kerguelen": TimeZone.INDIAN_KERGULEN,
+    "Asia/Colombo": TimeZone.ASIA_COLOMBO,
+    "Africa/Maseru": TimeZone.AFRICA_MASERU,
+    "America/Asuncion": TimeZone.AMERICA_ASUNCION,
+    "Europe/Copenhagen": TimeZone.EUROPE_COPENHAGEN,
+    "America/Argentina/Salta": TimeZone.AMERICA_ARGENTINA_SALTA,
+    "Africa/Malabo": TimeZone.AFRICA_MALABO,
+    "America/Matamoros": TimeZone.AMERICA_MATAMOROS,
+    "America/Argentina/La_Rioja": TimeZone.AMERICA_ARGENTINA_LA_RIOJA,
+    "Africa/Accra": TimeZone.AFRICA_ACCRA,
+    "Eire": TimeZone.EIRE,
+    "America/Kentucky/Louisville": TimeZone.AMERICA_KENTUCKY_LOUISVILLE,
+    "Africa/Bamako": TimeZone.AFRICA_BAMAKO,
+    "Etc/GMT-5": TimeZone.ETC_GMT_5,
+    "Pacific/Chatham": TimeZone.PACIFIC_CHATHAM,
+    "WET": TimeZone.WET,
+    "Etc/GMT+5": TimeZone.ETC_GMT_PLUS_5,
+    "Africa/Mogadishu": TimeZone.AFRICA_MOGADISHU,
+    "America/Thule": TimeZone.AMERICA_THULE,
+    "America/Phoenix": TimeZone.AMERICA_PHOENIX,
+    "Australia/Lord_Howe": TimeZone.AUSTRALIA_LORD_HOWE,
+    "Pacific/Chuuk": TimeZone.PACIFIC_CHUUK,
+    "Pacific/Marquesas": TimeZone.PACIFIC_MARQUESAS,
+    "Pacific/Wake": TimeZone.PACIFIC_WAKE,
+    "Africa/Brazzaville": TimeZone.AFRICA_BRAZZAVILLE,
+    "Australia/Broken_Hill": TimeZone.AUSTRALIA_BROKEN_HILL,
+    "Australia/South": TimeZone.AUSTRALIA_SOUTH,
+    "America/Kentucky/Monticello": TimeZone.AMERICA_KENTUCKY_MONTICELLO,
+    "Europe/Kiev": TimeZone.EUROPE_KIEV,
+    "Etc/GMT-9": TimeZone.ETC_GMT_9,
+    "Australia/Lindeman": TimeZone.AUSTRALIA_LINDEMAN,
+    "America/Metlakatla": TimeZone.AMERICA_METLAKATLA,
+    "America/Goose_Bay": TimeZone.AMERICA_GOOSE_BAY,
+    "America/St_Lucia": TimeZone.AMERICA_ST_LUCIA,
+    "Europe/Ljubljana": TimeZone.EUROPE_LJUBLJANA,
+    "Europe/Tirane": TimeZone.EUROPE_TIRANE,
+    "America/Santarem": TimeZone.AMERICA_SANTAREM,
+    "Atlantic/Canary": TimeZone.ATLANTIC_CANARY,
+    "America/Grenada": TimeZone.AMERICA_GRENADA,
+    "America/Shiprock": TimeZone.AMERICA_SHIPROCK,
+    "Europe/Skopje": TimeZone.EUROPE_SKOPJE,
+    "Etc/GMT+8": TimeZone.ETC_GMT_PLUS_8,
+    "Asia/Baghdad": TimeZone.ASIA_BAGHDAD,
+    "Australia/Sydney": TimeZone.AUSTRALIA_SYDNEY,
+    "Europe/Istanbul": TimeZone.EUROPE_ISTANBUL,
+    "America/Dominica": TimeZone.AMERICA_DOMINICA,
+    "America/Nipigon": TimeZone.AMERICA_NIPIGON,
+    "Asia/Calcutta": TimeZone.ASIA_CALCUTTA,
+    "Etc/GMT-0": TimeZone.ETC_GMT_0,
+    "Antarctica/Casey": TimeZone.ANTARCTICA_CASEY,
+    "Asia/Vladivostok": TimeZone.ASIA_VLADIVOSTOK,
+    "America/Godthab": TimeZone.AMERICA_GODTHAB,
+    "Asia/Aqtube": TimeZone.ASIA_AQTUBE,
+    "Europe/Kirov": TimeZone.EUROPE_KIROV,
+    "Asia/Aden": TimeZone.ASIA_ADEN,
+    "Europe/Isle_of_Man": TimeZone.EUROPE_ISLE_OF_MAN,
+}

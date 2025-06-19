@@ -1,5 +1,5 @@
 import testing
-from small_time.time_zone import TimeZone, from_utc
+from small_time.time_zone import TimeZone, from_utc, TIMEZONE_MAP
 
 
 def test_time_zone():
@@ -14,9 +14,9 @@ def test_time_zone():
 
 def test_time_zone_from_name():
     # Test with a known time zone
-    tz = TimeZone.from_name("Asia/Shanghai")
+    tz = TIMEZONE_MAP["Asia/Shanghai"]
     testing.assert_equal(tz.name, "Asia/Shanghai")
     testing.assert_equal(tz.offset, 28800)  # +08:00 in seconds
 
     # Test with an invalid time zone
-    _ = TimeZone.from_name("Invalid/TimeZone")
+    testing.assert_false(TIMEZONE_MAP.get("Invalid/TimeZone"))
