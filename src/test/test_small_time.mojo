@@ -45,7 +45,7 @@ def test_iso_format():
 
 
 def test_strptime():
-    var m = parse_time_with_format("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", None)
+    var m = parse_time_with_format("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S")
     testing.assert_equal(String(m), "2023-01-20T15:49:10.000000+00:00")
 
     # TODO: Need to add more tests for different types of timestamps to parse.
@@ -53,7 +53,7 @@ def test_strptime():
     # m = parse_time_with_format("2023-10-18 15:49:10 +0800", "%Y-%m-%d %H:%M:%S %z")
     # testing.assert_equal(String(m), "2023-10-18T15:49:10.000000+00:00")
 
-    m = parse_time_with_format("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", String("+09:00"))
+    m = parse_time_with_format("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "+09:00")
     testing.assert_equal(String(m), "2023-10-18T15:49:10.000000+09:00")
 
 
@@ -105,9 +105,10 @@ def test_format():
     testing.assert_equal(time.format["MMMM D, YYYY [at] h:mma"](), "February 1, 2024 at 3:04am")
     testing.assert_equal(time.format["[MMMM] M D, YYYY [at] h:mma"](), "MMMM 2 1, 2024 at 3:04am")
     testing.assert_equal(time.format["[[[ ]]"](), "[[ ]")
-    testing.assert_equal(time.format[
-        "[It happened on] MMMM D[st] [in the][ year] YYYY [a long time ago]"
-    ](), "It happened on February 1st in the year 2024 a long time ago")
+    testing.assert_equal(
+        time.format["[It happened on] MMMM D[st] [in the][ year] YYYY [a long time ago]"](),
+        "It happened on February 1st in the year 2024 a long time ago",
+    )
     testing.assert_equal(time.format["[I'm][ entirely][ escaped,][ weee!]"](), "I'm entirely escaped, weee!")
 
     # Escaping is atomic: brackets inside brackets are treated literally

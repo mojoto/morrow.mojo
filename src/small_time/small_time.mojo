@@ -21,13 +21,13 @@ alias MAX_TIMESTAMP_US = MAX_TIMESTAMP * 1_000_000
 
 fn normalize_timestamp(owned timestamp: Float64) raises -> Float64:
     """Normalize millisecond and microsecond timestamps into normal timestamps.
-    
+
     Args:
         timestamp: The timestamp to normalize.
-    
+
     Returns:
         The normalized timestamp.
-    
+
     Raises:
         Error: If the timestamp is too large.
     """
@@ -46,24 +46,26 @@ fn now(*, utc: Bool = False) raises -> SmallTime:
 
     Args:
         utc: If True, return the current time in UTC. Otherwise, return the current time in local time.
-    
+
     Returns:
         The current time.
     """
     return from_timestamp(libc.get_time_of_day(), utc=utc)
 
 
-fn _validate_timestamp(tm: libc._CTime, time_val: libc._CTimeValue, time_zone: TimeZone) raises -> SmallTime:
+fn _validate_timestamp(
+    tm: libc._CTime, time_zone: TimeZone, time_val: Optional[libc._CTimeValue] = None
+) raises -> SmallTime:
     """Validate the timestamp.
 
     Args:
         tm: The time struct.
-        time_val: The time value.
         time_zone: The time zone.
-    
+        time_val: The time value.
+
     Returns:
         The validated timestamp.
-    
+
     Raises:
         Error: If the timestamp is invalid.
     """
@@ -77,9 +79,7 @@ fn _validate_timestamp(tm: libc._CTime, time_val: libc._CTimeValue, time_zone: T
 
     var day = Int(tm.day_of_month)
     if not -1 < day < 32:
-        raise Error(
-            "The day of the month parsed out from the timestamp is too large or negative. Received: ", day
-        )
+        raise Error("The day of the month parsed out from the timestamp is too large or negative. Received: ", day)
 
     var hours = Int(tm.hours)
     if not -1 < hours < 25:
@@ -91,12 +91,11 @@ fn _validate_timestamp(tm: libc._CTime, time_val: libc._CTimeValue, time_zone: T
 
     var seconds = Int(tm.seconds)
     if not -1 < seconds < 61:
-        raise Error(
-            "The day of the month parsed out from the timestamp is too large or negative. Received: ", seconds
-        )
+        raise Error("The day of the month parsed out from the timestamp is too large or negative. Received: ", seconds)
 
-    if time_val.microseconds < 0:
-        raise Error("Received negative microseconds. Received: ", time_val.microseconds)
+    var microseconds = Int(time_val.value().microseconds) if time_val else 0
+    if microseconds < 0:
+        raise Error("Received negative microseconds. Received: ", microseconds)
 
     return SmallTime(
         year,
@@ -105,7 +104,7 @@ fn _validate_timestamp(tm: libc._CTime, time_val: libc._CTimeValue, time_zone: T
         hours,
         minutes,
         seconds,
-        Int(time_val.microseconds),
+        microseconds,
         time_zone,
     )
 
@@ -116,19 +115,19 @@ fn from_timestamp(t: libc._CTimeValue, *, utc: Bool) raises -> SmallTime:
     Args:
         t: The timestamp.
         utc: If True, the timestamp is in UTC. Otherwise, the timestamp is in local time.
-    
+
     Returns:
         The SmallTime instance.
-    
+
     Raises:
         Error: If the timestamp is invalid.
     """
     if utc:
-        return _validate_timestamp(libc.get_gm_time(t.seconds), t, TimeZone.UTC)
+        return _validate_timestamp(libc.get_gm_time(t.seconds), TimeZone.UTC, t)
 
     var tm = libc.get_local_time(t.seconds)
     var tz = TimeZone.from_utc_offset(Int(tm.time_zone_offset))
-    return _validate_timestamp(tm, t, tz)
+    return _validate_timestamp(tm, tz, t)
 
 
 fn from_timestamp(timestamp: Float64, *, utc: Bool = False) raises -> SmallTime:
@@ -137,17 +136,17 @@ fn from_timestamp(timestamp: Float64, *, utc: Bool = False) raises -> SmallTime:
     Args:
         timestamp: The timestamp.
         utc: If True, the timestamp is in UTC. Otherwise, the timestamp is in local time.
-    
+
     Returns:
         The SmallTime instance.
-    
+
     Raises:
         Error: If the timestamp is invalid.
     """
     return from_timestamp(libc._CTimeValue(Int(normalize_timestamp(timestamp)), 0), utc=utc)
 
 
-fn parse_time_with_format(date: StringSlice, format: StringSlice, tzinfo: Optional[TimeZone] = None) raises -> SmallTime:
+fn parse_time_with_format(date: StringSlice, format: StringSlice, tzinfo: TimeZone = TimeZone.UTC) raises -> SmallTime:
     """Create a `SmallTime` instance from a date string and format,
     in the style of `datetime.strptime`. Optionally replaces the parsed time_zone.
     Due to cstr pointer creation requiring a mutable reference to `date` and `format` to null terminate them,
@@ -157,10 +156,10 @@ fn parse_time_with_format(date: StringSlice, format: StringSlice, tzinfo: Option
         date: The date string.
         format: The format string.
         tzinfo: The time zone.
-    
+
     Returns:
         The SmallTime instance.
-    
+
     Raises:
         Error: If the timestamp is invalid.
 
@@ -173,9 +172,7 @@ fn parse_time_with_format(date: StringSlice, format: StringSlice, tzinfo: Option
     var date_str = String(date)
     var fmt_str = String(format)
     var tm = libc.parse_time_with_format(date_str, fmt_str)
-    # If no provided timezone, generate a UTC +/- offset timezone.
-    var tz = TimeZone.from_utc_offset(Int(tm.time_zone_offset)) if not tzinfo else tzinfo
-    return _validate_timestamp(tm, libc._CTimeValue(0, 0), tz.value())
+    return _validate_timestamp(tm, tzinfo)
 
 
 fn parse_time_with_format(date: StringSlice, format: StringSlice, tz: StringSlice) raises -> SmallTime:
@@ -188,10 +185,10 @@ fn parse_time_with_format(date: StringSlice, format: StringSlice, tz: StringSlic
         date: The date string.
         format: The format string.
         tz: The time zone.
-    
+
     Returns:
         The SmallTime instance.
-    
+
     Raises:
         Error: If the timestamp is invalid.
 
@@ -210,10 +207,10 @@ fn from_ordinal(ordinal: Int) -> SmallTime:
 
     Args:
         ordinal: The proleptic Gregorian ordinal.
-    
+
     Returns:
         The SmallTime instance.
-    
+
     Notes:
         January 1 of year 1 is day 1.  Only the year, month and day are
         non-zero in the result.
@@ -289,8 +286,9 @@ fn from_ordinal(ordinal: Int) -> SmallTime:
 
 @fieldwise_init
 @register_passable("trivial")
-struct Specification(Copyable, ExplicitlyCopyable, Movable, EqualityComparable):
+struct Specification(Copyable, EqualityComparable, ExplicitlyCopyable, Movable):
     """Time specification for the `SmallTime.isoformat` method."""
+
     var value: Int
     """Internal enum value."""
     alias AUTO = Self(0)
@@ -311,26 +309,27 @@ struct Specification(Copyable, ExplicitlyCopyable, Movable, EqualityComparable):
 
         Args:
             other: The other specification to compare with.
-        
+
         Returns:
             True if the specifications are equal, False otherwise.
         """
         return self.value == other.value
-    
+
     fn __ne__(self, other: Self) -> Bool:
         """Check if two specifications are not equal.
 
         Args:
             other: The other specification to compare with.
-        
+
         Returns:
             True if the specifications are not equal, False otherwise.
         """
         return self.value != other.value
 
 
-struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Representable):
+struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Representable, Stringable, Writable):
     """Datetime representation."""
+
     var year: Int
     """Year."""
     var month: Int
@@ -389,7 +388,7 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
 
         Returns:
             The formatted string.
-        
+
         Examples:
         ```mojo
         import small_time
@@ -409,10 +408,10 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
 
         Args:
             separator: The separator between date and time.
-        
+
         Returns:
             The formatted string.
-        
+
         Notes:
             The full format looks like 'YYYY-MM-DD HH:MM:SS.mmmmmm'.
 
@@ -434,13 +433,13 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
         @parameter
         if specification == Specification.AUTO or specification == Specification.MICROSECONDS:
             time = String(
-                String(self.hour).rjust(2, "0"), 
+                String(self.hour).rjust(2, "0"),
                 ":",
                 String(self.minute).rjust(2, "0"),
                 ":",
                 String(self.second).rjust(2, "0"),
                 ".",
-                String(self.microsecond).rjust(6, "0")
+                String(self.microsecond).rjust(6, "0"),
             )
         elif specification == Specification.MILLISECONDS:
             time = String(
@@ -450,7 +449,7 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
                 ":",
                 String(self.second).rjust(2, "0"),
                 ".",
-                String(self.microsecond // 1000).rjust(3, "0")
+                String(self.microsecond // 1000).rjust(3, "0"),
             )
         elif specification == Specification.SECONDS:
             time = String(
@@ -458,7 +457,7 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
                 ":",
                 String(self.minute).rjust(2, "0"),
                 ":",
-                String(self.second).rjust(2, "0")
+                String(self.second).rjust(2, "0"),
             )
         elif specification == Specification.MINUTES:
             time = String(String(self.hour).rjust(2, "0"), ":", String(self.minute).rjust(2, "0"))
@@ -472,7 +471,7 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
 
         Returns:
             Proleptic Gregorian ordinal for the year, month and day.
-        
+
         Notes:
             January 1 of year 1 is day 1.  Only the year, month and day values
             contribute to the result.
@@ -489,15 +488,15 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
 
     fn __str__(self) -> String:
         """Return the string representation of the `SmallTime` instance.
-        
+
         Returns:
             The string representation.
         """
         return self.isoformat()
-    
+
     fn __repr__(self) -> String:
         """Return the string representation of the `SmallTime` instance.
-        
+
         Returns:
             The string representation.
         """
@@ -508,7 +507,7 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
 
         Args:
             other: The other `SmallTime` instance.
-        
+
         Returns:
             The time difference.
         """
@@ -518,7 +517,7 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
         var secs2 = other.second + other.minute * 60 + other.hour * 3600
         var base = TimeDelta(days1 - days2, secs1 - secs2, self.microsecond - other.microsecond)
         return base
-    
+
     fn write_to[W: Writer, //](self, mut writer: W):
         """Writes a representation of the `SmallTime` instance to a writer.
 
@@ -528,6 +527,7 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
         Args:
             writer: The writer to write the contents to.
         """
+
         @parameter
         fn write_optional(opt: Optional[String]):
             if opt:
@@ -535,18 +535,24 @@ struct SmallTime(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable, Re
             else:
                 writer.write(repr(None))
 
-        writer.write("SmallTime(",
-        "year=", self.year,
-        ", month=", self.month,
-        ", day=", self.day,
-        ", hour=", self.hour,
-        ", minute=", self.minute,
-        ", second=", self.second,
-        ", microsecond=", self.microsecond,
+        writer.write(
+            "SmallTime(",
+            "year=",
+            self.year,
+            ", month=",
+            self.month,
+            ", day=",
+            self.day,
+            ", hour=",
+            self.hour,
+            ", minute=",
+            self.minute,
+            ", second=",
+            self.second,
+            ", microsecond=",
+            self.microsecond,
         )
-        writer.write(", tz=", "TimeZone(",
-        "offset=", self.time_zone.offset,
-        ", name=")
+        writer.write(", tz=", "TimeZone(", "offset=", self.time_zone.offset, ", name=")
         write_optional(self.time_zone.name)
         writer.write(")")
         writer.write(")")

@@ -7,7 +7,7 @@ alias COLON = ":"
 
 fn _is_numeric(c: Byte) -> Bool:
     """Checks if a character is numeric.
-    
+
     Args:
         c: Character.
 
@@ -64,7 +64,9 @@ fn from_utc(timestamp: StringSlice) raises -> TimeZone:
 
 
 @fieldwise_init
-struct TimeZone(Movable, Copyable, ExplicitlyCopyable):
+struct TimeZone(Copyable, ExplicitlyCopyable, Movable):
+    """Time zone representation."""
+
     var name: String
     """Time zone name."""
     var offset: Int
@@ -700,7 +702,7 @@ struct TimeZone(Movable, Copyable, ExplicitlyCopyable):
         """
         self.name = String(name)
         self.offset = offset
-    
+
     fn format(self, separator: String = ":") -> String:
         """Formats the timezone.
 
@@ -721,7 +723,7 @@ struct TimeZone(Movable, Copyable, ExplicitlyCopyable):
         var hours = String(offset_abs // 3600).rjust(2, "0")
         var minutes = String(offset_abs % 3600).rjust(2, "0")
         return String(sign, hours, separator, minutes)
-    
+
     @staticmethod
     fn from_utc_offset(offset: Int) raises -> Self:
         """Creates a new timezone from its UTC offset.
@@ -783,7 +785,7 @@ struct TimeZone(Movable, Copyable, ExplicitlyCopyable):
             return Self.UTC_MINUS_11
         elif offset == -43200:
             return Self.UTC_MINUS_12
-        
+
         raise Error("Unsupported UTC offset, must be a multiple of 3600 seconds. +-12 hours are supported.")
 
 
