@@ -30,7 +30,7 @@ jobs:
 
       - name: Install pixi
         run: |
-          curl -ssL https://pixi.sh/install.sh | bash
+          curl -fsSL https://pixi.sh/install.sh | sh
 
       - name: Build package for target platform
         env:
