@@ -35,4 +35,4 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: pixi run tests
+        run: pixi run -e util tests
