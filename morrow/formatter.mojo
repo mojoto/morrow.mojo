@@ -464,9 +464,9 @@ def _replace_token(
         if token_count == 2:
             return String(hour).ascii_rjust(2, "0")
     elif token == _h:
-        var h_12 = hour
-        if hour > 12:
-            h_12 -= 12
+        var h_12 = hour % 12
+        if h_12 == 0:
+            h_12 = 12
         if token_count == 1:
             return String(h_12)
         if token_count == 2:

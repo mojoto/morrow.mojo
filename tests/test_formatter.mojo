@@ -19,6 +19,9 @@ def test_format() raises:
     )
     assert_equal(m.format("Y-YY-YYY-YYYY M-MM D-DD"), "Y-24--2024 2-02 1-01")
     assert_equal(m.format("H-HH-h-hh m-mm s-ss"), "3-03-3-03 4-04 5-05")
+    assert_equal(Morrow(2024, 2, 1, 0, 4, 5).format("h-hh A-a"), "12-12 AM-am")
+    assert_equal(Morrow(2024, 2, 1, 12, 4, 5).format("h-hh A-a"), "12-12 PM-pm")
+    assert_equal(Morrow(2024, 2, 1, 23, 4, 5).format("h-hh A-a"), "11-11 PM-pm")
     assert_equal(
         m.format("S-SS-SSS-SSSS-SSSSS-SSSSSS"), "1-12-123-1234-12345-123456"
     )
