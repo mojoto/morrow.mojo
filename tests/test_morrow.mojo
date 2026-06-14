@@ -1633,10 +1633,20 @@ def test_flexible_get_creation_helpers() raises:
     var tz_formats = List[String]()
     tz_formats.append("YYYY/MM/DD")
     tz_formats.append("YYYY-MM-DD HH:mm:ss")
+    tz_formats.append("YYYY-MM-DD T HH:mm:ss")
     var multi_tz = Morrow.get(
         "2023-01-20 15:49:10", tz_formats, TimeZone.from_utc("+08:00")
     )
     assert_equal(String(multi_tz), "2023-01-20T15:49:10.000000+08:00")
+    var normalized_multi_tz = Morrow.get(
+        "2023-01-20  T \n   15:49:10",
+        tz_formats,
+        TimeZone.from_utc("+08:00"),
+        normalize_whitespace=True,
+    )
+    assert_equal(
+        String(normalized_multi_tz), "2023-01-20T15:49:10.000000+08:00"
+    )
     var local_tz = TimeZone.local()
     var parsed_local = Morrow.get(
         "2023-01-20 15:49:10", "YYYY-MM-DD HH:mm:ss", "local"
@@ -1648,6 +1658,15 @@ def test_flexible_get_creation_helpers() raises:
     assert_equal(multi_local.tz.offset, local_tz.offset)
     assert_equal(multi_local.tz.name, "local")
     assert_equal(multi_local.hour, 15)
+    var normalized_multi_local = Morrow.get(
+        "2023-01-20  T \n   15:49:10",
+        tz_formats,
+        "local",
+        normalize_whitespace=True,
+    )
+    assert_equal(normalized_multi_local.tz.offset, local_tz.offset)
+    assert_equal(normalized_multi_local.tz.name, "local")
+    assert_equal(normalized_multi_local.hour, 15)
 
     assert_equal(
         String(Morrow.get("1709175845.123456", "X")),

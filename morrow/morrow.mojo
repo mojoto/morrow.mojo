@@ -477,6 +477,26 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def get(
+        date_str: String,
+        formats: List[String],
+        tz: TimeZone,
+        normalize_whitespace: Bool,
+    ) raises -> Self:
+        """
+        Create a Morrow by trying Arrow format tokens in order with replacement timezone, optionally normalizing ASCII whitespace.
+        """
+        if not normalize_whitespace:
+            return Self._parse_arrow_formats(date_str, formats, tz)
+
+        var normalized_formats = List[String]()
+        for i in range(len(formats)):
+            normalized_formats.append(Self._normalize_whitespace(formats[i]))
+        return Self._parse_arrow_formats(
+            Self._normalize_whitespace(date_str), normalized_formats, tz
+        )
+
+    @staticmethod
+    def get(
         date_str: String, formats: List[String], tz_str: String
     ) raises -> Self:
         """
@@ -484,6 +504,23 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return Self._parse_arrow_formats(
             date_str, formats, Self._parse_timezone_argument(tz_str)
+        )
+
+    @staticmethod
+    def get(
+        date_str: String,
+        formats: List[String],
+        tz_str: String,
+        normalize_whitespace: Bool,
+    ) raises -> Self:
+        """
+        Create a Morrow by trying Arrow format tokens in order with parsed replacement timezone, optionally normalizing ASCII whitespace.
+        """
+        return Self.get(
+            date_str,
+            formats,
+            Self._parse_timezone_argument(tz_str),
+            normalize_whitespace,
         )
 
     @staticmethod
