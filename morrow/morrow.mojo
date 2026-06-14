@@ -2826,7 +2826,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         var date_str = self._date_string()
         var time_str: String
-        if timespec == "auto" or timespec == "microseconds":
+        if timespec == "auto":
+            if self.microsecond == 0:
+                time_str = (
+                    String(self.hour).ascii_rjust(2, "0")
+                    + ":"
+                    + String(self.minute).ascii_rjust(2, "0")
+                    + ":"
+                    + String(self.second).ascii_rjust(2, "0")
+                )
+            else:
+                time_str = self._time_string_microseconds()
+        elif timespec == "microseconds":
             time_str = self._time_string_microseconds()
         elif timespec == "milliseconds":
             time_str = (

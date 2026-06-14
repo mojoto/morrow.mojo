@@ -94,6 +94,18 @@ def test_iso_format() raises:
     var d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Beijing"))
     assert_equal(d1.isoformat(timespec="seconds"), "2023-10-01T00:00:00+08:00")
 
+    var whole_second = Morrow(2024, 2, 29, 3, 4, 5)
+    assert_equal(whole_second.isoformat(), "2024-02-29T03:04:05")
+    assert_equal(
+        whole_second.isoformat(timespec="microseconds"),
+        "2024-02-29T03:04:05.000000",
+    )
+
+    var whole_second_tz = Morrow(
+        2024, 2, 29, 3, 4, 5, tz=TimeZone.from_utc("UTC")
+    )
+    assert_equal(whole_second_tz.isoformat(), "2024-02-29T03:04:05+00:00")
+
 
 def test_strptime() raises:
     var m = Morrow.strptime(
