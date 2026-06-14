@@ -995,17 +995,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             elif Self._starts_with(fmt, fmt_pos, "X"):
                 if fmt_pos + 1 != fmt.byte_length():
                     raise Error("timestamp token must be the full format")
-                var parsed = Self.utcfromtimestamp(
-                    String(date_str[byte=date_pos:])
-                )
+                var timestamp_str = String(date_str[byte=date_pos:])
+                Self._validate_timestamp_seconds_token(timestamp_str)
+                var parsed = Self.utcfromtimestamp(timestamp_str)
                 if not tzinfo.is_none():
                     return parsed.replace(tzinfo=tzinfo)
                 return parsed
             elif Self._starts_with(fmt, fmt_pos, "x"):
                 if fmt_pos + 1 != fmt.byte_length():
                     raise Error("timestamp token must be the full format")
+                var timestamp_str = String(date_str[byte=date_pos:])
+                Self._validate_expanded_timestamp_token(timestamp_str)
                 var parsed = Self._from_expanded_timestamp_value(
-                    Int(date_str[byte=date_pos:])
+                    Int(timestamp_str)
                 )
                 if not tzinfo.is_none():
                     return parsed.replace(tzinfo=tzinfo)
@@ -2663,6 +2665,60 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if should_round:
             value += 1
         return MorrowParseInt(value, pos)
+
+    @staticmethod
+    def _validate_timestamp_seconds_token(timestamp_str: String) raises:
+        var length = timestamp_str.byte_length()
+        if length == 0:
+            raise Error("timestamp token is missing")
+        var pos = 0
+        if timestamp_str[byte=pos] == "-":
+            pos += 1
+            if pos == length:
+                raise Error("timestamp token is missing")
+
+        var digit_start = pos
+        while pos < length and Self._is_ascii_digit(
+            ord(timestamp_str[byte=pos])
+        ):
+            pos += 1
+        var digit_count = pos - digit_start
+        if digit_count == 0:
+            raise Error("timestamp token must start with digits")
+
+        var has_fraction = False
+        if pos < length and timestamp_str[byte=pos] == ".":
+            has_fraction = True
+            pos += 1
+            var fraction_start = pos
+            while pos < length and Self._is_ascii_digit(
+                ord(timestamp_str[byte=pos])
+            ):
+                pos += 1
+            if pos == fraction_start:
+                raise Error("timestamp token fraction is missing")
+
+        if pos != length:
+            raise Error("timestamp token has invalid characters")
+        if not has_fraction and digit_count < 2:
+            raise Error("timestamp token integer is too short")
+
+    @staticmethod
+    def _validate_expanded_timestamp_token(timestamp_str: String) raises:
+        var length = timestamp_str.byte_length()
+        if length == 0:
+            raise Error("timestamp token is missing")
+        var pos = 0
+        if timestamp_str[byte=pos] == "-":
+            pos += 1
+            if pos == length:
+                raise Error("timestamp token is missing")
+        while pos < length and Self._is_ascii_digit(
+            ord(timestamp_str[byte=pos])
+        ):
+            pos += 1
+        if pos != length:
+            raise Error("timestamp token has invalid characters")
 
     @staticmethod
     def _parse_ordinal_suffix(

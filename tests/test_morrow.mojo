@@ -1582,6 +1582,23 @@ def test_flexible_get_creation_helpers() raises:
         "2024-02-29T03:04:05.123456+00:00",
     )
     assert_equal(
+        String(Morrow.get("00", "X")), "1970-01-01T00:00:00.000000+00:00"
+    )
+    assert_equal(
+        String(Morrow.get("0.0", "X")), "1970-01-01T00:00:00.000000+00:00"
+    )
+    assert_equal(
+        String(Morrow.get("-01", "X")), "1969-12-31T23:59:59.000000+00:00"
+    )
+    assert_equal(
+        String(Morrow.get("01.5", "X")), "1970-01-01T00:00:01.500000+00:00"
+    )
+    assert_get_raises("1", "X")
+    assert_get_raises("+1709175845", "X")
+    assert_get_raises("1709175845 ", "X")
+    assert_get_raises("1e3", "X")
+    assert_get_raises("10.", "X")
+    assert_equal(
         String(Morrow.get("1709175845123456", "x")),
         "2024-02-29T03:04:05.123456+00:00",
     )
@@ -1589,6 +1606,9 @@ def test_flexible_get_creation_helpers() raises:
         String(Morrow.get("1709175845123", "x")),
         "2024-02-29T03:04:05.123000+00:00",
     )
+    assert_get_raises("+1709175845123", "x")
+    assert_get_raises("1709175845123 ", "x")
+    assert_get_raises("1e3", "x")
 
 
 def test_date_and_datetime_creation_helpers() raises:
