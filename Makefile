@@ -1,5 +1,6 @@
 MOJO ?= $(if $(wildcard .venv/bin/mojo),.venv/bin/mojo,mojo)
 MOJO_TEST_FLAGS ?= -I .
+MOJO_PYTHON ?= 3.14
 PACKAGE := morrow.mojopkg
 TEST_FILES := $(sort $(wildcard tests/test_*.mojo))
 
@@ -18,7 +19,7 @@ install:
 		printf "uv is required to install Mojo. See https://docs.astral.sh/uv/getting-started/installation/\n"; \
 		exit 1; \
 	fi
-	uv venv --allow-existing
+	uv venv --python $(MOJO_PYTHON) --allow-existing
 	uv pip install mojo
 	.venv/bin/mojo --version
 
