@@ -1603,8 +1603,6 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return the start and end of this Morrow's span in a given timeframe.
         """
-        if count < 1:
-            raise Error("count must be greater than 0")
         Self._validate_bounds(bounds)
 
         var start = self if exact else self._floor_frame(frame, week_start)
