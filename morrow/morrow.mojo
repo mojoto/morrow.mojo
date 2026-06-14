@@ -403,6 +403,62 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             + String(self.year).ascii_rjust(4, "0")
         )
 
+    def date(self) -> MorrowDate:
+        """
+        Return the date components.
+        """
+        return MorrowDate(self.year, self.month, self.day)
+
+    def time(self) -> MorrowTime:
+        """
+        Return the time components without timezone information.
+        """
+        return MorrowTime(
+            self.hour,
+            self.minute,
+            self.second,
+            self.microsecond,
+            TimeZone.none(),
+        )
+
+    def timetz(self) -> MorrowTime:
+        """
+        Return the time components with timezone information.
+        """
+        return MorrowTime(
+            self.hour, self.minute, self.second, self.microsecond, self.tz
+        )
+
+    def tzinfo(self) -> TimeZone:
+        """
+        Return this Morrow's timezone.
+        """
+        return self.tz
+
+    def utcoffset(self) -> TimeDelta:
+        """
+        Return this Morrow's fixed UTC offset.
+        """
+        return TimeDelta(seconds=self.tz.offset)
+
+    def dst(self) -> TimeDelta:
+        """
+        Return daylight-saving offset. Fixed-offset timezones have none.
+        """
+        return TimeDelta()
+
+    def timetuple(self) raises -> MorrowTimeTuple:
+        """
+        Return local date and time fields in Python struct_time style.
+        """
+        return self._time_tuple()
+
+    def utctimetuple(self) raises -> MorrowTimeTuple:
+        """
+        Return UTC date and time fields in Python struct_time style.
+        """
+        return self.to("UTC")._time_tuple()
+
     def humanize(
         self,
         other: Self,
@@ -1032,6 +1088,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
         return seconds * _US_PER_SECOND + self.microsecond
 
+    def _time_tuple(self) raises -> MorrowTimeTuple:
+        return MorrowTimeTuple(
+            self.year,
+            self.month,
+            self.day,
+            self.hour,
+            self.minute,
+            self.second,
+            self.weekday(),
+            self.toordinal() - _ymd2ord(self.year, 1, 1) + 1,
+            0,
+        )
+
     def format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
         """
         Returns a string representation of the `Morrow`
@@ -1327,3 +1396,105 @@ struct MorrowIsoCalendar(Copyable, ImplicitlyCopyable, Movable):
         self.year = year
         self.week = week
         self.weekday = weekday
+
+
+struct MorrowDate(Copyable, ImplicitlyCopyable, Movable, Writable):
+    var year: Int
+    var month: Int
+    var day: Int
+
+    def __init__(out self, year: Int, month: Int, day: Int):
+        self.year = year
+        self.month = month
+        self.day = day
+
+    def __str__(self) -> String:
+        return self.to_string()
+
+    def write_to(self, mut writer: Some[Writer]):
+        writer.write(self.to_string())
+
+    def to_string(self) -> String:
+        return (
+            String(self.year).ascii_rjust(4, "0")
+            + "-"
+            + String(self.month).ascii_rjust(2, "0")
+            + "-"
+            + String(self.day).ascii_rjust(2, "0")
+        )
+
+
+struct MorrowTime(Copyable, ImplicitlyCopyable, Movable, Writable):
+    var hour: Int
+    var minute: Int
+    var second: Int
+    var microsecond: Int
+    var tz: TimeZone
+
+    def __init__(
+        out self,
+        hour: Int,
+        minute: Int,
+        second: Int,
+        microsecond: Int,
+        tz: TimeZone = TimeZone.none(),
+    ):
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+        self.microsecond = microsecond
+        self.tz = tz
+
+    def __str__(self) -> String:
+        return self.to_string()
+
+    def write_to(self, mut writer: Some[Writer]):
+        writer.write(self.to_string())
+
+    def to_string(self) -> String:
+        var result = (
+            String(self.hour).ascii_rjust(2, "0")
+            + ":"
+            + String(self.minute).ascii_rjust(2, "0")
+            + ":"
+            + String(self.second).ascii_rjust(2, "0")
+            + "."
+            + String(self.microsecond).ascii_rjust(6, "0")
+        )
+        if not self.tz.is_none():
+            result += self.tz.format()
+        return result
+
+
+struct MorrowTimeTuple(Copyable, ImplicitlyCopyable, Movable):
+    var year: Int
+    var mon: Int
+    var mday: Int
+    var hour: Int
+    var min: Int
+    var sec: Int
+    var wday: Int
+    var yday: Int
+    var isdst: Int
+
+    def __init__(
+        out self,
+        year: Int,
+        mon: Int,
+        mday: Int,
+        hour: Int,
+        min: Int,
+        sec: Int,
+        wday: Int,
+        yday: Int,
+        isdst: Int,
+    ):
+        self.year = year
+        self.mon = mon
+        self.mday = mday
+        self.hour = hour
+        self.min = min
+        self.sec = sec
+        self.wday = wday
+        self.yday = yday
+        self.isdst = isdst

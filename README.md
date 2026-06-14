@@ -106,6 +106,14 @@ print(utc.ctime())  # Thu Feb 29 16:30:00 2024
 var iso = utc.isocalendar()
 print(iso.week)  # 9
 
+# Get date, time, and struct_time-style component views.
+print(str(utc.date()))  # 2024-02-29
+print(str(utc.time()))  # 16:30:00.123456
+print(str(utc.timetz()))  # 16:30:00.123456+00:00
+print(utc.timetuple().yday)  # 60
+print(utc.utctimetuple().hour)  # 16
+print(utc.utcoffset().total_seconds())  # 0.0
+
 # Humanize and dehumanize English relative times.
 var present = Morrow(2024, 1, 1, 12, 0, 0, 0, TimeZone.from_utc("UTC"))
 print(present.shift(hours=2).humanize(present))  # in 2 hours

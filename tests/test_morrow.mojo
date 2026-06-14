@@ -346,6 +346,55 @@ def test_object_properties_and_serialization() raises:
     assert_equal(year_edge.weekday, 1)
 
 
+def test_component_views() raises:
+    var tz = TimeZone.from_utc("+05:30")
+    var m = Morrow(2024, 2, 29, 3, 4, 5, 123456, tz)
+
+    var date = m.date()
+    assert_equal(date.year, 2024)
+    assert_equal(date.month, 2)
+    assert_equal(date.day, 29)
+    assert_equal(String(date), "2024-02-29")
+
+    var time = m.time()
+    assert_equal(time.hour, 3)
+    assert_equal(time.minute, 4)
+    assert_equal(time.second, 5)
+    assert_equal(time.microsecond, 123456)
+    assert_true(time.tz.is_none())
+    assert_equal(String(time), "03:04:05.123456")
+
+    var timetz = m.timetz()
+    assert_equal(timetz.tz.offset, 19800)
+    assert_equal(String(timetz), "03:04:05.123456+05:30")
+
+    assert_equal(m.tzinfo().offset, 19800)
+    assert_equal(m.utcoffset().total_seconds(), 19800.0)
+    assert_equal(m.dst().total_seconds(), 0.0)
+
+    var tuple = m.timetuple()
+    assert_equal(tuple.year, 2024)
+    assert_equal(tuple.mon, 2)
+    assert_equal(tuple.mday, 29)
+    assert_equal(tuple.hour, 3)
+    assert_equal(tuple.min, 4)
+    assert_equal(tuple.sec, 5)
+    assert_equal(tuple.wday, 3)
+    assert_equal(tuple.yday, 60)
+    assert_equal(tuple.isdst, 0)
+
+    var utc_tuple = m.utctimetuple()
+    assert_equal(utc_tuple.year, 2024)
+    assert_equal(utc_tuple.mon, 2)
+    assert_equal(utc_tuple.mday, 28)
+    assert_equal(utc_tuple.hour, 21)
+    assert_equal(utc_tuple.min, 34)
+    assert_equal(utc_tuple.sec, 5)
+    assert_equal(utc_tuple.wday, 2)
+    assert_equal(utc_tuple.yday, 59)
+    assert_equal(utc_tuple.isdst, 0)
+
+
 def test_humanize_and_dehumanize() raises:
     var utc = TimeZone.from_utc("UTC")
     var present = Morrow(2024, 1, 1, 12, 0, 0, 0, utc)
