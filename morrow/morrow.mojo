@@ -724,6 +724,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
             month = date.month
             day = date.day
+        if microsecond >= _US_PER_SECOND:
+            second += microsecond // _US_PER_SECOND
+            microsecond = microsecond % _US_PER_SECOND
         if not tzinfo.is_none():
             tz = tzinfo
         Self._validate_fields(
@@ -1867,11 +1870,33 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _parse_subsecond(
         date_str: String, date_pos: Int, count: Int
     ) raises -> MorrowParseInt:
-        var parsed = Self._parse_fixed_int(date_str, date_pos, count)
-        var digits = String(date_str[byte = date_pos : parsed.pos])
-        while digits.byte_length() < 6:
-            digits += "0"
-        return MorrowParseInt(Int(digits), parsed.pos)
+        var pos = date_pos
+        while pos < date_str.byte_length() and Self._is_ascii_digit(
+            ord(date_str[byte=pos])
+        ):
+            pos += 1
+        if pos == date_pos:
+            raise Error("subsecond token is missing")
+
+        var digit_count = pos - date_pos
+        if digit_count <= 6:
+            var digits = String(date_str[byte=date_pos:pos])
+            while digits.byte_length() < 6:
+                digits += "0"
+            return MorrowParseInt(Int(digits), pos)
+
+        var value = Int(date_str[byte = date_pos : date_pos + 6])
+        var round_digit = Int(date_str[byte = date_pos + 6 : date_pos + 7])
+        var should_round = round_digit > 5
+        if round_digit == 5:
+            var has_remaining = False
+            for i in range(date_pos + 7, pos):
+                if ord(date_str[byte=i]) != ord("0"):
+                    has_remaining = True
+            should_round = has_remaining or value % 2 == 1
+        if should_round:
+            value += 1
+        return MorrowParseInt(value, pos)
 
     @staticmethod
     def _parse_ordinal_suffix(date_str: String, date_pos: Int) raises -> Int:
