@@ -131,15 +131,37 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def fromtimestamp(timestamp: Float64) raises -> Self:
-        var timestamp_ = normalize_timestamp(timestamp)
-        var t = CTimeval(Int(timestamp_))
-        return Self._fromtimestamp(t, False)
+        return Self._fromtimestamp(
+            Self._timeval_from_timestamp(timestamp), False
+        )
+
+    @staticmethod
+    def fromtimestamp(timestamp: Float64, tz: TimeZone) raises -> Self:
+        return Self.utcfromtimestamp(timestamp).to(tz)
+
+    @staticmethod
+    def fromtimestamp(timestamp: Float64, tz_str: String) raises -> Self:
+        return Self.utcfromtimestamp(timestamp).to(tz_str)
 
     @staticmethod
     def utcfromtimestamp(timestamp: Float64) raises -> Self:
+        return Self._fromtimestamp(
+            Self._timeval_from_timestamp(timestamp), True
+        )
+
+    @staticmethod
+    def _timeval_from_timestamp(timestamp: Float64) raises -> CTimeval:
         var timestamp_ = normalize_timestamp(timestamp)
-        var t = CTimeval(Int(timestamp_))
-        return Self._fromtimestamp(t, True)
+        var seconds = Int(timestamp_)
+        if Float64(seconds) > timestamp_:
+            seconds -= 1
+        var microseconds = Int(
+            (timestamp_ - Float64(seconds)) * 1000000.0 + 0.5
+        )
+        if microseconds >= _US_PER_SECOND:
+            seconds += 1
+            microseconds -= _US_PER_SECOND
+        return CTimeval(seconds, microseconds)
 
     @staticmethod
     def get(timestamp: Float64) raises -> Self:
@@ -147,6 +169,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Create a UTC Morrow from a POSIX timestamp.
         """
         return Self.utcfromtimestamp(timestamp)
+
+    @staticmethod
+    def get(timestamp: Float64, tz: TimeZone) raises -> Self:
+        """
+        Create a Morrow from a POSIX timestamp converted to a fixed-offset timezone.
+        """
+        return Self.utcfromtimestamp(timestamp).to(tz)
+
+    @staticmethod
+    def get(timestamp: Float64, tz_str: String) raises -> Self:
+        """
+        Create a Morrow from a POSIX timestamp converted to a timezone string.
+        """
+        return Self.utcfromtimestamp(timestamp).to(tz_str)
 
     @staticmethod
     def get(date_str: String) raises -> Self:

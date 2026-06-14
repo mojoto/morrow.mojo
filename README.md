@@ -52,6 +52,7 @@ print(str(utc_t))  # 2023-09-30T16:00:00.000000+00:00
 print(str(Morrow.get("2013-05-05")))  # 2013-05-05T00:00:00.000000+00:00
 print(str(Morrow.fromisoformat("20160413T133656.456289Z")))  # 2016-04-13T13:36:56.456289+00:00
 print(str(Morrow.get(1700000000.0)))  # 2023-11-14T22:13:20.000000+00:00
+print(str(Morrow.get(1700000000.5, "+05:30")))  # 2023-11-15T03:43:20.500000+05:30
 print(Morrow.now("+08:00").tz.offset)  # 28800
 
 # Get ISO format.

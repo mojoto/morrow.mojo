@@ -386,5 +386,20 @@ def test_creation_helpers() raises:
     assert_true(beijing_now.year >= 2020)
 
 
+def test_timestamp_creation_with_timezone() raises:
+    var beijing = TimeZone.from_utc("+08:00")
+
+    var from_timestamp = Morrow.fromtimestamp(1700000000.0, beijing)
+    assert_equal(String(from_timestamp), "2023-11-15T06:13:20.000000+08:00")
+    assert_equal(from_timestamp.timestamp(), 1700000000.0)
+
+    var from_get = Morrow.get(1700000000.5, "+05:30")
+    assert_equal(String(from_get), "2023-11-15T03:43:20.500000+05:30")
+    assert_equal(from_get.timestamp(), 1700000000.5)
+
+    var before_epoch = Morrow.utcfromtimestamp(-0.75)
+    assert_equal(String(before_epoch), "1969-12-31T23:59:59.250000+00:00")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
