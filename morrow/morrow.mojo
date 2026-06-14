@@ -1384,16 +1384,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Return an English human-readable relative difference.
         """
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
+        var unit = granularity
+        if unit != "auto":
+            _ = Self._humanize_unit_seconds(unit)
+
         if delta_us == 0:
             if only_distance:
                 return "instantly"
             return "just now"
 
         var seconds = abs(delta_us) // _US_PER_SECOND
-        var unit = granularity
         if unit == "auto":
             return self._humanize_auto(other, delta_us, only_distance)
-        if (unit == "second" or unit == "seconds") and seconds < 2:
+        if unit == "second" and seconds < 2:
             if only_distance:
                 return "instantly"
             return "just now"

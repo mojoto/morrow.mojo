@@ -714,6 +714,10 @@ def test_humanize_and_dehumanize() raises:
         ),
         "instantly",
     )
+    assert_humanize_granularity_raises(present, present, "seconds")
+    assert_humanize_granularity_raises(
+        present.shift(seconds=1), present, "seconds"
+    )
     assert_equal(
         present.shift(seconds=2).humanize(present, granularity="second"),
         "in 2 seconds",
