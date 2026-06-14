@@ -77,6 +77,22 @@ def assert_strptime_raises(date_str: String, fmt: String) raises:
     assert_true(False)
 
 
+def assert_fromordinal_raises(ordinal: Int) raises:
+    try:
+        _ = Morrow.fromordinal(ordinal)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_int_get_raises(timestamp: Int) raises:
+    try:
+        _ = Morrow.get(timestamp)
+    except e:
+        return
+    assert_true(False)
+
+
 def assert_humanize_granularity_raises(
     value: Morrow, other: Morrow, granularity: String
 ) raises:
@@ -219,6 +235,15 @@ def test_ordinal() raises:
 
     var leap_day = Morrow.fromordinal(Morrow(2024, 2, 29).toordinal())
     assert_equal(String(leap_day), "2024-02-29T00:00:00.000000")
+
+    var min_ordinal = Morrow.fromordinal(1)
+    assert_equal(String(min_ordinal), "0001-01-01T00:00:00.000000")
+
+    var max_ordinal = Morrow.fromordinal(3652059)
+    assert_equal(String(max_ordinal), "9999-12-31T00:00:00.000000")
+
+    assert_fromordinal_raises(0)
+    assert_fromordinal_raises(3652060)
 
 
 def test_iso_calendar_creation() raises:
@@ -1500,6 +1525,8 @@ def test_timestamp_creation_with_timezone() raises:
 
     var before_epoch = Morrow.utcfromtimestamp(-0.75)
     assert_equal(String(before_epoch), "1969-12-31T23:59:59.250000+00:00")
+
+    assert_int_get_raises(-1000000000000)
 
 
 def test_string_timestamp_creation() raises:

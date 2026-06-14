@@ -10,6 +10,7 @@ from .timezone import TimeZone
 from .timedelta import TimeDelta
 from .formatter import format_morrow, format_strftime
 from .constants import (
+    MAX_ORDINAL,
     MAX_TIMESTAMP,
     MAX_TIMESTAMP_MS,
     MAX_TIMESTAMP_US,
@@ -147,27 +148,37 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             tm = c_localtime(t.tv_sec)
             tz = TimeZone(Int(tm.tm_gmtoff), "local")
 
-        var result = Self(
-            Int(tm.tm_year) + 1900,
-            Int(tm.tm_mon) + 1,
-            Int(tm.tm_mday),
-            Int(tm.tm_hour),
-            Int(tm.tm_min),
-            Int(tm.tm_sec),
-            t.tv_usec,
-            tz,
+        var year = Int(tm.tm_year) + 1900
+        var month = Int(tm.tm_mon) + 1
+        var day = Int(tm.tm_mday)
+        var hour = Int(tm.tm_hour)
+        var minute = Int(tm.tm_min)
+        var second = Int(tm.tm_sec)
+        return Self(year, month, day, hour, minute, second, t.tv_usec, tz)
+
+    @staticmethod
+    def _fromtimestamp_checked(t: CTimeval, utc: Bool) raises -> Self:
+        var result = Self._fromtimestamp(t, utc)
+        Self._validate_fields(
+            result.year,
+            result.month,
+            result.day,
+            result.hour,
+            result.minute,
+            result.second,
+            result.microsecond,
         )
         return result
 
     @staticmethod
     def fromtimestamp(timestamp: Float64) raises -> Self:
-        return Self._fromtimestamp(
+        return Self._fromtimestamp_checked(
             Self._timeval_from_timestamp(timestamp), False
         )
 
     @staticmethod
     def fromtimestamp(timestamp: Int) raises -> Self:
-        return Self._fromtimestamp(
+        return Self._fromtimestamp_checked(
             Self._timeval_from_timestamp(timestamp), False
         )
 
@@ -201,13 +212,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def utcfromtimestamp(timestamp: Float64) raises -> Self:
-        return Self._fromtimestamp(
+        return Self._fromtimestamp_checked(
             Self._timeval_from_timestamp(timestamp), True
         )
 
     @staticmethod
     def utcfromtimestamp(timestamp: Int) raises -> Self:
-        return Self._fromtimestamp(
+        return Self._fromtimestamp_checked(
             Self._timeval_from_timestamp(timestamp), True
         )
 
@@ -3121,6 +3132,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         January 1 of year 1 is day 1. Only the year, month and day are non-zero in the result.
         """
+        if ordinal < 1 or ordinal > MAX_ORDINAL:
+            raise Error("ordinal is out of range")
+
         # n is a 1-based index, starting at 1-Jan-1.  The pattern of leap years
         # repeats exactly every 400 years.  The basic strategy is to find the
         # closest 400-year boundary at or before n, then work with the offset

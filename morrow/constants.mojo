@@ -3,6 +3,7 @@ comptime _MAX_TIMESTAMP: Int = 32503737600
 comptime MAX_TIMESTAMP = _MAX_TIMESTAMP
 comptime MAX_TIMESTAMP_MS = MAX_TIMESTAMP * 1000
 comptime MAX_TIMESTAMP_US = MAX_TIMESTAMP * 1_000_000
+comptime MAX_ORDINAL = 3652059  # 9999-12-31
 
 
 def days_in_month(month: Int) -> Int:
