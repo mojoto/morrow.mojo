@@ -150,6 +150,22 @@ def test_shift_time_units() raises:
     assert_equal(String(shifted), "2024-03-05T22:30:00.000000")
 
 
+def test_shift_weekday() raises:
+    var saturday = Morrow(
+        2013, 5, 11, 22, 27, 34, 787885, TimeZone.from_utc("UTC")
+    )
+
+    assert_equal(
+        String(saturday.shift(weekday=5)), "2013-05-11T22:27:34.787885+00:00"
+    )
+    assert_equal(
+        String(saturday.shift(weekday=0)), "2013-05-13T22:27:34.787885+00:00"
+    )
+    assert_equal(
+        String(saturday.shift(weekday=6)), "2013-05-12T22:27:34.787885+00:00"
+    )
+
+
 def test_floor_ceil_and_span() raises:
     var tz = TimeZone.from_utc("+05:30")
     var m = Morrow(2024, 2, 29, 13, 14, 15, 123456, tz)
