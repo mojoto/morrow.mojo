@@ -25,5 +25,20 @@ def test_format() raises:
     assert_equal(leap.format("X-x"), "1709175845-1709175845123456")
 
 
+def test_strftime() raises:
+    var m = Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone(19800, "IST"))
+    assert_equal(
+        m.strftime("%Y-%m-%d %H:%M:%S.%f %z %Z"),
+        "2024-02-29 03:04:05.123456 +0530 IST",
+    )
+    assert_equal(
+        m.strftime("%a %A %b %B %j %w %u %G-W%V"),
+        "Thu Thursday Feb February 060 4 4 2024-W09",
+    )
+    assert_equal(
+        m.strftime("%I:%M %p %% %F %T"), "03:04 AM % 2024-02-29 03:04:05"
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

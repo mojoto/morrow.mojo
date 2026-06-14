@@ -8,7 +8,7 @@ from ._libc import c_gettimeofday, c_localtime, c_gmtime, c_strptime
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
 from .timedelta import TimeDelta
-from .formatter import format_morrow
+from .formatter import format_morrow, format_strftime
 from .constants import days_before_month, day_abbreviation, month_abbreviation
 from std.collections import List
 from std.format import Writable, Writer
@@ -1121,6 +1121,25 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         """
         return format_morrow(
+            self.year,
+            self.month,
+            self.day,
+            self.hour,
+            self.minute,
+            self.second,
+            self.microsecond,
+            self.tz.offset,
+            self.tz.name,
+            self.tz.is_none(),
+            self.isoweekday(),
+            fmt,
+        )
+
+    def strftime(self, fmt: String) raises -> String:
+        """
+        Format using Python ``datetime.strftime`` directives.
+        """
+        return format_strftime(
             self.year,
             self.month,
             self.day,
