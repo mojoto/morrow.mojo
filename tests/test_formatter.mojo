@@ -27,6 +27,19 @@ def test_format() raises:
 
     var m_tz = Morrow(2024, 2, 1, 3, 4, 5, 123456, TimeZone.from_utc("+05:30"))
     assert_equal(m_tz.format("ZZ"), "+05:30")
+    assert_equal(m_tz.format("ZZZ"), "UTC+05:30")
+    assert_equal(
+        Morrow(2024, 2, 1, 3, 4, 5, 123456, TimeZone.from_utc("-07:00")).format(
+            "ZZZ"
+        ),
+        "UTC-07:00",
+    )
+    assert_equal(
+        Morrow(2024, 2, 1, 3, 4, 5, 123456, TimeZone.from_utc("UTC")).format(
+            "ZZZ"
+        ),
+        "UTC",
+    )
 
     var leap = Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone.from_utc("UTC"))
     assert_equal(leap.format("DDD-DDDD-W"), "60-060-2024-W09-4")

@@ -503,7 +503,13 @@ def _replace_token(
             return day_name(weekday)
     elif token == _Z:
         if token_count == 3:
-            return "UTC" if tz_is_none else tz_name
+            if tz_is_none or tz_name == "utc" or tz_name == "UTC":
+                return "UTC"
+            if tz_name.byte_length() > 0:
+                return tz_name
+            if tz_offset == 0:
+                return "UTC"
+            return "UTC" + _format_timezone(tz_offset)
         var separator = "" if token_count == 1 else ":"
         if tz_is_none:
             return _format_timezone(0, separator)
