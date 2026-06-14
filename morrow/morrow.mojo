@@ -1210,6 +1210,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return self.isoformat()
 
+    def quarter(self) -> Int:
+        """
+        Return the calendar quarter as an integer in 1..4.
+        """
+        return (self.month - 1) // 3 + 1
+
+    def week(self) raises -> Int:
+        """
+        Return the ISO week number.
+        """
+        return self.isocalendar().week
+
     def ctime(self) raises -> String:
         """
         Return a ctime formatted representation of the date and time.
@@ -1261,6 +1273,22 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Return this Morrow's timezone.
         """
         return self.tz
+
+    def tzname(self) -> String:
+        """
+        Return this Morrow's timezone name.
+        """
+        if self.tz.is_none():
+            return ""
+        if (
+            self.tz.name.byte_length() > 0
+            and self.tz.name != "utc"
+            and self.tz.name != "UTC"
+        ):
+            return self.tz.name
+        if self.tz.offset == 0:
+            return "UTC"
+        return "UTC" + self.tz.format()
 
     def utcoffset(self) -> TimeDelta:
         """

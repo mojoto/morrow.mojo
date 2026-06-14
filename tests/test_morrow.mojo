@@ -512,12 +512,19 @@ def test_object_properties_and_serialization() raises:
     assert_equal(m.ctime(), "Thu Jan 24 16:35:27 2019")
 
     var leap_day = Morrow(2024, 2, 29)
+    assert_equal(leap_day.quarter(), 1)
+    assert_equal(Morrow(2024, 4, 1).quarter(), 2)
+    assert_equal(Morrow(2024, 9, 30).quarter(), 3)
+    assert_equal(Morrow(2024, 12, 31).quarter(), 4)
+    assert_equal(leap_day.week(), 9)
+
     var iso = leap_day.isocalendar()
     assert_equal(iso.year, 2024)
     assert_equal(iso.week, 9)
     assert_equal(iso.weekday, 4)
 
     var year_edge = Morrow(2018, 12, 31).isocalendar()
+    assert_equal(Morrow(2018, 12, 31).week(), 1)
     assert_equal(year_edge.year, 2019)
     assert_equal(year_edge.week, 1)
     assert_equal(year_edge.weekday, 1)
@@ -546,6 +553,13 @@ def test_component_views() raises:
     assert_equal(String(timetz), "03:04:05.123456+05:30")
 
     assert_equal(m.tzinfo().offset, 19800)
+    assert_equal(m.tzname(), "UTC+05:30")
+    assert_equal(
+        Morrow(2024, 1, 1, tz=TimeZone.from_utc("UTC")).tzname(), "UTC"
+    )
+    assert_equal(
+        Morrow(2024, 1, 1, tz=TimeZone.from_utc("-05:00")).tzname(), "UTC-05:00"
+    )
     assert_equal(m.utcoffset().total_seconds(), 19800.0)
     assert_equal(m.dst().total_seconds(), 0.0)
 
