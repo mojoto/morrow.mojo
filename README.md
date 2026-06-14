@@ -149,6 +149,10 @@ print(utc.imaginary())  # False
 # Humanize and dehumanize English relative times.
 var present = Morrow(2024, 1, 1, 12, 0, 0, 0, TimeZone.from_utc("UTC"))
 print(present.shift(hours=2).humanize(present))  # in 2 hours
+var granularity = List[String]()
+granularity.append("hour")
+granularity.append("minute")
+print(present.shift(minutes=66).humanize(present, granularity=granularity))  # in an hour and 6 minutes
 print(str(present.dehumanize("2 days ago")))  # 2023-12-30T12:00:00.000000+00:00
 
 # Get time zone offset.

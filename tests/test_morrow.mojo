@@ -476,6 +476,24 @@ def test_humanize_and_dehumanize() raises:
         present.shift(days=8).humanize(present, granularity="week"), "in a week"
     )
 
+    var hour_minute = List[String]()
+    hour_minute.append("hour")
+    hour_minute.append("minute")
+    assert_equal(
+        present.shift(minutes=66).humanize(present, granularity=hour_minute),
+        "in an hour and 6 minutes",
+    )
+    assert_equal(
+        present.humanize(present.shift(minutes=66), granularity=hour_minute),
+        "an hour and 6 minutes ago",
+    )
+    assert_equal(
+        present.shift(minutes=66).humanize(
+            present, only_distance=True, granularity=hour_minute
+        ),
+        "an hour and 6 minutes",
+    )
+
     assert_equal(
         String(present.dehumanize("2 days ago")),
         "2023-12-30T12:00:00.000000+00:00",

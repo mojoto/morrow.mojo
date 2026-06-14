@@ -954,6 +954,52 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return "in " + distance
         return distance + " ago"
 
+    def humanize(self, other: Self, granularity: List[String]) raises -> String:
+        """
+        Return an English human-readable relative difference with multiple granularities.
+        """
+        return self.humanize(other, False, granularity)
+
+    def humanize(
+        self,
+        other: Self,
+        only_distance: Bool,
+        granularity: List[String],
+    ) raises -> String:
+        """
+        Return an English human-readable relative difference with multiple granularities.
+        """
+        if len(granularity) == 0:
+            raise Error("granularity cannot be empty")
+
+        var delta_us = self._utc_microseconds() - other._utc_microseconds()
+        if delta_us == 0:
+            return "just now"
+
+        var remaining = abs(delta_us) // _US_PER_SECOND
+        var distance = ""
+        for i in range(len(granularity)):
+            var unit = granularity[i]
+            var unit_seconds = Self._humanize_unit_seconds(unit)
+            var count = remaining // unit_seconds
+            if count > 0 or (
+                distance.byte_length() == 0 and i == len(granularity) - 1
+            ):
+                if count < 1:
+                    count = 1
+                var part = Self._format_humanize_distance(count, unit)
+                if distance.byte_length() == 0:
+                    distance = part
+                else:
+                    distance += " and " + part
+            remaining = remaining % unit_seconds
+
+        if only_distance:
+            return distance
+        if delta_us > 0:
+            return "in " + distance
+        return distance + " ago"
+
     def dehumanize(self, input_string: String) raises -> Self:
         """
         Shift this Morrow by an English human-readable relative difference.
