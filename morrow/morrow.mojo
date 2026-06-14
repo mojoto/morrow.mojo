@@ -864,7 +864,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
                 day = parsed.value
                 date_pos = parsed.pos
-                date_pos = Self._parse_ordinal_suffix(date_str, date_pos)
+                date_pos = Self._parse_ordinal_suffix(date_str, date_pos, day)
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "DD"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
@@ -2400,11 +2400,23 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return MorrowParseInt(value, pos)
 
     @staticmethod
-    def _parse_ordinal_suffix(date_str: String, date_pos: Int) raises -> Int:
+    def _parse_ordinal_suffix(
+        date_str: String, date_pos: Int, value: Int
+    ) raises -> Int:
         if date_pos + 2 > date_str.byte_length():
             raise Error("ordinal suffix is missing")
         var suffix = String(date_str[byte = date_pos : date_pos + 2])
-        if suffix == "st" or suffix == "nd" or suffix == "rd" or suffix == "th":
+        var expected = "th"
+        var mod100 = value % 100
+        if mod100 < 11 or mod100 > 13:
+            var mod10 = value % 10
+            if mod10 == 1:
+                expected = "st"
+            elif mod10 == 2:
+                expected = "nd"
+            elif mod10 == 3:
+                expected = "rd"
+        if suffix == expected:
             return date_pos + 2
         raise Error("ordinal suffix is invalid")
 
