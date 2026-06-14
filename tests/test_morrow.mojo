@@ -225,6 +225,12 @@ def test_shift_months_clamps_to_last_day() raises:
     var mar = feb.shift(years=1)
     assert_equal(String(mar), "2025-02-28T03:04:05.123456")
 
+    var quarter = jan31.shift(quarters=1)
+    assert_equal(String(quarter), "2024-04-30T03:04:05.123456")
+
+    var previous_quarter = jan31.shift(quarters=-1)
+    assert_equal(String(previous_quarter), "2023-10-31T03:04:05.123456")
+
 
 def test_shift_time_units() raises:
     var m = Morrow(2024, 2, 28, 23, 59, 59, 999999)

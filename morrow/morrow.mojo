@@ -1528,6 +1528,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         self,
         years: Int = 0,
         months: Int = 0,
+        quarters: Int = 0,
         weeks: Int = 0,
         days: Int = 0,
         hours: Int = 0,
@@ -1542,7 +1543,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if weekday < -1 or weekday > 6:
             raise Error("weekday must be in 0..6")
         var total_months = (
-            self.year * 12 + (self.month - 1) + years * 12 + months
+            self.year * 12
+            + (self.month - 1)
+            + years * 12
+            + quarters * 3
+            + months
         )
         var year = total_months // 12
         var month = total_months % 12 + 1
