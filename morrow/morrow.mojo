@@ -2312,10 +2312,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 break
 
             if exact:
+                var raw_span_end = current._shift_frame(frame, interval)
                 var next = current._shift_frame_preserving_day(
                     frame, interval, original_day
                 )
-                var span = Self._span_from_bounds(current, next, bounds)
+                var span = Self._span_from_bounds(current, raw_span_end, bounds)
                 var span_start_key = span.start._utc_microseconds()
                 if span_start_key == end_key or span_start_key - 1 == end_key:
                     break

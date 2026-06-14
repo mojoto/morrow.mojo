@@ -682,10 +682,21 @@ def test_range_and_span_range() raises:
         "month", month_start, month_end, exact=True
     )
     assert_equal(
+        String(exact_month_spans[1].end), "2024-03-28T23:59:59.999999+00:00"
+    )
+    assert_equal(
         String(exact_month_spans[2].start), "2024-03-31T00:00:00.000000+00:00"
     )
     assert_equal(
         String(exact_month_spans[2].end), "2024-04-29T23:59:59.999999+00:00"
+    )
+
+    var exact_quarter_spans = Morrow.span_range(
+        "quarter", month_start, Morrow(2024, 8, 15, tz=utc), exact=True
+    )
+    assert_equal(
+        String(exact_quarter_spans[1].end),
+        "2024-07-29T23:59:59.999999+00:00",
     )
 
 
