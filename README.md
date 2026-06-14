@@ -62,6 +62,25 @@ print(m.format("YYYY[Y]MM[M]DD[D]"))  # 2023Y10M01D
 var m_beijing = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, 'Bejing'))
 print(m_beijing.isoformat(timespec="seconds"))  # 2023-10-01T00:00:00+08:00
 
+# Replace selected fields.
+var replaced = m.replace(year=2024, month=2, day=29)
+print(str(replaced))  # 2024-02-29T00:00:00.001234
+
+# Shift by relative offsets. Month and year shifts clamp to the last valid day.
+var shifted = Morrow(2024, 1, 31).shift(months=1, weeks=1, hours=2)
+print(str(shifted))  # 2024-03-07T02:00:00.000000
+
+# Get the floor, ceiling, or span of a timeframe.
+var hour = Morrow(2024, 2, 29, 13, 14, 15).span("hour")
+print(str(hour.start))  # 2024-02-29T13:00:00.000000
+print(str(hour.end))  # 2024-02-29T13:59:59.999999
+print(str(Morrow(2024, 2, 29, 13, 14, 15).floor("day")))  # 2024-02-29T00:00:00.000000
+
+# Convert fixed-offset time zones and get POSIX timestamps.
+var utc = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
+print(str(utc.to("+08:00")))  # 2024-03-01T00:30:00.123456+08:00
+print(utc.timestamp())  # 1709224200.123456
+
 # Get time zone offset.
 print(TimeZone.from_utc('UTC+08:00').offset)  # 28800
 

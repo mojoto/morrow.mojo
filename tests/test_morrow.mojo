@@ -95,6 +95,9 @@ def test_ordinal() raises:
     assert_equal(m.month, 10)
     assert_equal(m.day, 1)
 
+    var leap_day = Morrow.fromordinal(Morrow(2024, 2, 29).toordinal())
+    assert_equal(String(leap_day), "2024-02-29T00:00:00.000000")
+
 
 def test_sub() raises:
     var result = Morrow(2023, 10, 1, 10, 0, 0, 1) - Morrow(
@@ -118,6 +121,113 @@ def test_sub() raises:
     result = Morrow(2023, 10, 3, 10, 1, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 2)
     assert_equal(String(result), "2 days, 0:01:01")
+
+
+def test_replace() raises:
+    var tz = TimeZone.from_utc("+05:30")
+    var m = Morrow(2024, 2, 29, 3, 4, 5, 123456, tz)
+    var replaced = m.replace(year=2025, month=12, day=31, hour=23, minute=59)
+
+    assert_equal(String(replaced), "2025-12-31T23:59:05.123456+05:30")
+    assert_equal(replaced.tz.offset, tz.offset)
+
+
+def test_shift_months_clamps_to_last_day() raises:
+    var jan31 = Morrow(2024, 1, 31, 3, 4, 5, 123456)
+    var feb = jan31.shift(months=1)
+    assert_equal(String(feb), "2024-02-29T03:04:05.123456")
+
+    var mar = feb.shift(years=1)
+    assert_equal(String(mar), "2025-02-28T03:04:05.123456")
+
+
+def test_shift_time_units() raises:
+    var m = Morrow(2024, 2, 28, 23, 59, 59, 999999)
+    var shifted = m.shift(microseconds=1)
+    assert_equal(String(shifted), "2024-02-29T00:00:00.000000")
+
+    shifted = shifted.shift(weeks=1, days=-1, hours=-1, minutes=-30)
+    assert_equal(String(shifted), "2024-03-05T22:30:00.000000")
+
+
+def test_floor_ceil_and_span() raises:
+    var tz = TimeZone.from_utc("+05:30")
+    var m = Morrow(2024, 2, 29, 13, 14, 15, 123456, tz)
+
+    assert_equal(String(m.floor("hour")), "2024-02-29T13:00:00.000000+05:30")
+    assert_equal(String(m.ceil("hour")), "2024-02-29T13:59:59.999999+05:30")
+
+    var day_span = m.span("day")
+    assert_equal(String(day_span.start), "2024-02-29T00:00:00.000000+05:30")
+    assert_equal(String(day_span.end), "2024-02-29T23:59:59.999999+05:30")
+
+    var two_days = m.span("day", count=2)
+    assert_equal(String(two_days.start), "2024-02-29T00:00:00.000000+05:30")
+    assert_equal(String(two_days.end), "2024-03-01T23:59:59.999999+05:30")
+
+    var closed = m.span("day", bounds="[]")
+    assert_equal(String(closed.start), "2024-02-29T00:00:00.000000+05:30")
+    assert_equal(String(closed.end), "2024-03-01T00:00:00.000000+05:30")
+
+    var open = m.span("day", bounds="()")
+    assert_equal(String(open.start), "2024-02-29T00:00:00.000001+05:30")
+    assert_equal(String(open.end), "2024-02-29T23:59:59.999999+05:30")
+
+
+def test_week_and_quarter_spans() raises:
+    var m = Morrow(2024, 2, 29, 13)
+
+    var iso_week = m.span("week")
+    assert_equal(String(iso_week.start), "2024-02-26T00:00:00.000000")
+    assert_equal(String(iso_week.end), "2024-03-03T23:59:59.999999")
+
+    var sunday_week = m.span("week", week_start=7)
+    assert_equal(String(sunday_week.start), "2024-02-25T00:00:00.000000")
+    assert_equal(String(sunday_week.end), "2024-03-02T23:59:59.999999")
+
+    var quarter = Morrow(2024, 5, 17, 8).span("quarter")
+    assert_equal(String(quarter.start), "2024-04-01T00:00:00.000000")
+    assert_equal(String(quarter.end), "2024-06-30T23:59:59.999999")
+
+    var month = Morrow(2024, 2, 17, 8).span("month")
+    assert_equal(String(month.start), "2024-02-01T00:00:00.000000")
+    assert_equal(String(month.end), "2024-02-29T23:59:59.999999")
+
+    var instant = m.span("microsecond")
+    assert_equal(String(instant.start), "2024-02-29T13:00:00.000000")
+    assert_equal(String(instant.end), "2024-02-29T13:00:00.000000")
+
+
+def test_timestamp_and_timezone_conversion() raises:
+    var utc = TimeZone.from_utc("UTC")
+    var epoch = Morrow(1970, 1, 1, 0, 0, 0, 0, utc)
+    assert_equal(epoch.timestamp(), 0.0)
+    assert_equal(epoch.float_timestamp(), 0.0)
+
+    var beijing_epoch = Morrow(
+        1970, 1, 1, 8, 0, 0, 500000, TimeZone.from_utc("+08:00")
+    )
+    assert_equal(beijing_epoch.timestamp(), 0.5)
+
+    var before_epoch = Morrow(1969, 12, 31, 23, 59, 59, 250000, utc)
+    assert_equal(before_epoch.timestamp(), -0.75)
+
+    var base = Morrow(2024, 2, 29, 16, 30, 0, 123456, utc)
+    var shanghai = base.to("+08:00")
+    assert_equal(String(shanghai), "2024-03-01T00:30:00.123456+08:00")
+    assert_equal(String(shanghai.to("UTC")), "2024-02-29T16:30:00.123456+00:00")
+
+    var fixed = base.to(TimeZone.from_utc("-05:00"))
+    assert_equal(String(fixed), "2024-02-29T11:30:00.123456-05:00")
+
+
+def test_clone_weekday_and_naive() raises:
+    var m = Morrow(2024, 2, 29, 3, 4, 5, 6, TimeZone.from_utc("+05:30"))
+
+    assert_equal(String(m.clone()), "2024-02-29T03:04:05.000006+05:30")
+    assert_equal(m.weekday(), 3)
+    assert_equal(m.isoweekday(), 4)
+    assert_equal(String(m.naive()), "2024-02-29T03:04:05.000006")
 
 
 def main() raises:

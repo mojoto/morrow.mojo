@@ -1,4 +1,9 @@
-from .util import normalize_timestamp, _ymd2ord, _days_before_year
+from .util import (
+    normalize_timestamp,
+    _ymd2ord,
+    _days_before_year,
+    _days_in_month,
+)
 from ._libc import c_gettimeofday, c_localtime, c_gmtime, c_strptime
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
@@ -11,6 +16,11 @@ from std.format import Writable, Writer
 comptime _DI400Y = 146097  # number of days in 400 years
 comptime _DI100Y = 36524  #    "    "   "   " 100   "
 comptime _DI4Y = 1461  #    "    "   "   "   4   "
+comptime _US_PER_SECOND = 1000000
+comptime _US_PER_MINUTE = 60 * _US_PER_SECOND
+comptime _US_PER_HOUR = 60 * _US_PER_MINUTE
+comptime _US_PER_DAY = 24 * _US_PER_HOUR
+comptime _UNIX_EPOCH_ORDINAL = 719163  # 1970-01-01
 
 
 struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -152,6 +162,331 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         var tzinfo = TimeZone.from_utc(tz_str)
         return Self.strptime(date_str, fmt, tzinfo)
+
+    def clone(self) -> Self:
+        """
+        Return a copy of this Morrow.
+        """
+        return Self(
+            self.year,
+            self.month,
+            self.day,
+            self.hour,
+            self.minute,
+            self.second,
+            self.microsecond,
+            self.tz,
+        )
+
+    def naive(self) -> Self:
+        """
+        Return a copy without timezone information.
+        """
+        return Self(
+            self.year,
+            self.month,
+            self.day,
+            self.hour,
+            self.minute,
+            self.second,
+            self.microsecond,
+            TimeZone.none(),
+        )
+
+    def timestamp(self) raises -> Float64:
+        """
+        Return the POSIX timestamp for this Morrow as UTC seconds.
+        """
+        var seconds = (
+            (self.toordinal() - _UNIX_EPOCH_ORDINAL) * 86400
+            + self.hour * 3600
+            + self.minute * 60
+            + self.second
+            - self.tz.offset
+        )
+        return Float64(seconds) + Float64(self.microsecond) / 1000000.0
+
+    def float_timestamp(self) raises -> Float64:
+        """
+        Return the POSIX timestamp for this Morrow as a floating point value.
+        """
+        return self.timestamp()
+
+    def to(self, tz: TimeZone) raises -> Self:
+        """
+        Return this instant converted to a fixed-offset timezone.
+        """
+        var shifted = self.shift(seconds=tz.offset - self.tz.offset)
+        return Self(
+            shifted.year,
+            shifted.month,
+            shifted.day,
+            shifted.hour,
+            shifted.minute,
+            shifted.second,
+            shifted.microsecond,
+            tz,
+        )
+
+    def to(self, tz_str: String) raises -> Self:
+        """
+        Return this instant converted to a timezone parsed from a UTC offset string.
+        """
+        if tz_str == "local":
+            return self.to(TimeZone.local())
+        return self.to(TimeZone.from_utc(tz_str))
+
+    def replace(
+        self,
+        year: Int = -1,
+        month: Int = -1,
+        day: Int = -1,
+        hour: Int = -1,
+        minute: Int = -1,
+        second: Int = -1,
+        microsecond: Int = -1,
+    ) raises -> Self:
+        """
+        Return a new Morrow with selected fields replaced.
+        """
+        var year_ = self.year if year == -1 else year
+        var month_ = self.month if month == -1 else month
+        var day_ = self.day if day == -1 else day
+        var hour_ = self.hour if hour == -1 else hour
+        var minute_ = self.minute if minute == -1 else minute
+        var second_ = self.second if second == -1 else second
+        var microsecond_ = (
+            self.microsecond if microsecond == -1 else microsecond
+        )
+        Self._validate_fields(
+            year_, month_, day_, hour_, minute_, second_, microsecond_
+        )
+        return Self(
+            year_, month_, day_, hour_, minute_, second_, microsecond_, self.tz
+        )
+
+    def shift(
+        self,
+        years: Int = 0,
+        months: Int = 0,
+        weeks: Int = 0,
+        days: Int = 0,
+        hours: Int = 0,
+        minutes: Int = 0,
+        seconds: Int = 0,
+        microseconds: Int = 0,
+    ) raises -> Self:
+        """
+        Return a new Morrow shifted by relative date and time offsets.
+        """
+        var total_months = (
+            self.year * 12 + (self.month - 1) + years * 12 + months
+        )
+        var year = total_months // 12
+        var month = total_months % 12 + 1
+        if month < 1:
+            month += 12
+            year -= 1
+        var max_day = _days_in_month(year, month)
+        var day = self.day if self.day <= max_day else max_day
+        Self._validate_fields(
+            year,
+            month,
+            day,
+            self.hour,
+            self.minute,
+            self.second,
+            self.microsecond,
+        )
+        var shifted = Self(
+            year,
+            month,
+            day,
+            self.hour,
+            self.minute,
+            self.second,
+            self.microsecond,
+            self.tz,
+        )
+        return shifted._shift_day_time(
+            weeks * 7 + days, hours, minutes, seconds, microseconds
+        )
+
+    def span(
+        self,
+        frame: String,
+        count: Int = 1,
+        bounds: String = "[)",
+        week_start: Int = 1,
+    ) raises -> MorrowSpan:
+        """
+        Return the start and end of this Morrow's span in a given timeframe.
+        """
+        if count < 1:
+            raise Error("count must be greater than 0")
+        Self._validate_bounds(bounds)
+
+        var start = self._floor_frame(frame, week_start)
+        var end = start._shift_frame(frame, count)
+
+        if ord(bounds[byte=0]) == 40:  # (
+            start = start.shift(microseconds=1)
+        if ord(bounds[byte=1]) == 41:  # )
+            end = end.shift(microseconds=-1)
+
+        return MorrowSpan(start, end)
+
+    def floor(self, frame: String, week_start: Int = 1) raises -> Self:
+        """
+        Return the start of this Morrow's span in a given timeframe.
+        """
+        return self._floor_frame(frame, week_start)
+
+    def ceil(self, frame: String, week_start: Int = 1) raises -> Self:
+        """
+        Return the end of this Morrow's span in a given timeframe.
+        """
+        return self.span(frame, week_start=week_start).end
+
+    @staticmethod
+    def _validate_bounds(bounds: String) raises:
+        if bounds.byte_length() != 2:
+            raise Error("bounds must be one of [), [], (), (]")
+        var left = ord(bounds[byte=0])
+        var right = ord(bounds[byte=1])
+        if (left != 91 and left != 40) or (right != 93 and right != 41):
+            raise Error("bounds must be one of [), [], (), (]")
+
+    def _floor_frame(self, frame: String, week_start: Int = 1) raises -> Self:
+        if frame == "year" or frame == "years":
+            return Self(self.year, 1, 1, 0, 0, 0, 0, self.tz)
+        elif frame == "quarter" or frame == "quarters":
+            var month = ((self.month - 1) // 3) * 3 + 1
+            return Self(self.year, month, 1, 0, 0, 0, 0, self.tz)
+        elif frame == "month" or frame == "months":
+            return Self(self.year, self.month, 1, 0, 0, 0, 0, self.tz)
+        elif frame == "week" or frame == "weeks":
+            if week_start < 1 or week_start > 7:
+                raise Error("week_start must be in 1..7")
+            var offset = self.isoweekday() - week_start
+            if offset < 0:
+                offset += 7
+            return Self(
+                self.year, self.month, self.day, 0, 0, 0, 0, self.tz
+            )._shift_day_time(-offset, 0, 0, 0, 0)
+        elif frame == "day" or frame == "days":
+            return Self(self.year, self.month, self.day, 0, 0, 0, 0, self.tz)
+        elif frame == "hour" or frame == "hours":
+            return Self(
+                self.year, self.month, self.day, self.hour, 0, 0, 0, self.tz
+            )
+        elif frame == "minute" or frame == "minutes":
+            return Self(
+                self.year,
+                self.month,
+                self.day,
+                self.hour,
+                self.minute,
+                0,
+                0,
+                self.tz,
+            )
+        elif frame == "second" or frame == "seconds":
+            return Self(
+                self.year,
+                self.month,
+                self.day,
+                self.hour,
+                self.minute,
+                self.second,
+                0,
+                self.tz,
+            )
+        elif frame == "microsecond" or frame == "microseconds":
+            return self
+        else:
+            raise Error("unsupported frame")
+
+    def _shift_frame(self, frame: String, count: Int) raises -> Self:
+        if frame == "year" or frame == "years":
+            return self.shift(years=count)
+        elif frame == "quarter" or frame == "quarters":
+            return self.shift(months=count * 3)
+        elif frame == "month" or frame == "months":
+            return self.shift(months=count)
+        elif frame == "week" or frame == "weeks":
+            return self.shift(weeks=count)
+        elif frame == "day" or frame == "days":
+            return self.shift(days=count)
+        elif frame == "hour" or frame == "hours":
+            return self.shift(hours=count)
+        elif frame == "minute" or frame == "minutes":
+            return self.shift(minutes=count)
+        elif frame == "second" or frame == "seconds":
+            return self.shift(seconds=count)
+        elif frame == "microsecond" or frame == "microseconds":
+            return self.shift(microseconds=count)
+        else:
+            raise Error("unsupported frame")
+
+    @staticmethod
+    def _validate_fields(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+        second: Int,
+        microsecond: Int,
+    ) raises:
+        if month < 1 or month > 12:
+            raise Error("month must be in 1..12")
+        if day < 1 or day > _days_in_month(year, month):
+            raise Error("day is out of range for month")
+        if hour < 0 or hour > 23:
+            raise Error("hour must be in 0..23")
+        if minute < 0 or minute > 59:
+            raise Error("minute must be in 0..59")
+        if second < 0 or second > 60:
+            raise Error("second must be in 0..60")
+        if microsecond < 0 or microsecond >= _US_PER_SECOND:
+            raise Error("microsecond must be in 0..999999")
+
+    def _shift_day_time(
+        self,
+        days: Int,
+        hours: Int,
+        minutes: Int,
+        seconds: Int,
+        microseconds: Int,
+    ) raises -> Self:
+        var total_us = (
+            (self.hour * 3600 + self.minute * 60 + self.second) * _US_PER_SECOND
+            + self.microsecond
+            + hours * _US_PER_HOUR
+            + minutes * _US_PER_MINUTE
+            + seconds * _US_PER_SECOND
+            + microseconds
+        )
+        var extra_days = total_us // _US_PER_DAY
+        var remaining_us = total_us % _US_PER_DAY
+        var date = Self.fromordinal(self.toordinal() + days + extra_days)
+        var hour = remaining_us // _US_PER_HOUR
+        remaining_us = remaining_us % _US_PER_HOUR
+        var minute = remaining_us // _US_PER_MINUTE
+        remaining_us = remaining_us % _US_PER_MINUTE
+        var second = remaining_us // _US_PER_SECOND
+        var microsecond = remaining_us % _US_PER_SECOND
+        return Self(
+            date.year,
+            date.month,
+            date.day,
+            hour,
+            minute,
+            second,
+            microsecond,
+            self.tz,
+        )
 
     def format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
         """
@@ -344,10 +679,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             preceding = days_before_month(month)
         if preceding > n:  # estimate is too large
             month -= 1
-            if month == 2 and leapyear:
-                preceding -= days_before_month(month) + 1
+            if month > 2 and leapyear:
+                preceding = days_before_month(month) + 1
             else:
-                preceding -= days_before_month(month)
+                preceding = days_before_month(month)
         n -= preceding
 
         # Now the year and month are correct, and n is the offset from the
@@ -361,6 +696,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         # 1-Jan-0001 is a Monday
         return self.toordinal() % 7 or 7
 
+    def weekday(self) raises -> Int:
+        """
+        Return the day of the week as an integer, where Monday is 0 and Sunday is 6.
+        """
+        return self.isoweekday() - 1
+
     def __str__(self) raises -> String:
         return self.isoformat()
 
@@ -373,3 +714,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             days1 - days2, secs1 - secs2, self.microsecond - other.microsecond
         )
         return base
+
+
+struct MorrowSpan(Copyable, ImplicitlyCopyable, Movable):
+    var start: Morrow
+    var end: Morrow
+
+    def __init__(out self, start: Morrow, end: Morrow):
+        self.start = start
+        self.end = end
+
+    def __init__(out self, *, copy: Self):
+        self.start = copy.start
+        self.end = copy.end
+
+    def __init__(out self, *, deinit take: Self):
+        self.start = take.start^
+        self.end = take.end^
