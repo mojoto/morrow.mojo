@@ -1203,6 +1203,16 @@ def test_creation_helpers() raises:
     var space_iso_utc = Morrow.get("2024-02-29 03:04:05Z")
     assert_equal(String(space_iso_utc), "2024-02-29T03:04:05.000000+00:00")
 
+    var trailing_punctuation_iso = Morrow.get("2024-02-29T03:04:05Z.")
+    assert_equal(
+        String(trailing_punctuation_iso), "2024-02-29T03:04:05.000000+00:00"
+    )
+
+    var wrapped_punctuation_iso = Morrow.get("(2024-02-29T03:04:05Z)")
+    assert_equal(
+        String(wrapped_punctuation_iso), "2024-02-29T03:04:05.000000+00:00"
+    )
+
     var space_iso_tz = Morrow.get("2024-02-29 03:04:05+05:30")
     assert_equal(String(space_iso_tz), "2024-02-29T03:04:05.000000+05:30")
     var short_colon_iso_tz = Morrow.get("2024-02-29T03:04:05.123+05:")
@@ -1213,6 +1223,8 @@ def test_creation_helpers() raises:
     assert_string_get_raises("2024-02-29T03:04:05+053015")
     assert_string_get_raises("2024-02-29T03:04:05+05:30:15")
     assert_string_get_raises("2024-02-29T03:04:05+05:3")
+    assert_string_get_raises("2024-02-29T03:04:05Z..")
+    assert_string_get_raises("(2024-02-29T03:04:05Z).")
 
     var space_iso_naive = Morrow.get("2024-02-29 03:04:05")
     assert_equal(String(space_iso_naive), "2024-02-29T03:04:05.000000+00:00")

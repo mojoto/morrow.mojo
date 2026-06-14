@@ -431,7 +431,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Create a UTC Morrow from an ISO 8601 string.
         """
-        return Self.fromisoformat(date_str)
+        return Self._parse_iso_auto(date_str)
 
     @staticmethod
     def get(date_str: String, normalize_whitespace: Bool) raises -> Self:
@@ -439,8 +439,47 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Create a UTC Morrow from an ISO 8601 string, optionally normalizing ASCII whitespace.
         """
         if normalize_whitespace:
-            return Self.fromisoformat(Self._normalize_whitespace(date_str))
-        return Self.fromisoformat(date_str)
+            return Self._parse_iso_auto(Self._normalize_whitespace(date_str))
+        return Self._parse_iso_auto(date_str)
+
+    @staticmethod
+    def _parse_iso_auto(date_str: String) raises -> Self:
+        try:
+            return Self.fromisoformat(date_str)
+        except e:
+            pass
+
+        var length = date_str.byte_length()
+        if length == 0:
+            raise Error("isoformat string is too short")
+
+        if Self._is_parse_punctuation(ord(date_str[byte=0])):
+            try:
+                return Self.fromisoformat(String(date_str[byte=1:]))
+            except e:
+                pass
+
+        if Self._is_parse_punctuation(ord(date_str[byte=length - 1])):
+            try:
+                return Self.fromisoformat(
+                    String(date_str[byte = 0 : length - 1])
+                )
+            except e:
+                pass
+
+        if (
+            length > 1
+            and Self._is_parse_punctuation(ord(date_str[byte=0]))
+            and Self._is_parse_punctuation(ord(date_str[byte=length - 1]))
+        ):
+            try:
+                return Self.fromisoformat(
+                    String(date_str[byte = 1 : length - 1])
+                )
+            except e:
+                pass
+
+        raise Error("date string does not match ISO format")
 
     @staticmethod
     def get(date_str: String, formats: List[String]) raises -> Self:
