@@ -238,6 +238,77 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             + String(self.year).ascii_rjust(4, "0")
         )
 
+    def humanize(
+        self,
+        other: Self,
+        only_distance: Bool = False,
+        granularity: String = "auto",
+    ) raises -> String:
+        """
+        Return an English human-readable relative difference.
+        """
+        var delta_us = self._utc_microseconds() - other._utc_microseconds()
+        if delta_us == 0:
+            return "just now"
+
+        var seconds = abs(delta_us) // _US_PER_SECOND
+        var unit = granularity
+        if unit == "auto":
+            unit = Self._auto_humanize_unit(seconds)
+        var count = Self._humanize_count(seconds, unit)
+        var distance = Self._format_humanize_distance(count, unit)
+
+        if only_distance:
+            return distance
+        if delta_us > 0:
+            return "in " + distance
+        return distance + " ago"
+
+    def dehumanize(self, input_string: String) raises -> Self:
+        """
+        Shift this Morrow by an English human-readable relative difference.
+        """
+        if input_string == "just now":
+            return self
+
+        var future: Bool
+        var phrase: String
+        if input_string.byte_length() > 3 and input_string[byte=0:3] == "in ":
+            future = True
+            phrase = String(input_string[byte=3:])
+        elif (
+            input_string.byte_length() > 4
+            and input_string[byte = input_string.byte_length() - 4 :] == " ago"
+        ):
+            future = False
+            phrase = String(
+                input_string[byte = 0 : input_string.byte_length() - 4]
+            )
+        else:
+            raise Error(
+                "humanized string must start with 'in ' or end with ' ago'"
+            )
+
+        var count: Int
+        var unit: String
+        if phrase.byte_length() > 2 and phrase[byte=0:2] == "a ":
+            count = 1
+            unit = String(phrase[byte=2:])
+        elif phrase.byte_length() > 3 and phrase[byte=0:3] == "an ":
+            count = 1
+            unit = String(phrase[byte=3:])
+        else:
+            var separator = Self._find_byte(phrase, ord(" "))
+            if separator <= 0:
+                raise Error("humanized distance is invalid")
+            count = Int(phrase[byte=0:separator])
+            unit = String(phrase[byte = separator + 1 :])
+
+        unit = Self._normalize_humanize_unit(unit)
+        if not future:
+            count = -count
+        return self._shift_humanize_unit(unit, count)
+
     def to(self, tz: TimeZone) raises -> Self:
         """
         Return this instant converted to a fixed-offset timezone.
@@ -641,6 +712,117 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             microsecond,
             self.tz,
         )
+
+    @staticmethod
+    def _auto_humanize_unit(seconds: Int) raises -> String:
+        if seconds < 60:
+            return "second"
+        elif seconds < 3600:
+            return "minute"
+        elif seconds < 86400:
+            return "hour"
+        elif seconds < 604800:
+            return "day"
+        elif seconds < 2592000:
+            return "week"
+        elif seconds < 7776000:
+            return "month"
+        elif seconds < 31536000:
+            return "quarter"
+        else:
+            return "year"
+
+    @staticmethod
+    def _humanize_count(seconds: Int, unit: String) raises -> Int:
+        var unit_seconds = Self._humanize_unit_seconds(unit)
+        var count = seconds // unit_seconds
+        if count < 1:
+            return 1
+        return count
+
+    @staticmethod
+    def _humanize_unit_seconds(unit: String) raises -> Int:
+        if unit == "second" or unit == "seconds":
+            return 1
+        elif unit == "minute" or unit == "minutes":
+            return 60
+        elif unit == "hour" or unit == "hours":
+            return 3600
+        elif unit == "day" or unit == "days":
+            return 86400
+        elif unit == "week" or unit == "weeks":
+            return 604800
+        elif unit == "month" or unit == "months":
+            return 2592000
+        elif unit == "quarter" or unit == "quarters":
+            return 7776000
+        elif unit == "year" or unit == "years":
+            return 31536000
+        else:
+            raise Error("unsupported granularity")
+
+    @staticmethod
+    def _format_humanize_distance(count: Int, unit: String) raises -> String:
+        var unit_ = Self._normalize_humanize_unit(unit)
+        if count == 1:
+            if unit_ == "hour":
+                return "an hour"
+            return "a " + unit_
+        return String(count) + " " + Self._plural_humanize_unit(unit_)
+
+    @staticmethod
+    def _normalize_humanize_unit(unit: String) raises -> String:
+        if unit == "second" or unit == "seconds":
+            return "second"
+        elif unit == "minute" or unit == "minutes":
+            return "minute"
+        elif unit == "hour" or unit == "hours":
+            return "hour"
+        elif unit == "day" or unit == "days":
+            return "day"
+        elif unit == "week" or unit == "weeks":
+            return "week"
+        elif unit == "month" or unit == "months":
+            return "month"
+        elif unit == "quarter" or unit == "quarters":
+            return "quarter"
+        elif unit == "year" or unit == "years":
+            return "year"
+        else:
+            raise Error("unsupported granularity")
+
+    @staticmethod
+    def _plural_humanize_unit(unit: String) raises -> String:
+        if unit == "quarter":
+            return "quarters"
+        return unit + "s"
+
+    @staticmethod
+    def _find_byte(s: String, c: Int) -> Int:
+        for i in range(s.byte_length()):
+            if ord(s[byte=i]) == c:
+                return i
+        return -1
+
+    def _shift_humanize_unit(self, unit: String, count: Int) raises -> Self:
+        if unit == "second":
+            return self.shift(seconds=count)
+        elif unit == "minute":
+            return self.shift(minutes=count)
+        elif unit == "hour":
+            return self.shift(hours=count)
+        elif unit == "day":
+            return self.shift(days=count)
+        elif unit == "week":
+            return self.shift(weeks=count)
+        elif unit == "month":
+            return self.shift(months=count)
+        elif unit == "quarter":
+            return self.shift(months=count * 3)
+        elif unit == "year":
+            return self.shift(years=count)
+        else:
+            raise Error("unsupported granularity")
 
     def _utc_microseconds(self) raises -> Int:
         var seconds = (

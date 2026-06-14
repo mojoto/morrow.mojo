@@ -96,6 +96,11 @@ print(utc.ctime())  # Thu Feb 29 16:30:00 2024
 var iso = utc.isocalendar()
 print(iso.week)  # 9
 
+# Humanize and dehumanize English relative times.
+var present = Morrow(2024, 1, 1, 12, 0, 0, 0, TimeZone.from_utc("UTC"))
+print(present.shift(hours=2).humanize(present))  # in 2 hours
+print(str(present.dehumanize("2 days ago")))  # 2023-12-30T12:00:00.000000+00:00
+
 # Get time zone offset.
 print(TimeZone.from_utc('UTC+08:00').offset)  # 28800
 

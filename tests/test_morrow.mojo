@@ -305,5 +305,37 @@ def test_object_properties_and_serialization() raises:
     assert_equal(year_edge.weekday, 1)
 
 
+def test_humanize_and_dehumanize() raises:
+    var utc = TimeZone.from_utc("UTC")
+    var present = Morrow(2024, 1, 1, 12, 0, 0, 0, utc)
+
+    assert_equal(present.humanize(present), "just now")
+    assert_equal(present.shift(hours=-1).humanize(present), "an hour ago")
+    assert_equal(present.shift(hours=2).humanize(present), "in 2 hours")
+    assert_equal(
+        present.shift(hours=2).humanize(present, only_distance=True), "2 hours"
+    )
+    assert_equal(
+        present.shift(minutes=66).humanize(present, granularity="minute"),
+        "in 66 minutes",
+    )
+    assert_equal(
+        present.shift(days=8).humanize(present, granularity="week"), "in a week"
+    )
+
+    assert_equal(
+        String(present.dehumanize("2 days ago")),
+        "2023-12-30T12:00:00.000000+00:00",
+    )
+    assert_equal(
+        String(present.dehumanize("in a month")),
+        "2024-02-01T12:00:00.000000+00:00",
+    )
+    assert_equal(
+        String(present.dehumanize("an hour ago")),
+        "2024-01-01T11:00:00.000000+00:00",
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
