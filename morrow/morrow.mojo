@@ -1628,13 +1628,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         minutes: Int = 0,
         seconds: Int = 0,
         microseconds: Int = 0,
-        weekday: Int = -1,
+        weekday: Int = -9999,
     ) raises -> Self:
         """
         Return a new Morrow shifted by relative date and time offsets.
         """
-        if weekday < -1 or weekday > 6:
-            raise Error("weekday must be in 0..6")
+        if weekday != -9999 and (weekday < -7 or weekday > 6):
+            raise Error("weekday must be in -7..6")
         var total_months = (
             self.year * 12
             + (self.month - 1)
@@ -1669,9 +1669,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.tz,
         )
         var day_offset = weeks * 7 + days
-        if weekday != -1:
+        if weekday != -9999:
+            var target_weekday = weekday
+            if target_weekday < 0:
+                target_weekday += 7
             var current_weekday = shifted.weekday()
-            var weekday_offset = weekday - current_weekday
+            var weekday_offset = target_weekday - current_weekday
             if weekday_offset < 0:
                 weekday_offset += 7
             day_offset += weekday_offset

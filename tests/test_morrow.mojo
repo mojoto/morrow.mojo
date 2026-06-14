@@ -105,6 +105,14 @@ def assert_dehumanize_raises(value: Morrow, input_string: String) raises:
     assert_true(False)
 
 
+def assert_shift_weekday_raises(value: Morrow, weekday: Int) raises:
+    try:
+        _ = value.shift(weekday=weekday)
+    except e:
+        return
+    assert_true(False)
+
+
 def test_now() raises:
     var result = Morrow.now()
     assert_true(result.year >= 2020)
@@ -357,6 +365,16 @@ def test_shift_weekday() raises:
     assert_equal(
         String(saturday.shift(weekday=6)), "2013-05-12T22:27:34.787885+00:00"
     )
+    assert_equal(
+        String(saturday.shift(weekday=-1)), "2013-05-12T22:27:34.787885+00:00"
+    )
+    assert_equal(
+        String(saturday.shift(weekday=-2)), "2013-05-11T22:27:34.787885+00:00"
+    )
+    assert_equal(
+        String(saturday.shift(weekday=-7)), "2013-05-13T22:27:34.787885+00:00"
+    )
+    assert_shift_weekday_raises(saturday, -8)
 
 
 def test_floor_ceil_and_span() raises:
