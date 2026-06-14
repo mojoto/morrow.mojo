@@ -1000,6 +1000,7 @@ def test_flexible_get_creation_helpers() raises:
     assert_get_raises("2024-02-29 +05:30", "YYYY-MM-DD Z")
     assert_get_raises("2024-02-29 UTC", "YYYY-MM-DD Z")
     assert_get_raises("2024-02-29 +0530", "YYYY-MM-DD ZZ")
+    assert_get_raises("2024-02-29 +24:00", "YYYY-MM-DD ZZ")
     assert_get_raises("2024-02-29 UTC", "YYYY-MM-DD ZZ")
     assert_get_raises("2024-02-29 +0530", "YYYY-MM-DD ZZZ")
     assert_get_raises("2024-02-29 +05:30", "YYYY-MM-DD ZZZ")

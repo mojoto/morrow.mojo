@@ -81,6 +81,8 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         else:
             raise Error("utc_str format is invalid")
         var offset: Int = sign * (hours * 3600 + minutes * 60)
+        if offset <= -86400 or offset >= 86400:
+            raise Error("utc offset must be strictly between -24:00 and +24:00")
         return TimeZone(offset)
 
     def format(self, sep: String = ":") -> String:

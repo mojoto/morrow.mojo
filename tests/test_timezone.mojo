@@ -3,6 +3,14 @@ from std.testing import assert_equal, TestSuite
 from morrow import TimeZone
 
 
+def assert_timezone_raises(utc_str: String) raises:
+    try:
+        _ = TimeZone.from_utc(utc_str)
+    except e:
+        return
+    raise Error("expected timezone parsing to fail")
+
+
 def test_time_zone() raises:
     assert_equal(TimeZone.from_utc("UTC+0800").offset, 28800)
     assert_equal(TimeZone.from_utc("UTC+08:00").offset, 28800)
@@ -12,6 +20,11 @@ def test_time_zone() raises:
     assert_equal(TimeZone.from_utc("+0800").offset, 28800)
     assert_equal(TimeZone.from_utc("08").offset, 28800)
     assert_equal(TimeZone.from_utc("+05:30").format(), "+05:30")
+    assert_equal(TimeZone.from_utc("+05:60").format(), "+06:00")
+    assert_timezone_raises("+24:00")
+    assert_timezone_raises("-24:00")
+    assert_timezone_raises("+23:60")
+    assert_timezone_raises("UTC+24:00")
 
 
 def main() raises:
