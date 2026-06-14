@@ -1004,7 +1004,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 date_pos = parsed.pos
                 fmt_pos += 3
             elif Self._starts_with(fmt, fmt_pos, "Do"):
+                var ordinal_start = date_pos
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
+                if (
+                    parsed.pos - ordinal_start > 1
+                    and date_str[byte=ordinal_start] == "0"
+                ):
+                    raise Error("ordinal day must not contain a leading zero")
                 day = parsed.value
                 has_day = True
                 date_pos = parsed.pos

@@ -1746,6 +1746,7 @@ def test_flexible_get_creation_helpers() raises:
     assert_get_raises("2024 1th", "YYYY Do")
     assert_get_raises("2024 2st", "YYYY Do")
     assert_get_raises("2024 11st", "YYYY Do")
+    assert_get_raises("2024 01st", "YYYY Do")
 
     var iso_week = Morrow.get("2024-W09-4", "W")
     assert_equal(String(iso_week), "2024-02-29T00:00:00.000000+00:00")
