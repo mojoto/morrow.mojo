@@ -645,6 +645,17 @@ def test_interval_exact_range_and_is_between() raises:
     assert_equal(String(exact[4].start), "2013-05-05T16:30:00.000000+00:00")
     assert_equal(String(exact[4].end), "2013-05-05T17:14:59.999999+00:00")
 
+    var exact_empty = Morrow.span_range("hour", start, start, exact=True)
+    assert_equal(len(exact_empty), 0)
+
+    var exact_aligned_end = Morrow.span_range(
+        "hour", start, start.shift(hours=1), exact=True
+    )
+    assert_equal(len(exact_aligned_end), 1)
+    assert_equal(
+        String(exact_aligned_end[0].end), "2013-05-05T13:29:59.999999+00:00"
+    )
+
     var point = Morrow(2013, 5, 5, 12, 30, 27, 0, utc)
     var low = Morrow(2013, 5, 5, 12, 30, 10, 0, utc)
     var high = Morrow(2013, 5, 5, 12, 30, 36, 0, utc)

@@ -1967,6 +1967,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var original_day = start.day
 
         while current._utc_microseconds() <= end_key:
+            if exact and current._utc_microseconds() >= end_key:
+                break
             if limit >= 0 and emitted >= limit:
                 break
 
