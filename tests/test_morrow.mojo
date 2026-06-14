@@ -1205,10 +1205,14 @@ def test_creation_helpers() raises:
 
     var space_iso_tz = Morrow.get("2024-02-29 03:04:05+05:30")
     assert_equal(String(space_iso_tz), "2024-02-29T03:04:05.000000+05:30")
+    var short_colon_iso_tz = Morrow.get("2024-02-29T03:04:05.123+05:")
+    assert_equal(String(short_colon_iso_tz), "2024-02-29T03:04:05.123000+05:00")
     assert_fromisoformat_raises("2024-02-29T03:04:05+053015")
     assert_fromisoformat_raises("2024-02-29T03:04:05+05:30:15")
+    assert_fromisoformat_raises("2024-02-29T03:04:05+05:3")
     assert_string_get_raises("2024-02-29T03:04:05+053015")
     assert_string_get_raises("2024-02-29T03:04:05+05:30:15")
+    assert_string_get_raises("2024-02-29T03:04:05+05:3")
 
     var space_iso_naive = Morrow.get("2024-02-29 03:04:05")
     assert_equal(String(space_iso_naive), "2024-02-29T03:04:05.000000+00:00")

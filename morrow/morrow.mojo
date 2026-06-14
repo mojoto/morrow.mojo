@@ -2580,7 +2580,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             )
 
         if date_str[byte=pos] == ":":
+            var colon_pos = pos
             pos += 1
+            if pos == date_str.byte_length():
+                return MorrowParseTimeZone(
+                    TimeZone.from_utc(
+                        String(date_str[byte=date_pos:colon_pos])
+                    ),
+                    pos,
+                )
             if pos + 2 > date_str.byte_length():
                 raise Error("isoformat timezone minute is invalid")
             for i in range(2):
