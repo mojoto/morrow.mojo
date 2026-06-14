@@ -4,6 +4,10 @@ from morrow import TimeDelta
 
 
 def test_timedelta() raises:
+    assert_equal(String(TimeDelta(microseconds=1)), "0:00:00.000001")
+    assert_equal(String(TimeDelta(milliseconds=1)), "0:00:00.001000")
+    assert_equal(String(TimeDelta(microseconds=-1)), "-1 day, 23:59:59.999999")
+
     assert_equal(TimeDelta(3, 2, 100).total_seconds(), 259202.0001)
     assert_true(
         TimeDelta(2, 1, 50)

@@ -92,7 +92,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             + String(ss).ascii_rjust(2, "0")
         )
         if self.microseconds != 0:
-            result += String(self.microseconds).ascii_rjust(6, "0")
+            result += "." + String(self.microseconds).ascii_rjust(6, "0")
         return result
 
     def total_seconds(self) -> Float64:

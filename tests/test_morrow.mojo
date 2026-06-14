@@ -193,7 +193,10 @@ def test_sub() raises:
         2023, 10, 1, 10, 0, 0
     )
     assert_equal(result.microseconds, 1)
-    assert_equal(String(result), "0:00:00000001")
+    assert_equal(String(result), "0:00:00.000001")
+
+    result = Morrow(2023, 10, 1, 10, 0, 0) - Morrow(2023, 10, 1, 10, 0, 0, 1)
+    assert_equal(String(result), "-1 day, 23:59:59.999999")
 
     result = Morrow(2023, 10, 1, 10, 0, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.seconds, 1)
