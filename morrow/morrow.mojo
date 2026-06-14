@@ -1135,7 +1135,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def strptime(
         date_str: String, fmt: String, tzinfo: TimeZone = TimeZone.none()
-    ) -> Self:
+    ) raises -> Self:
         """
         Create a Morrow instance from a date string and format,
         in the style of ``datetime.strptime``.  Optionally replaces the parsed TimeZone.
@@ -1147,7 +1147,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         var tm = c_strptime(date_str, fmt)
         var tz = TimeZone(Int(tm.tm_gmtoff)) if tzinfo.is_none() else tzinfo
-        return Self(
+        return Self._from_components(
             Int(tm.tm_year) + 1900,
             Int(tm.tm_mon) + 1,
             Int(tm.tm_mday),

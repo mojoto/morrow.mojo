@@ -53,6 +53,14 @@ def assert_replace_second_raises(second: Int) raises:
     assert_true(False)
 
 
+def assert_strptime_raises(date_str: String, fmt: String) raises:
+    try:
+        _ = Morrow.strptime(date_str, fmt)
+    except e:
+        return
+    assert_true(False)
+
+
 def test_now() raises:
     var result = Morrow.now()
     assert_true(result.year >= 2020)
@@ -139,6 +147,7 @@ def test_strptime() raises:
 
     m = Morrow.strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "+09:00")
     assert_equal(String(m), "2023-10-18T15:49:10.000000+09:00")
+    assert_strptime_raises("2024-02-29 23:59:60", "%Y-%m-%d %H:%M:%S")
 
 
 def test_ordinal() raises:
