@@ -3053,12 +3053,23 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if pos < date_str.byte_length() and date_str[byte=pos] == ":":
             if not colon:
                 raise Error("timezone offset must not contain a colon")
+            var colon_pos = pos
             pos += 1
             if pos + 2 > date_str.byte_length():
-                raise Error("timezone minute is invalid")
+                return MorrowParseTimeZone(
+                    TimeZone.from_utc(
+                        String(date_str[byte=date_pos:colon_pos])
+                    ),
+                    colon_pos,
+                )
             for i in range(2):
                 if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
-                    raise Error("timezone minute is invalid")
+                    return MorrowParseTimeZone(
+                        TimeZone.from_utc(
+                            String(date_str[byte=date_pos:colon_pos])
+                        ),
+                        colon_pos,
+                    )
             pos += 2
         elif (
             pos + 2 <= date_str.byte_length()
