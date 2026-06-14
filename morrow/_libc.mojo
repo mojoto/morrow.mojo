@@ -27,7 +27,7 @@ struct CTimeval(TrivialRegisterPassable):
         self.tv_usec = tv_usec
 
 
-struct CTm(TrivialRegisterPassable):
+struct CTm(Movable):
     """Represents the C struct tm for date and time information."""
 
     var tm_sec: c_int  # Seconds
@@ -40,7 +40,9 @@ struct CTm(TrivialRegisterPassable):
     var tm_yday: c_int  # Day of the year
     var tm_isdst: c_int  # Daylight savings flag
     var tm_gmtoff: c_long  # localtime zone offset seconds
-    var tm_zone: UnsafePointer[c_char, MutExternalOrigin]  # timezone name
+    var tm_zone: Optional[
+        UnsafePointer[c_char, MutExternalOrigin]
+    ]  # timezone name
 
     def __init__(out self):
         self.tm_sec = 0
@@ -53,9 +55,7 @@ struct CTm(TrivialRegisterPassable):
         self.tm_yday = 0
         self.tm_isdst = 0
         self.tm_gmtoff = 0
-        self.tm_zone = UnsafePointer[
-            c_char, MutExternalOrigin
-        ].unsafe_dangling()
+        self.tm_zone = None
 
 
 @always_inline
@@ -74,7 +74,7 @@ def c_localtime(tv_sec: Int) -> CTm:
     _ = external_call["localtime_r", UnsafePointer[CTm, MutExternalOrigin]](
         UnsafePointer(to=tv_sec_), UnsafePointer(to=tm)
     )
-    return tm
+    return tm^
 
 
 @always_inline
@@ -88,7 +88,7 @@ def c_strptime(time_str: String, time_format: String) -> CTm:
         time_format_.as_c_string_slice().unsafe_ptr(),
         UnsafePointer(to=tm),
     )
-    return tm
+    return tm^
 
 
 @always_inline
@@ -99,7 +99,7 @@ def c_gmtime(tv_sec: Int) -> CTm:
     _ = external_call["gmtime_r", UnsafePointer[CTm, MutExternalOrigin]](
         UnsafePointer(to=tv_sec_), UnsafePointer(to=tm)
     )
-    return tm
+    return tm^
 
 
 def to_char_ptr(s: String) -> UnsafePointer[c_char, MutExternalOrigin]:
