@@ -4,6 +4,11 @@ from .constants import (
     day_name,
     day_abbreviation,
 )
+from .util import _ymd2ord
+
+
+comptime _US_PER_SECOND = 1000000
+comptime _UNIX_EPOCH_ORDINAL = 719163  # 1970-01-01
 
 
 def format_morrow(
@@ -225,10 +230,15 @@ def _replace_token(
         if token_count == 4:
             return month_name(month)
     elif token == _D:
+        var day_of_year = _day_of_year(year, month, day)
         if token_count == 1:
             return String(day)
         if token_count == 2:
             return String(day).ascii_rjust(2, "0")
+        if token_count == 3:
+            return String(day_of_year)
+        if token_count == 4:
+            return String(day_of_year).ascii_rjust(3, "0")
     elif token == _H:
         if token_count == 1:
             return String(hour)
@@ -281,6 +291,22 @@ def _replace_token(
         else:
             return _format_timezone(tz_offset, separator)
 
+    elif token == _W:
+        return _format_iso_week(year, month, day, weekday)
+    elif token == _X:
+        return String(
+            _timestamp_seconds(
+                year, month, day, hour, minute, second, tz_offset
+            )
+        )
+    elif token == _x:
+        return String(
+            _timestamp_seconds(
+                year, month, day, hour, minute, second, tz_offset
+            )
+            * _US_PER_SECOND
+            + microsecond
+        )
     elif token == _a:
         return "am" if hour < 12 else "pm"
     elif token == _A:
@@ -307,13 +333,65 @@ def _format_timezone(offset: Int, sep: String = ":") -> String:
     )
 
 
+def _day_of_year(year: Int, month: Int, day: Int) raises -> Int:
+    return _ymd2ord(year, month, day) - _ymd2ord(year, 1, 1) + 1
+
+
+def _timestamp_seconds(
+    year: Int,
+    month: Int,
+    day: Int,
+    hour: Int,
+    minute: Int,
+    second: Int,
+    tz_offset: Int,
+) raises -> Int:
+    return (
+        (_ymd2ord(year, month, day) - _UNIX_EPOCH_ORDINAL) * 86400
+        + hour * 3600
+        + minute * 60
+        + second
+        - tz_offset
+    )
+
+
+def _format_iso_week(
+    year: Int, month: Int, day: Int, weekday: Int
+) raises -> String:
+    var ordinal = _ymd2ord(year, month, day)
+    var iso_year = year
+    var week1 = _iso_week1_monday(iso_year)
+    if ordinal < week1:
+        iso_year -= 1
+        week1 = _iso_week1_monday(iso_year)
+    else:
+        var next_week1 = _iso_week1_monday(iso_year + 1)
+        if ordinal >= next_week1:
+            iso_year += 1
+            week1 = next_week1
+    var week = (ordinal - week1) // 7 + 1
+    return (
+        String(iso_year).ascii_rjust(4, "0")
+        + "-W"
+        + String(week).ascii_rjust(2, "0")
+        + "-"
+        + String(weekday)
+    )
+
+
+def _iso_week1_monday(year: Int) raises -> Int:
+    var fourth_jan = _ymd2ord(year, 1, 4)
+    var weekday = fourth_jan % 7 or 7
+    return fourth_jan - weekday + 1
+
+
 def _sub_chr_max(c: Int) -> Int:
     if c == _Y:
         return 4
     if c == _M:
         return 4
     if c == _D:
-        return 2
+        return 4
     if c == _d:
         return 4
     if c == _H:
@@ -328,6 +406,12 @@ def _sub_chr_max(c: Int) -> Int:
         return 6
     if c == _Z:
         return 3
+    if c == _W:
+        return 1
+    if c == _X:
+        return 1
+    if c == _x:
+        return 1
     if c == _A:
         return 1
     if c == _a:
@@ -340,11 +424,14 @@ comptime _Y = ord("Y")  # Year
 comptime _M = ord("M")  # Month
 comptime _D = ord("D")  # Day
 comptime _d = ord("d")  # Day of week
+comptime _W = ord("W")  # ISO week date
 comptime _H = ord("H")  # Hour (24-hour)
 comptime _h = ord("h")  # Hour (12-hour)
 comptime _m = ord("m")  # Minute
 comptime _s = ord("s")  # Second
 comptime _S = ord("S")  # Microsecond
 comptime _Z = ord("Z")  # Timezone
+comptime _X = ord("X")  # Unix timestamp in seconds
+comptime _x = ord("x")  # Unix timestamp in microseconds
 comptime _A = ord("A")  # AM/PM
 comptime _a = ord("a")  # am/pm

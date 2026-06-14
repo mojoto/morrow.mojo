@@ -63,6 +63,7 @@ var m = Morrow(2023, 10, 1, 0, 0, 0, 1234)
 print(m.format("YYYY-MM-DD HH:mm:ss.SSSSSS ZZ"))  # 2023-10-01 00:00:00.001234 +00:00
 print(m.format("dddd, DD MMM YYYY HH:mm:ss ZZZ"))  # Sunday, 01 Oct 2023 00:00:00 UTC
 print(m.format("YYYY[Y]MM[M]DD[D]"))  # 2023Y10M01D
+print(Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone.from_utc("UTC")).format("DDD W X x"))  # 60 2024-W09-4 1709175845 1709175845123456
 
 # Get ISO format with time zone.
 var m_beijing = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, 'Bejing'))
