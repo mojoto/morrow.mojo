@@ -5,7 +5,7 @@ comptime MAX_TIMESTAMP_MS = MAX_TIMESTAMP * 1000
 comptime MAX_TIMESTAMP_US = MAX_TIMESTAMP * 1_000_000
 
 
-fn days_in_month(month: Int) -> Int:
+def days_in_month(month: Int) -> Int:
     if month == 1:
         return 31
     if month == 2:
@@ -33,7 +33,7 @@ fn days_in_month(month: Int) -> Int:
     return -1
 
 
-fn days_before_month(month: Int) -> Int:
+def days_before_month(month: Int) -> Int:
     if month == 1:
         return 0
     if month == 2:
@@ -61,7 +61,7 @@ fn days_before_month(month: Int) -> Int:
     return -1
 
 
-fn month_name(month: Int) -> String:
+def month_name(month: Int) -> String:
     if month == 1:
         return "January"
     if month == 2:
@@ -89,7 +89,7 @@ fn month_name(month: Int) -> String:
     return ""
 
 
-fn month_abbreviation(month: Int) -> String:
+def month_abbreviation(month: Int) -> String:
     if month == 1:
         return "Jan"
     if month == 2:
@@ -117,7 +117,7 @@ fn month_abbreviation(month: Int) -> String:
     return ""
 
 
-fn day_name(day: Int) -> String:
+def day_name(day: Int) -> String:
     if day == 1:
         return "Monday"
     if day == 2:
@@ -135,7 +135,7 @@ fn day_name(day: Int) -> String:
     return ""
 
 
-fn day_abbreviation(day: Int) -> String:
+def day_abbreviation(day: Int) -> String:
     if day == 1:
         return "Mon"
     if day == 2:

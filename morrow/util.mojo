@@ -2,7 +2,7 @@ from .constants import MAX_TIMESTAMP, MAX_TIMESTAMP_MS, MAX_TIMESTAMP_US
 from .constants import days_in_month, days_before_month
 
 
-fn _is_leap(year: Int) -> Bool:
+def _is_leap(year: Int) -> Bool:
     """
     Determine if a given year is a leap year.
     """

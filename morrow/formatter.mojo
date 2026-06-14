@@ -6,7 +6,7 @@ from .constants import (
 )
 
 
-fn format_morrow(
+def format_morrow(
     year: Int,
     month: Int,
     day: Int,
@@ -25,12 +25,12 @@ fn format_morrow(
 
     Handles brackets for literal text: "YYYY[abc]MM" -> replace("YYYY") + "abc" + replace("MM")
     """
-    if len(fmt) == 0:
+    if fmt.byte_length() == 0:
         return ""
     var ret: String = ""
     var in_bracket = False
     var start_idx = 0
-    for i in range(len(fmt)):
+    for i in range(fmt.byte_length()):
         if fmt[byte=i] == "[":
             if in_bracket:
                 ret += "["
@@ -74,7 +74,7 @@ fn format_morrow(
             start_idx = i + 1
     if in_bracket:
         ret += "["
-    if start_idx < len(fmt):
+    if start_idx < fmt.byte_length():
         ret += _replace(
             year,
             month,
@@ -92,7 +92,7 @@ fn format_morrow(
     return ret
 
 
-fn _replace(
+def _replace(
     year: Int,
     month: Int,
     day: Int,
@@ -109,12 +109,12 @@ fn _replace(
     """
     Replace formatting tokens in the string with their corresponding values.
     """
-    if len(s) == 0:
+    if s.byte_length() == 0:
         return ""
     var ret: String = ""
     var match_chr_ord = 0
     var match_count = 0
-    for i in range(len(s)):
+    for i in range(s.byte_length()):
         var c = ord(s[byte=i])
         if 0 < c and c < 128 and _sub_chr_max(c) > 0:
             if c == match_chr_ord:
@@ -192,7 +192,7 @@ fn _replace(
     return ret
 
 
-fn _replace_token(
+def _replace_token(
     year: Int,
     month: Int,
     day: Int,
@@ -288,7 +288,7 @@ fn _replace_token(
     return ""
 
 
-fn _format_timezone(offset: Int, sep: String = ":") -> String:
+def _format_timezone(offset: Int, sep: String = ":") -> String:
     var sign: String
     var offset_abs: Int
     if offset < 0:
@@ -307,7 +307,7 @@ fn _format_timezone(offset: Int, sep: String = ":") -> String:
     )
 
 
-fn _sub_chr_max(c: Int) -> Int:
+def _sub_chr_max(c: Int) -> Int:
     if c == _Y:
         return 4
     if c == _M:

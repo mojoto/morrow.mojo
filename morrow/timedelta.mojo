@@ -12,7 +12,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
     var seconds: Int
     var microseconds: Int
 
-    fn __init__(
+    def __init__(
         out self,
         days: Int = 0,
         seconds: Int = 0,
@@ -58,7 +58,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.seconds = self.seconds % SECONDS_OF_DAY
         self.days += days_
 
-    fn __copyinit__(out self, copy: Self):
+    def __init__(out self, *, copy: Self):
         """
         Copy constructor for TimeDelta.
         """
@@ -66,13 +66,13 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.seconds = copy.seconds
         self.microseconds = copy.microseconds
 
-    fn __str__(self) -> String:
+    def __str__(self) -> String:
         return self.to_string()
 
     def write_to(self, mut writer: Some[Writer]):
         writer.write(self.to_string())
 
-    fn to_string(self) -> String:
+    def to_string(self) -> String:
         var mm = self.seconds // 60
         var ss = self.seconds % 60
         var hh = mm // 60
@@ -95,7 +95,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             result += String(self.microseconds).ascii_rjust(6, "0")
         return result
 
-    fn total_seconds(self) -> Float64:
+    def total_seconds(self) -> Float64:
         """
         Calculate the total number of seconds in the TimeDelta.
         """
@@ -107,7 +107,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @always_inline
-    fn __add__(self, other: Self) -> Self:
+    def __add__(self, other: Self) -> Self:
         """
         Add two TimeDelta objects.
         """
@@ -117,13 +117,13 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.microseconds + other.microseconds,
         )
 
-    fn __radd__(self, other: Self) -> Self:
+    def __radd__(self, other: Self) -> Self:
         """
         Reverse add operation for TimeDelta.
         """
         return self.__add__(other)
 
-    fn __sub__(self, other: Self) -> Self:
+    def __sub__(self, other: Self) -> Self:
         """
         Subtract one TimeDelta from another.
         """
@@ -133,7 +133,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.microseconds - other.microseconds,
         )
 
-    fn __rsub__(self, other: Self) -> Self:
+    def __rsub__(self, other: Self) -> Self:
         """
         Reverse subtract operation for TimeDelta.
         """
@@ -143,13 +143,13 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             other.microseconds - self.microseconds,
         )
 
-    fn __neg__(self) -> Self:
+    def __neg__(self) -> Self:
         """
         Negate the TimeDelta.
         """
         return Self(-self.days, -self.seconds, -self.microseconds)
 
-    fn __pos__(self) -> Self:
+    def __pos__(self) -> Self:
         """
         Return a positive TimeDelta (self).
         """
@@ -165,7 +165,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             return self
 
     @always_inline
-    fn __mul__(self, other: Int) -> Self:
+    def __mul__(self, other: Int) -> Self:
         """
         Multiply the TimeDelta by an integer.
         """
@@ -175,13 +175,13 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.microseconds * other,
         )
 
-    fn __rmul__(self, other: Int) -> Self:
+    def __rmul__(self, other: Int) -> Self:
         """
         Reverse multiply operation for TimeDelta.
         """
         return self.__mul__(other)
 
-    fn _to_microseconds(self) -> Int:
+    def _to_microseconds(self) -> Int:
         """
         Convert the TimeDelta to microseconds.
         """
@@ -189,14 +189,14 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.days * SECONDS_OF_DAY + self.seconds
         ) * 1000000 + self.microseconds
 
-    fn __mod__(self, other: Self) -> Self:
+    def __mod__(self, other: Self) -> Self:
         """
         Calculate the remainder of dividing this TimeDelta by another.
         """
         var r = self._to_microseconds() % other._to_microseconds()
         return Self(0, 0, r)
 
-    fn __eq__(self, other: Self) -> Bool:
+    def __eq__(self, other: Self) -> Bool:
         """
         Check if two TimeDelta objects are equal.
         """
@@ -207,7 +207,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @always_inline
-    fn __le__(self, other: Self) -> Bool:
+    def __le__(self, other: Self) -> Bool:
         """
         Check if this TimeDelta is less than or equal to another.
         """
@@ -224,7 +224,7 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
         return False
 
     @always_inline
-    fn __lt__(self, other: Self) -> Bool:
+    def __lt__(self, other: Self) -> Bool:
         """
         Check if this TimeDelta is less than another.
         """
@@ -240,19 +240,19 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
                 return True
         return False
 
-    fn __ge__(self, other: Self) -> Bool:
+    def __ge__(self, other: Self) -> Bool:
         """
         Check if this TimeDelta is greater than or equal to another.
         """
         return not self.__lt__(other)
 
-    fn __gt__(self, other: Self) -> Bool:
+    def __gt__(self, other: Self) -> Bool:
         """
         Check if this TimeDelta is greater than another.
         """
         return not self.__le__(other)
 
-    fn __bool__(self) -> Bool:
+    def __bool__(self) -> Bool:
         """
         Check if the TimeDelta is non-zero.
         """

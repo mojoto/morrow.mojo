@@ -22,7 +22,7 @@ struct CTimeval(TrivialRegisterPassable):
     var tv_sec: Int  # Seconds
     var tv_usec: Int  # Microseconds
 
-    fn __init__(out self, tv_sec: Int = 0, tv_usec: Int = 0):
+    def __init__(out self, tv_sec: Int = 0, tv_usec: Int = 0):
         self.tv_sec = tv_sec
         self.tv_usec = tv_usec
 
@@ -42,7 +42,7 @@ struct CTm(TrivialRegisterPassable):
     var tm_gmtoff: c_long  # localtime zone offset seconds
     var tm_zone: UnsafePointer[c_char, MutExternalOrigin]  # timezone name
 
-    fn __init__(out self):
+    def __init__(out self):
         self.tm_sec = 0
         self.tm_min = 0
         self.tm_hour = 0
@@ -53,11 +53,13 @@ struct CTm(TrivialRegisterPassable):
         self.tm_yday = 0
         self.tm_isdst = 0
         self.tm_gmtoff = 0
-        self.tm_zone = UnsafePointer[c_char, MutExternalOrigin]()
+        self.tm_zone = UnsafePointer[
+            c_char, MutExternalOrigin
+        ].unsafe_dangling()
 
 
 @always_inline
-fn c_gettimeofday() -> CTimeval:
+def c_gettimeofday() -> CTimeval:
     """Wrapper for the C function gettimeofday."""
     var tv = CTimeval()
     external_call["gettimeofday", NoneType](UnsafePointer(to=tv), 0)
@@ -65,7 +67,7 @@ fn c_gettimeofday() -> CTimeval:
 
 
 @always_inline
-fn c_localtime(tv_sec: Int) -> CTm:
+def c_localtime(tv_sec: Int) -> CTm:
     """Wrapper for the C function localtime."""
     var tv_sec_ = tv_sec
     var tm = CTm()
@@ -76,7 +78,7 @@ fn c_localtime(tv_sec: Int) -> CTm:
 
 
 @always_inline
-fn c_strptime(time_str: String, time_format: String) -> CTm:
+def c_strptime(time_str: String, time_format: String) -> CTm:
     """Wrapper for the C function strptime."""
     var time_str_ = time_str
     var time_format_ = time_format
@@ -90,7 +92,7 @@ fn c_strptime(time_str: String, time_format: String) -> CTm:
 
 
 @always_inline
-fn c_gmtime(tv_sec: Int) -> CTm:
+def c_gmtime(tv_sec: Int) -> CTm:
     """Wrapper for the C function gmtime."""
     var tv_sec_ = tv_sec
     var tm = CTm()
@@ -100,9 +102,9 @@ fn c_gmtime(tv_sec: Int) -> CTm:
     return tm
 
 
-fn to_char_ptr(s: String) -> UnsafePointer[c_char, MutExternalOrigin]:
+def to_char_ptr(s: String) -> UnsafePointer[c_char, MutExternalOrigin]:
     """Only ASCII-based strings."""
-    var ptr = alloc[c_char](len(s))
-    for i in range(len(s)):
+    var ptr = alloc[c_char](s.byte_length())
+    for i in range(s.byte_length()):
         ptr.store(i, UInt8(ord(s[byte=i])))
     return ptr

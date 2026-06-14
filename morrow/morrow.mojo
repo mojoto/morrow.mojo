@@ -23,7 +23,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     var microsecond: Int
     var tz: TimeZone
 
-    fn __init__(
+    def __init__(
         out self,
         year: Int,
         month: Int,
@@ -43,7 +43,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.microsecond = microsecond
         self.tz = tz
 
-    fn __copyinit__(out self, copy: Self):
+    def __init__(out self, *, copy: Self):
         self.year = copy.year
         self.month = copy.month
         self.day = copy.day
@@ -53,7 +53,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.microsecond = copy.microsecond
         self.tz = copy.tz
 
-    fn __moveinit__(out self, deinit take: Self):
+    def __init__(out self, *, deinit take: Self):
         self.year = take.year
         self.month = take.month
         self.day = take.day
@@ -64,7 +64,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.tz = take.tz^
 
     @staticmethod
-    fn now() -> Self:
+    def now() -> Self:
         """
         Return a Morrow object representing the current local date and time.
         """
@@ -72,7 +72,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self._fromtimestamp(t, False)
 
     @staticmethod
-    fn utcnow() -> Self:
+    def utcnow() -> Self:
         """
         Return a Morrow object representing the current UTC date and time.
         """
@@ -80,7 +80,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self._fromtimestamp(t, True)
 
     @staticmethod
-    fn _fromtimestamp(t: CTimeval, utc: Bool) -> Self:
+    def _fromtimestamp(t: CTimeval, utc: Bool) -> Self:
         var tm: CTm
         var tz: TimeZone
         if utc:
@@ -103,19 +103,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return result
 
     @staticmethod
-    fn fromtimestamp(timestamp: Float64) raises -> Self:
+    def fromtimestamp(timestamp: Float64) raises -> Self:
         var timestamp_ = normalize_timestamp(timestamp)
         var t = CTimeval(Int(timestamp_))
         return Self._fromtimestamp(t, False)
 
     @staticmethod
-    fn utcfromtimestamp(timestamp: Float64) raises -> Self:
+    def utcfromtimestamp(timestamp: Float64) raises -> Self:
         var timestamp_ = normalize_timestamp(timestamp)
         var t = CTimeval(Int(timestamp_))
         return Self._fromtimestamp(t, True)
 
     @staticmethod
-    fn strptime(
+    def strptime(
         date_str: String, fmt: String, tzinfo: TimeZone = TimeZone.none()
     ) -> Self:
         """
@@ -141,7 +141,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
-    fn strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:
+    def strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:
         """
         Create a Morrow instance by time_zone_string with utc format.
 
@@ -153,7 +153,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var tzinfo = TimeZone.from_utc(tz_str)
         return Self.strptime(date_str, fmt, tzinfo)
 
-    fn format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
+    def format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
         """
         Returns a string representation of the `Morrow`
         formatted according to the provided format string.
@@ -187,7 +187,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             fmt,
         )
 
-    fn isoformat(
+    def isoformat(
         self, sep: String = "T", timespec: StringLiteral = "auto"
     ) raises -> String:
         """
@@ -242,7 +242,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         else:
             return date_str + sep + time_str + self.tz.format()
 
-    fn _date_string(self) -> String:
+    def _date_string(self) -> String:
         return (
             String(self.year).ascii_rjust(4, "0")
             + "-"
@@ -251,7 +251,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             + String(self.day).ascii_rjust(2, "0")
         )
 
-    fn _time_string_microseconds(self) -> String:
+    def _time_string_microseconds(self) -> String:
         return (
             String(self.hour).ascii_rjust(2, "0")
             + ":"
@@ -262,7 +262,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             + String(self.microsecond).ascii_rjust(6, "0")
         )
 
-    fn _isoformat_auto(self) -> String:
+    def _isoformat_auto(self) -> String:
         var result = (
             self._date_string() + "T" + self._time_string_microseconds()
         )
@@ -273,14 +273,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def write_to(self, mut writer: Some[Writer]):
         writer.write(self._isoformat_auto())
 
-    fn toordinal(self) raises -> Int:
+    def toordinal(self) raises -> Int:
         """
         Return the proleptic Gregorian ordinal of the date, where January 1 of year 1 has ordinal 1.
         """
         return _ymd2ord(self.year, self.month, self.day)
 
     @staticmethod
-    fn fromordinal(ordinal: Int) raises -> Self:
+    def fromordinal(ordinal: Int) raises -> Self:
         """
         Construct a Morrow object from a proleptic Gregorian ordinal.
 
@@ -354,17 +354,17 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         # start of that month:  we're done!
         return Self(year, month, n + 1)
 
-    fn isoweekday(self) raises -> Int:
+    def isoweekday(self) raises -> Int:
         """
         Return the day of the week as an integer, where Monday is 1 and Sunday is 7.
         """
         # 1-Jan-0001 is a Monday
         return self.toordinal() % 7 or 7
 
-    fn __str__(self) raises -> String:
+    def __str__(self) raises -> String:
         return self.isoformat()
 
-    fn __sub__(self, other: Self) raises -> TimeDelta:
+    def __sub__(self, other: Self) raises -> TimeDelta:
         var days1 = self.toordinal()
         var days2 = other.toordinal()
         var secs1 = self.second + self.minute * 60 + self.hour * 3600
