@@ -1619,7 +1619,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 return "instantly"
             return "just now"
 
-        var seconds = abs(delta_us) // _US_PER_SECOND
+        var rounded_delta_seconds = Self._rounded_seconds(delta_us)
+        var seconds = abs(rounded_delta_seconds)
         if unit == "auto":
             return self._humanize_auto(other, delta_us, only_distance)
         if unit == "second" and seconds < 2:
@@ -1628,7 +1629,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return "just now"
         var count = Self._humanize_count(seconds, unit)
         return Self._format_humanize_result(
-            delta_us, count, unit, only_distance
+            rounded_delta_seconds, count, unit, only_distance
         )
 
     def humanize(self, other: Self, granularity: List[String]) raises -> String:
@@ -1655,7 +1656,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             granularity
         )
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
-        var remaining = abs(delta_us) // _US_PER_SECOND
+        var rounded_delta_seconds = Self._rounded_seconds(delta_us)
+        var remaining = abs(rounded_delta_seconds)
         if (
             len(ordered_granularity) == 1
             and ordered_granularity[0] == "second"
@@ -1676,7 +1678,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var distance = Self._join_humanize_parts(parts)
         if only_distance:
             return distance
-        if delta_us >= 0:
+        if rounded_delta_seconds >= 0:
             return "in " + distance
         return distance + " ago"
 
@@ -2925,75 +2927,76 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _humanize_auto(
         self, other: Self, delta_us: Int, only_distance: Bool
     ) raises -> String:
-        var seconds = abs(delta_us) // _US_PER_SECOND
+        var rounded_delta_seconds = Self._rounded_seconds(delta_us)
+        var seconds = abs(rounded_delta_seconds)
         if seconds < 60:
             if seconds < 10:
                 if only_distance:
                     return "instantly"
                 return "just now"
             return Self._format_humanize_result(
-                delta_us, seconds, "second", only_distance
+                rounded_delta_seconds, seconds, "second", only_distance
             )
         elif seconds < 3600:
             if seconds < 120:
                 return Self._format_humanize_result(
-                    delta_us, 1, "minute", only_distance
+                    rounded_delta_seconds, 1, "minute", only_distance
                 )
             var minutes = seconds // 60
             if minutes < 2:
                 minutes = 2
             return Self._format_humanize_result(
-                delta_us, minutes, "minute", only_distance
+                rounded_delta_seconds, minutes, "minute", only_distance
             )
         elif seconds < 86400:
             if seconds < 7200:
                 return Self._format_humanize_result(
-                    delta_us, 1, "hour", only_distance
+                    rounded_delta_seconds, 1, "hour", only_distance
                 )
             var hours = seconds // 3600
             if hours < 2:
                 hours = 2
             return Self._format_humanize_result(
-                delta_us, hours, "hour", only_distance
+                rounded_delta_seconds, hours, "hour", only_distance
             )
 
         var calendar_months = self._humanize_calendar_months(other)
         if seconds < 172800:
             return Self._format_humanize_result(
-                delta_us, 1, "day", only_distance
+                rounded_delta_seconds, 1, "day", only_distance
             )
         elif seconds < 604800:
             var days = seconds // 86400
             if days < 2:
                 days = 2
             return Self._format_humanize_result(
-                delta_us, days, "day", only_distance
+                rounded_delta_seconds, days, "day", only_distance
             )
         elif calendar_months >= 1 and seconds < 31536000:
             return Self._format_humanize_result(
-                delta_us, calendar_months, "month", only_distance
+                rounded_delta_seconds, calendar_months, "month", only_distance
             )
         elif seconds < 1209600:
             return Self._format_humanize_result(
-                delta_us, 1, "week", only_distance
+                rounded_delta_seconds, 1, "week", only_distance
             )
         elif seconds < 2592000:
             var weeks = seconds // 604800
             if weeks < 2:
                 weeks = 2
             return Self._format_humanize_result(
-                delta_us, weeks, "week", only_distance
+                rounded_delta_seconds, weeks, "week", only_distance
             )
         elif seconds < 63072000:
             return Self._format_humanize_result(
-                delta_us, 1, "year", only_distance
+                rounded_delta_seconds, 1, "year", only_distance
             )
 
         var years = seconds // 31536000
         if years < 2:
             years = 2
         return Self._format_humanize_result(
-            delta_us, years, "year", only_distance
+            rounded_delta_seconds, years, "year", only_distance
         )
 
     def _humanize_calendar_months(self, other: Self) raises -> Int:
@@ -3028,14 +3031,29 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _format_humanize_result(
-        delta_us: Int, count: Int, unit: String, only_distance: Bool
+        delta_seconds: Int, count: Int, unit: String, only_distance: Bool
     ) raises -> String:
         var distance = Self._format_humanize_distance(count, unit)
         if only_distance:
             return distance
-        if delta_us > 0:
+        if delta_seconds >= 0:
             return "in " + distance
         return distance + " ago"
+
+    @staticmethod
+    def _rounded_seconds(delta_us: Int) -> Int:
+        var sign = 1
+        var abs_us = delta_us
+        if abs_us < 0:
+            sign = -1
+            abs_us = -abs_us
+        var seconds = abs_us // _US_PER_SECOND
+        var remainder = abs_us % _US_PER_SECOND
+        if remainder > _US_PER_SECOND // 2:
+            seconds += 1
+        elif remainder == _US_PER_SECOND // 2 and seconds % 2 == 1:
+            seconds += 1
+        return sign * seconds
 
     @staticmethod
     def _join_humanize_parts(parts: List[String]) -> String:
