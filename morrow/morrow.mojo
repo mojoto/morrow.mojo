@@ -2809,6 +2809,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def __gt__(self, other: Self) raises -> Bool:
         return self._utc_microseconds() > other._utc_microseconds()
 
+    def __add__(self, delta: TimeDelta) raises -> Self:
+        return self._shift_day_time(
+            delta.days, 0, 0, delta.seconds, delta.microseconds
+        )
+
+    def __radd__(self, delta: TimeDelta) raises -> Self:
+        return self + delta
+
+    def __sub__(self, delta: TimeDelta) raises -> Self:
+        return self._shift_day_time(
+            -delta.days, 0, 0, -delta.seconds, -delta.microseconds
+        )
+
     def __sub__(self, other: Self) raises -> TimeDelta:
         var days1 = self.toordinal()
         var days2 = other.toordinal()

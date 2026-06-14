@@ -2,7 +2,7 @@ from std.collections import List
 from std.testing import assert_equal, assert_true, TestSuite
 
 from morrow._libc import c_localtime, CTm
-from morrow import Morrow, MorrowIsoCalendar
+from morrow import Morrow, MorrowIsoCalendar, TimeDelta
 from morrow import TimeZone
 
 
@@ -146,6 +146,32 @@ def test_sub() raises:
     result = Morrow(2023, 10, 3, 10, 1, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 2)
     assert_equal(String(result), "2 days, 0:01:01")
+
+
+def test_timedelta_arithmetic() raises:
+    var base = Morrow(
+        2024, 2, 28, 23, 59, 59, 999999, TimeZone.from_utc("+05:30")
+    )
+    var delta = TimeDelta(days=1, seconds=2, microseconds=3)
+
+    var added = base + delta
+    assert_equal(String(added), "2024-03-01T00:00:02.000002+05:30")
+
+    var reverse_added = delta + base
+    assert_equal(String(reverse_added), "2024-03-01T00:00:02.000002+05:30")
+
+    var subtracted = base - delta
+    assert_equal(String(subtracted), "2024-02-27T23:59:57.999996+05:30")
+
+    var borrowed = Morrow(
+        2024, 3, 1, 0, 0, 0, 0, TimeZone.from_utc("UTC")
+    ) - TimeDelta(microseconds=1)
+    assert_equal(String(borrowed), "2024-02-29T23:59:59.999999+00:00")
+
+    var diff = added - base
+    assert_equal(diff.days, 1)
+    assert_equal(diff.seconds, 2)
+    assert_equal(diff.microseconds, 3)
 
 
 def test_replace() raises:
