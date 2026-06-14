@@ -383,14 +383,35 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Create a Morrow from an ISO 8601 string.
         """
         var length = date_str.byte_length()
-        if length < 7:
+        if length < 4:
             raise Error("isoformat string is too short")
 
         var year: Int
         var month: Int
         var day: Int
         var pos: Int
-        if length >= 7 and (
+        if length == 4:
+            year = Int(date_str[byte=0:4])
+            month = 1
+            day = 1
+            pos = 4
+        elif (
+            length >= 7
+            and date_str[byte=4] == "-"
+            and Self._is_ascii_digit(ord(date_str[byte=5]))
+            and Self._is_ascii_digit(ord(date_str[byte=6]))
+            and (
+                length == 7
+                or date_str[byte=7] == "T"
+                or date_str[byte=7] == "t"
+                or date_str[byte=7] == " "
+            )
+        ):
+            year = Int(date_str[byte=0:4])
+            month = Int(date_str[byte=5:7])
+            day = 1
+            pos = 7
+        elif length >= 7 and (
             (date_str[byte=4] == "-" and date_str[byte=5] == "W")
             or date_str[byte=4] == "W"
         ):

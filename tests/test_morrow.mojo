@@ -557,6 +557,15 @@ def test_creation_helpers() raises:
     var iso_week_datetime = Morrow.get("2024-W09T03:04:05Z")
     assert_equal(String(iso_week_datetime), "2024-02-26T03:04:05.000000+00:00")
 
+    var iso_year = Morrow.get("2024")
+    assert_equal(String(iso_year), "2024-01-01T00:00:00.000000+00:00")
+
+    var iso_month = Morrow.get("2024-02")
+    assert_equal(String(iso_month), "2024-02-01T00:00:00.000000+00:00")
+
+    var iso_month_datetime = Morrow.get("2024-02T03:04:05Z")
+    assert_equal(String(iso_month_datetime), "2024-02-01T03:04:05.000000+00:00")
+
     var normalized_iso = Morrow.get(
         "\t \n  2013-05-05T12:30:45.123456 \t \n",
         normalize_whitespace=True,
