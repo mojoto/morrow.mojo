@@ -367,6 +367,13 @@ def test_timestamp_and_timezone_conversion() raises:
 
     var before_epoch = Morrow(1969, 12, 31, 23, 59, 59, 250000, utc)
     assert_equal(before_epoch.timestamp(), -0.75)
+    assert_equal(before_epoch.int_timestamp(), 0)
+
+    var one_microsecond_before_epoch = Morrow(
+        1969, 12, 31, 23, 59, 59, 999999, utc
+    )
+    assert_equal(one_microsecond_before_epoch.timestamp(), -0.000001)
+    assert_equal(one_microsecond_before_epoch.int_timestamp(), 0)
 
     var base = Morrow(2024, 2, 29, 16, 30, 0, 123456, utc)
     var shanghai = base.to("+08:00")

@@ -1223,7 +1223,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return the POSIX timestamp for this Morrow as integer UTC seconds.
         """
-        return self._utc_microseconds() // _US_PER_SECOND
+        var total_us = self._utc_microseconds()
+        if total_us < 0:
+            return -((-total_us) // _US_PER_SECOND)
+        return total_us // _US_PER_SECOND
 
     def for_json(self) raises -> String:
         """

@@ -61,6 +61,24 @@ def test_format() raises:
         Morrow(2024, 2, 29, 3, 4, 5, 0, TimeZone.from_utc("UTC")).format("X"),
         "1709175845.0",
     )
+    assert_equal(
+        Morrow(
+            1969, 12, 31, 23, 59, 59, 250000, TimeZone.from_utc("UTC")
+        ).format("X"),
+        "-0.75",
+    )
+    assert_equal(
+        Morrow(
+            1969, 12, 31, 23, 59, 59, 999999, TimeZone.from_utc("UTC")
+        ).format("X"),
+        "-1e-06",
+    )
+    assert_equal(
+        Morrow(
+            1969, 12, 31, 23, 59, 59, 999999, TimeZone.from_utc("UTC")
+        ).format("x"),
+        "-1",
+    )
 
     var standard = Morrow(2020, 5, 27, 10, 30, 35, 0, TimeZone(0, "UTC"))
     assert_equal(standard.format(FORMAT_ATOM), "2020-05-27 10:30:35+00:00")
