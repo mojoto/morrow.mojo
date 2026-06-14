@@ -69,18 +69,35 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         var hours: Int = Int(utc_str[byte = p : p + 2])
         p += 2
 
-        var minutes: Int
+        var minutes = 0
+        var seconds = 0
         if utc_str.byte_length() <= p:
-            minutes = 0
+            pass
+        elif (
+            utc_str.byte_length() == p + 6
+            and utc_str[byte=p] == ":"
+            and utc_str[byte=p + 3] == ":"
+        ):
+            minutes = Int(utc_str[byte = p + 1 : p + 3])
+            seconds = Int(utc_str[byte = p + 4 : p + 6])
         elif utc_str.byte_length() == p + 3 and utc_str[byte=p] == ":":
             minutes = Int(utc_str[byte = p + 1 : p + 3])
+        elif (
+            utc_str.byte_length() == p + 4
+            and _is_ascii_digit(ord(utc_str[byte=p]))
+            and _is_ascii_digit(ord(utc_str[byte=p + 1]))
+            and _is_ascii_digit(ord(utc_str[byte=p + 2]))
+            and _is_ascii_digit(ord(utc_str[byte=p + 3]))
+        ):
+            minutes = Int(utc_str[byte = p : p + 2])
+            seconds = Int(utc_str[byte = p + 2 : p + 4])
         elif utc_str.byte_length() == p + 2 and _is_ascii_digit(
             ord(utc_str[byte=p])
         ):
             minutes = Int(utc_str[byte = p : p + 2])
         else:
             raise Error("utc_str format is invalid")
-        var offset: Int = sign * (hours * 3600 + minutes * 60)
+        var offset: Int = sign * (hours * 3600 + minutes * 60 + seconds)
         if offset <= -86400 or offset >= 86400:
             raise Error("utc offset must be strictly between -24:00 and +24:00")
         return TimeZone(offset)
@@ -99,12 +116,16 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
             offset_abs = self.offset
         var hh = offset_abs // 3600
         var mm = (offset_abs % 3600) // 60
-        return (
+        var result = (
             sign
             + String(hh).ascii_rjust(2, "0")
             + sep
             + String(mm).ascii_rjust(2, "0")
         )
+        var ss = offset_abs % 60
+        if ss != 0:
+            result += sep + String(ss).ascii_rjust(2, "0")
+        return result
 
 
 def _is_ascii_digit(c: Int) -> Bool:

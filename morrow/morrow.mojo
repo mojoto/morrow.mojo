@@ -1348,6 +1348,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         pos += 2
 
         var minutes: Int
+        var seconds = 0
         if pos < date_str.byte_length() and date_str[byte=pos] == ":":
             pos += 1
             if (
@@ -1359,7 +1360,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             minutes = Int(date_str[byte = pos : pos + 2])
             pos += 2
             if pos < date_str.byte_length() and date_str[byte=pos] == ":":
-                raise Error("timezone seconds are unsupported")
+                pos += 1
+                if (
+                    pos + 2 > date_str.byte_length()
+                    or not Self._is_ascii_digit(ord(date_str[byte=pos]))
+                    or not Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+                ):
+                    raise Error("timezone second is invalid")
+                seconds = Int(date_str[byte = pos : pos + 2])
+                pos += 2
         else:
             if (
                 pos + 2 > date_str.byte_length()
@@ -1369,10 +1378,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 raise Error("timezone minute is invalid")
             minutes = Int(date_str[byte = pos : pos + 2])
             pos += 2
+            if (
+                pos + 2 <= date_str.byte_length()
+                and Self._is_ascii_digit(ord(date_str[byte=pos]))
+                and Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+            ):
+                seconds = Int(date_str[byte = pos : pos + 2])
+                pos += 2
 
         if minutes > 59:
             raise Error("timezone minute is invalid")
-        var offset = sign * (hours * 3600 + minutes * 60)
+        if seconds > 59:
+            raise Error("timezone second is invalid")
+        var offset = sign * (hours * 3600 + minutes * 60 + seconds)
         if offset <= -86400 or offset >= 86400:
             raise Error(
                 "timezone offset must be strictly between -24:00 and +24:00"

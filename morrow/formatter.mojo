@@ -425,7 +425,7 @@ def _replace_strftime_directive(
     if directive == ord("f"):
         return String(microsecond).ascii_rjust(6, "0")
     if directive == ord("z"):
-        return _format_timezone(0 if tz_is_none else tz_offset, "")
+        return _format_timezone(0 if tz_is_none else tz_offset, "", True)
     if directive == ord("Z"):
         if tz_is_none or tz_name == "utc" or tz_name == "UTC":
             return "UTC"
@@ -433,7 +433,7 @@ def _replace_strftime_directive(
             return tz_name
         if tz_offset == 0:
             return "UTC"
-        return "UTC" + _format_timezone(tz_offset)
+        return "UTC" + _format_timezone(tz_offset, include_seconds=True)
     if directive == ord("j"):
         return String(day_of_year).ascii_rjust(3, "0")
     if directive == ord("U"):
@@ -614,7 +614,7 @@ def _replace_token(
                 return tz_name
             if tz_offset == 0:
                 return "UTC"
-            return "UTC" + _format_timezone(tz_offset)
+            return "UTC" + _format_timezone(tz_offset, include_seconds=True)
         var separator = "" if token_count == 1 else ":"
         if tz_is_none:
             return _format_timezone(0, separator)
@@ -645,7 +645,9 @@ def _replace_token(
     return ""
 
 
-def _format_timezone(offset: Int, sep: String = ":") -> String:
+def _format_timezone(
+    offset: Int, sep: String = ":", include_seconds: Bool = False
+) -> String:
     var sign: String
     var offset_abs: Int
     if offset < 0:
@@ -656,12 +658,16 @@ def _format_timezone(offset: Int, sep: String = ":") -> String:
         offset_abs = offset
     var hh = offset_abs // 3600
     var mm = (offset_abs % 3600) // 60
-    return (
+    var result = (
         sign
         + String(hh).ascii_rjust(2, "0")
         + sep
         + String(mm).ascii_rjust(2, "0")
     )
+    var ss = offset_abs % 60
+    if include_seconds and ss != 0:
+        result += sep + String(ss).ascii_rjust(2, "0")
+    return result
 
 
 def _format_ordinal(value: Int) -> String:

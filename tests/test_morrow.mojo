@@ -185,6 +185,8 @@ def test_iso_format() raises:
 
     var d1 = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, "Beijing"))
     assert_equal(d1.isoformat(timespec="seconds"), "2023-10-01T00:00:00+08:00")
+    var offset_seconds = Morrow(2024, 2, 29, 3, 4, 5, tz=TimeZone(19815))
+    assert_equal(offset_seconds.isoformat(), "2024-02-29T03:04:05+05:30:15")
 
     var whole_second = Morrow(2024, 2, 29, 3, 4, 5)
     assert_equal(whole_second.isoformat(), "2024-02-29T03:04:05")
@@ -216,6 +218,10 @@ def test_strptime() raises:
     assert_equal(String(m), "2024-02-29T03:04:05.000000+05:30")
     m = Morrow.strptime("2024-02-29 03:04:05 +05:30", "%Y-%m-%d %H:%M:%S %z")
     assert_equal(String(m), "2024-02-29T03:04:05.000000+05:30")
+    m = Morrow.strptime("2024-02-29 03:04:05 +053015", "%Y-%m-%d %H:%M:%S %z")
+    assert_equal(String(m), "2024-02-29T03:04:05.000000+05:30:15")
+    m = Morrow.strptime("2024-02-29 03:04:05 +05:30:15", "%Y-%m-%d %H:%M:%S %z")
+    assert_equal(String(m), "2024-02-29T03:04:05.000000+05:30:15")
     m = Morrow.strptime("2024-02-29 03:04:05 Z", "%Y-%m-%d %H:%M:%S %z")
     assert_equal(String(m), "2024-02-29T03:04:05.000000+00:00")
     m = Morrow.strptime("2024-02-29 03:04:05 UTC", "%Y-%m-%d %H:%M:%S %Z")
@@ -246,6 +252,9 @@ def test_strptime() raises:
     assert_strptime_raises("2024-02-29abc", "%Y-%m-%d")
     assert_strptime_raises("2024-02-29 24:00", "%Y-%m-%d %H:%M")
     assert_strptime_raises("2024-02-29 03:04:05 +05", "%Y-%m-%d %H:%M:%S %z")
+    assert_strptime_raises(
+        "2024-02-29 03:04:05 +05:30:15.5", "%Y-%m-%d %H:%M:%S %z"
+    )
     assert_strptime_raises("2024-02-29 03:04:05 EST", "%Y-%m-%d %H:%M:%S %Z")
     assert_strptime_raises("2024-02-29 03:04:05 local", "%Y-%m-%d %H:%M:%S %Z")
     assert_strptime_raises(
@@ -771,6 +780,12 @@ def test_component_views() raises:
     var timetz = m.timetz()
     assert_equal(timetz.tz.offset, 19800)
     assert_equal(String(timetz), "03:04:05.123456+05:30")
+
+    var timetz_seconds = Morrow(
+        2024, 2, 29, 3, 4, 5, 123456, TimeZone(19815)
+    ).timetz()
+    assert_equal(timetz_seconds.tz.offset, 19815)
+    assert_equal(String(timetz_seconds), "03:04:05.123456+05:30:15")
 
     assert_equal(m.tzinfo().offset, 19800)
     assert_equal(m.tzname(), "UTC+05:30")

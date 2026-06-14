@@ -35,6 +35,8 @@ def test_format() raises:
     var m_tz = Morrow(2024, 2, 1, 3, 4, 5, 123456, TimeZone.from_utc("+05:30"))
     assert_equal(m_tz.format("ZZ"), "+05:30")
     assert_equal(m_tz.format("ZZZ"), "UTC+05:30")
+    var m_tz_seconds = Morrow(2024, 2, 1, 3, 4, 5, 123456, TimeZone(19815))
+    assert_equal(m_tz_seconds.format("Z ZZ ZZZ"), "+0530 +05:30 UTC+05:30:15")
     assert_equal(
         Morrow(2024, 2, 1, 3, 4, 5, 123456, TimeZone.from_utc("-07:00")).format(
             "ZZZ"
@@ -119,6 +121,10 @@ def test_strftime() raises:
             "%z %Z"
         ),
         "+0530 UTC+05:30",
+    )
+    assert_equal(
+        Morrow(2024, 2, 29, 3, 4, 5, tz=TimeZone(19815)).strftime("%z %Z"),
+        "+053015 UTC+05:30:15",
     )
     assert_equal(
         Morrow(2024, 2, 29, 3, 4, 5, tz=TimeZone.from_utc("-05:00")).strftime(
