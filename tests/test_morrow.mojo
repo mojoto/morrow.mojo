@@ -476,6 +476,11 @@ def test_humanize_and_dehumanize() raises:
         present.shift(days=8).humanize(present, granularity="week"), "in a week"
     )
 
+    assert_equal(Morrow.utcnow().shift(hours=-1).humanize(), "an hour ago")
+    assert_equal(
+        Morrow.utcnow().shift(hours=-2).humanize(only_distance=True), "2 hours"
+    )
+
     var hour_minute = List[String]()
     hour_minute.append("hour")
     hour_minute.append("minute")

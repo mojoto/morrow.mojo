@@ -148,6 +148,7 @@ print(utc.imaginary())  # False
 
 # Humanize and dehumanize English relative times.
 var present = Morrow(2024, 1, 1, 12, 0, 0, 0, TimeZone.from_utc("UTC"))
+print(Morrow.utcnow().shift(hours=-1).humanize())  # an hour ago
 print(present.shift(hours=2).humanize(present))  # in 2 hours
 var granularity = List[String]()
 granularity.append("hour")

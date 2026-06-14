@@ -930,6 +930,23 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def humanize(
         self,
+    ) raises -> String:
+        """
+        Return an English human-readable relative difference from now.
+        """
+        return self.humanize(Self.utcnow())
+
+    def humanize(
+        self,
+        only_distance: Bool,
+    ) raises -> String:
+        """
+        Return an English human-readable relative difference from now.
+        """
+        return self.humanize(Self.utcnow(), only_distance)
+
+    def humanize(
+        self,
         other: Self,
         only_distance: Bool = False,
         granularity: String = "auto",
