@@ -467,16 +467,28 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var fmt_pos = 0
         while fmt_pos < fmt.byte_length():
             if fmt[byte=fmt_pos] == "[":
-                fmt_pos += 1
-                while fmt_pos < fmt.byte_length() and ord(
-                    fmt[byte=fmt_pos]
+                var literal_start = fmt_pos + 1
+                var literal_end = literal_start
+                while literal_end < fmt.byte_length() and ord(
+                    fmt[byte=literal_end]
                 ) != ord("]"):
-                    Self._parse_literal_char(date_str, date_pos, fmt, fmt_pos)
-                    date_pos += 1
-                    fmt_pos += 1
-                if fmt_pos >= fmt.byte_length():
+                    literal_end += 1
+                if literal_end >= fmt.byte_length():
                     raise Error("format literal is missing closing bracket")
-                fmt_pos += 1
+
+                if Self._is_whitespace_regex_literal(
+                    fmt, literal_start, literal_end
+                ):
+                    date_pos = Self._parse_whitespace_regex(date_str, date_pos)
+                else:
+                    var literal_pos = literal_start
+                    while literal_pos < literal_end:
+                        Self._parse_literal_char(
+                            date_str, date_pos, fmt, literal_pos
+                        )
+                        date_pos += 1
+                        literal_pos += 1
+                fmt_pos = literal_end + 1
             elif Self._starts_with(fmt, fmt_pos, "YYYY"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 4)
                 year = parsed.value
@@ -1752,6 +1764,30 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _is_ascii_digit(c: Int) -> Bool:
         return c >= ord("0") and c <= ord("9")
+
+    @staticmethod
+    def _is_ascii_whitespace(c: Int) -> Bool:
+        return c == ord(" ") or c == 9 or c == 10 or c == 13
+
+    @staticmethod
+    def _is_whitespace_regex_literal(fmt: String, start: Int, end: Int) -> Bool:
+        return (
+            end - start == 3
+            and ord(fmt[byte=start]) == 92
+            and ord(fmt[byte=start + 1]) == ord("s")
+            and ord(fmt[byte=start + 2]) == ord("+")
+        )
+
+    @staticmethod
+    def _parse_whitespace_regex(date_str: String, date_pos: Int) raises -> Int:
+        var pos = date_pos
+        while pos < date_str.byte_length() and Self._is_ascii_whitespace(
+            ord(date_str[byte=pos])
+        ):
+            pos += 1
+        if pos == date_pos:
+            raise Error("whitespace is missing")
+        return pos
 
     @staticmethod
     def _parse_literal_char(

@@ -593,6 +593,12 @@ def test_flexible_get_creation_helpers() raises:
     )
     assert_equal(String(searched_datetime), "2023-01-20T15:49:10.000000+00:00")
 
+    var whitespace_regex = Morrow.get(
+        "Mon \t Sep 08   16:41:45     2014",
+        "ddd[\\s+]MMM[\\s+]DD[\\s+]HH:mm:ss[\\s+]YYYY",
+    )
+    assert_equal(String(whitespace_regex), "2014-09-08T16:41:45.000000+00:00")
+
     var day_of_year = Morrow.get("2024 60", "YYYY DDD")
     assert_equal(String(day_of_year), "2024-02-29T00:00:00.000000+00:00")
 
