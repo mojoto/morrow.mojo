@@ -1708,7 +1708,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             var name = month_abbreviation(value) if abbreviated else month_name(
                 value
             )
-            if Self._starts_with(date_str, date_pos, name):
+            if Self._starts_with_ascii_case_insensitive(
+                date_str, date_pos, name
+            ):
                 return MorrowParseInt(value, date_pos + name.byte_length())
         raise Error("month name is invalid")
 
