@@ -1204,49 +1204,76 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S')
             <Morrow [2019-01-20T15:49:10+00:00]>
         """
-        var microsecond_directive = Self._find_strptime_microsecond_directive(
-            fmt
-        )
-        if microsecond_directive != -1:
-            var prefix_fmt = String(fmt[byte=0:microsecond_directive])
-            var microsecond_start = c_strptime_consumed(date_str, prefix_fmt)
-            var microsecond_end = microsecond_start
-            while (
-                microsecond_end < date_str.byte_length()
-                and Self._is_ascii_digit(ord(date_str[byte=microsecond_end]))
-                and microsecond_end - microsecond_start < 6
-            ):
-                microsecond_end += 1
-            if microsecond_end == microsecond_start:
-                raise Error("microsecond is missing")
-            if (
-                microsecond_end < date_str.byte_length()
-                and Self._is_ascii_digit(ord(date_str[byte=microsecond_end]))
-            ):
-                raise Error("unconverted data remains")
+        var normalized_date = date_str
+        var normalized_fmt = fmt
+        var microsecond = 0
+        var parsed_tz = TimeZone.none()
 
-            var digits = String(
-                date_str[byte=microsecond_start:microsecond_end]
+        while True:
+            var directive = Self._find_strptime_extension_directive(
+                normalized_fmt
             )
-            while digits.byte_length() < 6:
-                digits += "0"
-            var normalized_date = String(
-                date_str[byte=0:microsecond_start]
-            ) + String(date_str[byte=microsecond_end:])
-            var normalized_fmt = prefix_fmt + String(
-                fmt[byte = microsecond_directive + 2 :]
-            )
-            var tm = c_strptime(normalized_date, normalized_fmt)
-            return Self._from_strptime_tm(tm, Int(digits), tzinfo)
+            if directive.pos == -1:
+                break
 
-        var tm = c_strptime(date_str, fmt)
-        return Self._from_strptime_tm(tm, 0, tzinfo)
+            var prefix_fmt = String(normalized_fmt[byte = 0 : directive.pos])
+            var value_start = c_strptime_consumed(normalized_date, prefix_fmt)
+            var value_end: Int
+            if directive.value == ord("f"):
+                value_end = value_start
+                while (
+                    value_end < normalized_date.byte_length()
+                    and Self._is_ascii_digit(
+                        ord(normalized_date[byte=value_end])
+                    )
+                    and value_end - value_start < 6
+                ):
+                    value_end += 1
+                if value_end == value_start:
+                    raise Error("microsecond is missing")
+                if (
+                    value_end < normalized_date.byte_length()
+                    and Self._is_ascii_digit(
+                        ord(normalized_date[byte=value_end])
+                    )
+                ):
+                    raise Error("unconverted data remains")
+
+                var digits = String(normalized_date[byte=value_start:value_end])
+                while digits.byte_length() < 6:
+                    digits += "0"
+                microsecond = Int(digits)
+            else:
+                var parsed = Self._parse_strptime_timezone_offset(
+                    normalized_date, value_start
+                )
+                value_end = parsed.pos
+                parsed_tz = parsed.tz
+
+            normalized_date = String(
+                normalized_date[byte=0:value_start]
+            ) + String(normalized_date[byte=value_end:])
+            normalized_fmt = prefix_fmt + String(
+                normalized_fmt[byte = directive.pos + 2 :]
+            )
+
+        var tm = c_strptime(normalized_date, normalized_fmt)
+        return Self._from_strptime_tm(tm, microsecond, tzinfo, parsed_tz)
 
     @staticmethod
     def _from_strptime_tm(
-        tm: CTm, microsecond: Int, tzinfo: TimeZone
+        tm: CTm,
+        microsecond: Int,
+        tzinfo: TimeZone,
+        parsed_tz: TimeZone = TimeZone.none(),
     ) raises -> Self:
-        var tz = TimeZone(Int(tm.tm_gmtoff)) if tzinfo.is_none() else tzinfo
+        var tz: TimeZone
+        if not tzinfo.is_none():
+            tz = tzinfo
+        elif not parsed_tz.is_none():
+            tz = parsed_tz
+        else:
+            tz = TimeZone(Int(tm.tm_gmtoff))
         return Self._from_components(
             Int(tm.tm_year) + 1900,
             Int(tm.tm_mon) + 1,
@@ -1259,19 +1286,76 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
-    def _find_strptime_microsecond_directive(fmt: String) -> Int:
+    def _find_strptime_extension_directive(fmt: String) -> MorrowParseInt:
         var pos = 0
         while pos + 1 < fmt.byte_length():
             if fmt[byte=pos] == "%":
                 if fmt[byte=pos + 1] == "%":
                     pos += 2
                     continue
-                if fmt[byte=pos + 1] == "f":
-                    return pos
+                if fmt[byte=pos + 1] == "f" or fmt[byte=pos + 1] == "z":
+                    return MorrowParseInt(ord(fmt[byte=pos + 1]), pos)
                 pos += 2
             else:
                 pos += 1
-        return -1
+        return MorrowParseInt(0, -1)
+
+    @staticmethod
+    def _parse_strptime_timezone_offset(
+        date_str: String, date_pos: Int
+    ) raises -> MorrowParseTimeZone:
+        if date_pos >= date_str.byte_length():
+            raise Error("timezone is missing")
+        if date_str[byte=date_pos] == "Z":
+            return MorrowParseTimeZone(TimeZone.from_utc("UTC"), date_pos + 1)
+
+        var sign = 1
+        if date_str[byte=date_pos] == "-":
+            sign = -1
+        elif not date_str[byte=date_pos] == "+":
+            raise Error("timezone must be Z or a fixed offset")
+
+        var pos = date_pos + 1
+        if (
+            pos + 2 > date_str.byte_length()
+            or not Self._is_ascii_digit(ord(date_str[byte=pos]))
+            or not Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+        ):
+            raise Error("timezone hour is invalid")
+        var hours = Int(date_str[byte = pos : pos + 2])
+        pos += 2
+
+        var minutes: Int
+        if pos < date_str.byte_length() and date_str[byte=pos] == ":":
+            pos += 1
+            if (
+                pos + 2 > date_str.byte_length()
+                or not Self._is_ascii_digit(ord(date_str[byte=pos]))
+                or not Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+            ):
+                raise Error("timezone minute is invalid")
+            minutes = Int(date_str[byte = pos : pos + 2])
+            pos += 2
+            if pos < date_str.byte_length() and date_str[byte=pos] == ":":
+                raise Error("timezone seconds are unsupported")
+        else:
+            if (
+                pos + 2 > date_str.byte_length()
+                or not Self._is_ascii_digit(ord(date_str[byte=pos]))
+                or not Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+            ):
+                raise Error("timezone minute is invalid")
+            minutes = Int(date_str[byte = pos : pos + 2])
+            pos += 2
+
+        if minutes > 59:
+            raise Error("timezone minute is invalid")
+        var offset = sign * (hours * 3600 + minutes * 60)
+        if offset <= -86400 or offset >= 86400:
+            raise Error(
+                "timezone offset must be strictly between -24:00 and +24:00"
+            )
+        return MorrowParseTimeZone(TimeZone(offset), pos)
 
     @staticmethod
     def strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:

@@ -212,6 +212,12 @@ def test_strptime() raises:
 
     m = Morrow.strptime("2023-10-18 15:49:10 +0800", "%Y-%m-%d %H:%M:%S %z")
     assert_equal(String(m), "2023-10-18T15:49:10.000000+08:00")
+    m = Morrow.strptime("2024-02-29 03:04:05 +0530", "%Y-%m-%d %H:%M:%S %z")
+    assert_equal(String(m), "2024-02-29T03:04:05.000000+05:30")
+    m = Morrow.strptime("2024-02-29 03:04:05 +05:30", "%Y-%m-%d %H:%M:%S %z")
+    assert_equal(String(m), "2024-02-29T03:04:05.000000+05:30")
+    m = Morrow.strptime("2024-02-29 03:04:05 Z", "%Y-%m-%d %H:%M:%S %z")
+    assert_equal(String(m), "2024-02-29T03:04:05.000000+00:00")
 
     m = Morrow.strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "+09:00")
     assert_equal(String(m), "2023-10-18T15:49:10.000000+09:00")
@@ -231,6 +237,7 @@ def test_strptime() raises:
     assert_strptime_raises("2024-02-29 23:59:60", "%Y-%m-%d %H:%M:%S")
     assert_strptime_raises("2024-02-29abc", "%Y-%m-%d")
     assert_strptime_raises("2024-02-29 24:00", "%Y-%m-%d %H:%M")
+    assert_strptime_raises("2024-02-29 03:04:05 +05", "%Y-%m-%d %H:%M:%S %z")
     assert_strptime_raises(
         "2024-02-29 03:04:05.1234567", "%Y-%m-%d %H:%M:%S.%f"
     )
