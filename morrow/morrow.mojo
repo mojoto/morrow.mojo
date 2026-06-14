@@ -269,6 +269,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.fromdatetime(dt, tz_str)
 
     @staticmethod
+    def get(iso: MorrowIsoCalendar) raises -> Self:
+        """
+        Create a UTC Morrow from ISO calendar fields.
+        """
+        return Self.fromisocalendar(iso.year, iso.week, iso.weekday)
+
+    @staticmethod
     def fromisoformat(date_str: String) raises -> Self:
         """
         Create a Morrow from an ISO 8601 string.
@@ -1490,6 +1497,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         # Now the year and month are correct, and n is the offset from the
         # start of that month:  we're done!
         return Self(year, month, n + 1)
+
+    @staticmethod
+    def fromisocalendar(
+        iso_year: Int, iso_week: Int, iso_weekday: Int
+    ) raises -> Self:
+        """
+        Construct a UTC Morrow from ISO year, week, and weekday fields.
+        """
+        if iso_weekday < 1 or iso_weekday > 7:
+            raise Error("iso_weekday must be in 1..7")
+        var week1 = Self._iso_week1_monday(iso_year)
+        var next_week1 = Self._iso_week1_monday(iso_year + 1)
+        var max_week = (next_week1 - week1) // 7
+        if iso_week < 1 or iso_week > max_week:
+            raise Error("iso_week is out of range for iso_year")
+        var ordinal = week1 + (iso_week - 1) * 7 + iso_weekday - 1
+        var date = Self.fromordinal(ordinal)
+        return date.replace(Self._utc_timezone())
 
     def isoweekday(self) raises -> Int:
         """

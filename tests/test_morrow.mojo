@@ -1,7 +1,7 @@
 from std.testing import assert_equal, assert_true, TestSuite
 
 from morrow._libc import c_localtime, CTm
-from morrow import Morrow
+from morrow import Morrow, MorrowIsoCalendar
 from morrow import TimeZone
 
 
@@ -97,6 +97,14 @@ def test_ordinal() raises:
 
     var leap_day = Morrow.fromordinal(Morrow(2024, 2, 29).toordinal())
     assert_equal(String(leap_day), "2024-02-29T00:00:00.000000")
+
+
+def test_iso_calendar_creation() raises:
+    var sunday = Morrow.fromisocalendar(2013, 18, 7)
+    assert_equal(String(sunday), "2013-05-05T00:00:00.000000+00:00")
+
+    var iso = MorrowIsoCalendar(2020, 53, 7)
+    assert_equal(String(Morrow.get(iso)), "2021-01-03T00:00:00.000000+00:00")
 
 
 def test_sub() raises:

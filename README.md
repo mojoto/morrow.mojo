@@ -114,6 +114,8 @@ print(utc.for_json())  # 2024-02-29T16:30:00.123456+00:00
 print(utc.ctime())  # Thu Feb 29 16:30:00 2024
 var iso = utc.isocalendar()
 print(iso.week)  # 9
+print(str(Morrow.fromisocalendar(2013, 18, 7)))  # 2013-05-05T00:00:00.000000+00:00
+print(str(Morrow.get(iso)))  # 2024-02-29T00:00:00.000000+00:00
 
 # Get date, time, and struct_time-style component views.
 print(str(utc.date()))  # 2024-02-29
