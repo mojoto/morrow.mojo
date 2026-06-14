@@ -466,6 +466,24 @@ def test_creation_helpers() raises:
     assert_true(beijing_now.year >= 2020)
 
 
+def test_flexible_get_creation_helpers() raises:
+    var utc_now = Morrow.get()
+    assert_true(utc_now.year >= 2020)
+    assert_equal(utc_now.tz.offset, 0)
+
+    var beijing_now = Morrow.get(TimeZone.from_utc("+08:00"))
+    assert_true(beijing_now.year >= 2020)
+    assert_equal(beijing_now.tz.offset, 28800)
+
+    var formatted = Morrow.get("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S")
+    assert_equal(String(formatted), "2023-01-20T15:49:10.000000+00:00")
+
+    var formatted_tz = Morrow.get(
+        "20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", "+05:30"
+    )
+    assert_equal(String(formatted_tz), "2023-01-20T15:49:10.000000+05:30")
+
+
 def test_date_and_datetime_creation_helpers() raises:
     var date = Morrow(2024, 2, 29).date()
     assert_equal(

@@ -164,6 +164,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return CTimeval(seconds, microseconds)
 
     @staticmethod
+    def get() -> Self:
+        """
+        Create a UTC Morrow for the current time.
+        """
+        return Self.utcnow()
+
+    @staticmethod
+    def get(tz: TimeZone) raises -> Self:
+        """
+        Create a Morrow for the current time converted to a fixed-offset timezone.
+        """
+        return Self.now(tz)
+
+    @staticmethod
     def get(timestamp: Float64) raises -> Self:
         """
         Create a UTC Morrow from a POSIX timestamp.
@@ -190,6 +204,27 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Create a UTC Morrow from an ISO 8601 string.
         """
         return Self.fromisoformat(date_str)
+
+    @staticmethod
+    def get(date_str: String, fmt: String) -> Self:
+        """
+        Create a Morrow by parsing a string with a datetime format.
+        """
+        return Self.strptime(date_str, fmt)
+
+    @staticmethod
+    def get(date_str: String, fmt: String, tz: TimeZone) -> Self:
+        """
+        Create a Morrow by parsing a string with a datetime format and replacement timezone.
+        """
+        return Self.strptime(date_str, fmt, tz)
+
+    @staticmethod
+    def get(date_str: String, fmt: String, tz_str: String) raises -> Self:
+        """
+        Create a Morrow by parsing a string with a datetime format and parsed replacement timezone.
+        """
+        return Self.strptime(date_str, fmt, tz_str)
 
     @staticmethod
     def get(date: MorrowDate) -> Self:
