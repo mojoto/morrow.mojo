@@ -192,6 +192,48 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.fromisoformat(date_str)
 
     @staticmethod
+    def get(date: MorrowDate) -> Self:
+        """
+        Create a UTC Morrow from a date view.
+        """
+        return Self.fromdate(date)
+
+    @staticmethod
+    def get(date: MorrowDate, tz: TimeZone) -> Self:
+        """
+        Create a Morrow from a date view and replacement timezone.
+        """
+        return Self.fromdate(date, tz)
+
+    @staticmethod
+    def get(date: MorrowDate, tz_str: String) raises -> Self:
+        """
+        Create a Morrow from a date view and parsed replacement timezone.
+        """
+        return Self.fromdate(date, tz_str)
+
+    @staticmethod
+    def get(dt: Self) -> Self:
+        """
+        Create a Morrow from another Morrow object.
+        """
+        return Self.fromdatetime(dt)
+
+    @staticmethod
+    def get(dt: Self, tz: TimeZone) -> Self:
+        """
+        Create a Morrow from another Morrow object and replacement timezone.
+        """
+        return Self.fromdatetime(dt, tz)
+
+    @staticmethod
+    def get(dt: Self, tz_str: String) raises -> Self:
+        """
+        Create a Morrow from another Morrow object and parsed replacement timezone.
+        """
+        return Self.fromdatetime(dt, tz_str)
+
+    @staticmethod
     def fromisoformat(date_str: String) raises -> Self:
         """
         Create a Morrow from an ISO 8601 string.
@@ -289,6 +331,59 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             year, month, day, hour, minute, second, microsecond
         )
         return Self(year, month, day, hour, minute, second, microsecond, tz)
+
+    @staticmethod
+    def fromdate(date: MorrowDate) -> Self:
+        """
+        Construct a Morrow from a date view. Time fields are set to zero.
+        """
+        return Self.fromdate(date, Self._utc_timezone())
+
+    @staticmethod
+    def fromdate(date: MorrowDate, tz: TimeZone) -> Self:
+        """
+        Construct a Morrow from a date view and replacement timezone.
+        """
+        return Self(date.year, date.month, date.day, tz=tz)
+
+    @staticmethod
+    def fromdate(date: MorrowDate, tz_str: String) raises -> Self:
+        """
+        Construct a Morrow from a date view and parsed replacement timezone.
+        """
+        return Self.fromdate(date, TimeZone.from_utc(tz_str))
+
+    @staticmethod
+    def fromdatetime(dt: Self) -> Self:
+        """
+        Construct a Morrow from another Morrow object.
+        """
+        if dt.tz.is_none():
+            return Self.fromdatetime(dt, Self._utc_timezone())
+        return dt.clone()
+
+    @staticmethod
+    def fromdatetime(dt: Self, tz: TimeZone) -> Self:
+        """
+        Construct a Morrow from another Morrow object and replacement timezone.
+        """
+        return Self(
+            dt.year,
+            dt.month,
+            dt.day,
+            dt.hour,
+            dt.minute,
+            dt.second,
+            dt.microsecond,
+            tz,
+        )
+
+    @staticmethod
+    def fromdatetime(dt: Self, tz_str: String) raises -> Self:
+        """
+        Construct a Morrow from another Morrow object and parsed replacement timezone.
+        """
+        return Self.fromdatetime(dt, TimeZone.from_utc(tz_str))
 
     @staticmethod
     def strptime(
@@ -930,6 +1025,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             raise Error("second must be in 0..60")
         if microsecond < 0 or microsecond >= _US_PER_SECOND:
             raise Error("microsecond must be in 0..999999")
+
+    @staticmethod
+    def _utc_timezone() -> TimeZone:
+        return TimeZone(0, "utc")
 
     def _shift_day_time(
         self,

@@ -54,6 +54,9 @@ print(str(Morrow.fromisoformat("20160413T133656.456289Z")))  # 2016-04-13T13:36:
 print(str(Morrow.get(1700000000.0)))  # 2023-11-14T22:13:20.000000+00:00
 print(str(Morrow.get(1700000000.5, "+05:30")))  # 2023-11-15T03:43:20.500000+05:30
 print(Morrow.now("+08:00").tz.offset)  # 28800
+var date_view = Morrow(2024, 2, 29).date()
+print(str(Morrow.fromdate(date_view, "+05:30")))  # 2024-02-29T00:00:00.000000+05:30
+print(str(Morrow.fromdatetime(Morrow(2024, 2, 29, 3))))  # 2024-02-29T03:00:00.000000+00:00
 
 # Get ISO format.
 var m = Morrow(2023, 10, 1, 0, 0, 0, 1234)

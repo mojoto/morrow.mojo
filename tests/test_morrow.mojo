@@ -445,6 +445,36 @@ def test_creation_helpers() raises:
     assert_true(beijing_now.year >= 2020)
 
 
+def test_date_and_datetime_creation_helpers() raises:
+    var date = Morrow(2024, 2, 29).date()
+    assert_equal(
+        String(Morrow.fromdate(date)), "2024-02-29T00:00:00.000000+00:00"
+    )
+    assert_equal(
+        String(Morrow.fromdate(date, "+05:30")),
+        "2024-02-29T00:00:00.000000+05:30",
+    )
+    assert_equal(
+        String(Morrow.get(date, TimeZone.from_utc("+09:00"))),
+        "2024-02-29T00:00:00.000000+09:00",
+    )
+
+    var dt = Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone.from_utc("+08:00"))
+    assert_equal(String(Morrow.fromdatetime(dt)), String(dt))
+    assert_equal(
+        String(Morrow.fromdatetime(Morrow(2024, 2, 29, 3))),
+        "2024-02-29T03:00:00.000000+00:00",
+    )
+    assert_equal(
+        String(Morrow.fromdatetime(dt, "UTC")),
+        "2024-02-29T03:04:05.123456+00:00",
+    )
+    assert_equal(
+        String(Morrow.get(dt, TimeZone.from_utc("+05:30"))),
+        "2024-02-29T03:04:05.123456+05:30",
+    )
+
+
 def test_timestamp_creation_with_timezone() raises:
     var beijing = TimeZone.from_utc("+08:00")
 
