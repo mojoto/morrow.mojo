@@ -596,6 +596,15 @@ def test_creation_helpers() raises:
     var basic = Morrow.fromisoformat("20160413T133656.456289Z")
     assert_equal(String(basic), "2016-04-13T13:36:56.456289+00:00")
 
+    var space_iso_utc = Morrow.get("2024-02-29 03:04:05Z")
+    assert_equal(String(space_iso_utc), "2024-02-29T03:04:05.000000+00:00")
+
+    var space_iso_tz = Morrow.get("2024-02-29 03:04:05+05:30")
+    assert_equal(String(space_iso_tz), "2024-02-29T03:04:05.000000+05:30")
+
+    var space_iso_naive = Morrow.get("2024-02-29 03:04:05")
+    assert_equal(String(space_iso_naive), "2024-02-29T03:04:05.000000+00:00")
+
     var date_only = Morrow.get("2013-05-05")
     assert_equal(String(date_only), "2013-05-05T00:00:00.000000+00:00")
 
