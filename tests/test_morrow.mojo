@@ -1579,6 +1579,7 @@ def test_flexible_get_creation_helpers() raises:
     assert_equal(String(non_leap_day_366), "2024-01-01T00:00:00.000000+00:00")
     assert_get_raises("2024 000", "YYYY DDDD")
     assert_get_raises("2024 367", "YYYY DDDD")
+    assert_get_raises("2019-02-032", "YYYY-MM-DDD")
 
     var mixed_case_ordinal = Morrow.get("2024 1St", "YYYY Do")
     assert_equal(String(mixed_case_ordinal), "2024-01-01T00:00:00.000000+00:00")

@@ -1068,6 +1068,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if day_of_year != -1:
             if not has_year:
                 raise Error("year component is required with day of year")
+            if has_month:
+                raise Error("month component is not allowed with day of year")
             if day_of_year < 1 or day_of_year > 366:
                 raise Error("day of year is invalid")
             var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
