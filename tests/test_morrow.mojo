@@ -742,6 +742,30 @@ def test_interval_exact_range_and_is_between() raises:
     assert_equal(String(exact[4].start), "2013-05-05T16:30:00.000000+00:00")
     assert_equal(String(exact[4].end), "2013-05-05T17:14:59.999999+00:00")
 
+    var exact_interval_start = Morrow(2024, 1, 31, tz=utc)
+    var exact_month_intervals = Morrow.interval(
+        "month",
+        exact_interval_start,
+        Morrow(2025, 1, 15, tz=utc),
+        interval=2,
+        exact=True,
+    )
+    assert_equal(
+        String(exact_month_intervals[0].end),
+        "2024-03-28T23:59:59.999999+00:00",
+    )
+    var exact_quarter_intervals = Morrow.interval(
+        "quarter",
+        exact_interval_start,
+        Morrow(2025, 1, 15, tz=utc),
+        interval=2,
+        exact=True,
+    )
+    assert_equal(
+        String(exact_quarter_intervals[0].end),
+        "2024-07-29T23:59:59.999999+00:00",
+    )
+
     var exact_empty = Morrow.span_range("hour", start, start, exact=True)
     assert_equal(len(exact_empty), 0)
 

@@ -2227,7 +2227,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return spans between start and end, grouping each span by interval frames.
         """
-        return Self._span_range(
+        return Self._interval_range(
             frame, start, end, interval, limit, bounds, exact, week_start
         )
 
@@ -2341,6 +2341,45 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             emitted += 1
 
         return spans^
+
+    @staticmethod
+    def _interval_range(
+        frame: String,
+        start: Self,
+        end: Self,
+        interval: Int,
+        limit: Int,
+        bounds: String,
+        exact: Bool,
+        week_start: Int,
+    ) raises -> List[MorrowSpan]:
+        if interval < 1:
+            raise Error("interval must be greater than 0")
+        if not exact or interval == 1:
+            return Self._span_range(
+                frame, start, end, interval, limit, bounds, exact, week_start
+            )
+
+        var base_spans = Self._span_range(
+            frame, start, end, 1, _UNBOUNDED_LIMIT, bounds, True, week_start
+        )
+        var grouped = List[MorrowSpan]()
+        var emitted = 0
+        var index = 0
+        while index < len(base_spans):
+            if limit != _UNBOUNDED_LIMIT and emitted >= limit:
+                break
+
+            var end_index = index + interval - 1
+            if end_index >= len(base_spans):
+                end_index = len(base_spans) - 1
+            grouped.append(
+                MorrowSpan(base_spans[index].start, base_spans[end_index].end)
+            )
+            index += interval
+            emitted += 1
+
+        return grouped^
 
     @staticmethod
     def _span_from_bounds(
