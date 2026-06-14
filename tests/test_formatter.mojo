@@ -15,6 +15,10 @@ from morrow import TimeZone
 def test_format() raises:
     var m = Morrow(2024, 2, 1, 3, 4, 5, 123456)
     assert_equal(
+        Morrow(2024, 2, 29, 3, 4, 5, 0, TimeZone.from_utc("+05:30")).format(),
+        "2024-02-29 03:04:05+05:30",
+    )
+    assert_equal(
         m.format("YYYY-MM-DD HH:mm:ss.SSS ZZ"), "2024-02-01 03:04:05.123 +00:00"
     )
     assert_equal(m.format("Y-YY-YYY-YYYY M-MM D-DD"), "Y-24--2024 2-02 1-01")

@@ -2575,7 +2575,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             0,
         )
 
-    def format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
+    def format(self, fmt: String = "YYYY-MM-DD HH:mm:ssZZ") raises -> String:
         """
         Returns a string representation of the `Morrow`
         formatted according to the provided format string.
