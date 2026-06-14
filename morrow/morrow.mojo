@@ -203,6 +203,33 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.now(tz)
 
     @staticmethod
+    def get(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int = 0,
+        minute: Int = 0,
+        second: Int = 0,
+        microsecond: Int = 0,
+    ) raises -> Self:
+        """
+        Create a UTC Morrow from date and time components.
+        """
+        Self._validate_fields(
+            year, month, day, hour, minute, second, microsecond
+        )
+        return Self(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            microsecond,
+            Self._utc_timezone(),
+        )
+
+    @staticmethod
     def get(timestamp: Float64) raises -> Self:
         """
         Create a UTC Morrow from a POSIX timestamp.
