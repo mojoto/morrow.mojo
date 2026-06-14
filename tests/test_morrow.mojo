@@ -221,6 +221,8 @@ def test_strptime() raises:
     assert_equal(m.tz.name, "local")
     assert_equal(m.hour, 15)
     assert_strptime_raises("2024-02-29 23:59:60", "%Y-%m-%d %H:%M:%S")
+    assert_strptime_raises("2024-02-29abc", "%Y-%m-%d")
+    assert_strptime_raises("2024-02-29 24:00", "%Y-%m-%d %H:%M")
 
 
 def test_ordinal() raises:

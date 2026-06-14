@@ -78,16 +78,24 @@ def c_localtime(tv_sec: Int) -> CTm:
 
 
 @always_inline
-def c_strptime(time_str: String, time_format: String) -> CTm:
+def c_strptime(time_str: String, time_format: String) raises -> CTm:
     """Wrapper for the C function strptime."""
     var time_str_ = time_str
     var time_format_ = time_format
     var tm = CTm()
-    _ = external_call["strptime", UnsafePointer[Int8, MutExternalOrigin]](
+    var end_addr = external_call["strptime", Int](
         time_str_.as_c_string_slice().unsafe_ptr(),
         time_format_.as_c_string_slice().unsafe_ptr(),
         UnsafePointer(to=tm),
     )
+    if end_addr == 0:
+        raise Error("time data does not match format")
+
+    var end = UnsafePointer[Int8, MutExternalOrigin](
+        unsafe_from_address=end_addr
+    )
+    if end.load() != 0:
+        raise Error("unconverted data remains")
     return tm^
 
 
