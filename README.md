@@ -31,7 +31,7 @@ You have three ways to reference this library:
 
 ```mojo
 from std.collections import List
-from morrow import Morrow, TimeZone
+from morrow import FORMAT_RSS, Morrow, TimeZone
 
 # Get local date and time.
 var now = Morrow.now()
@@ -88,6 +88,7 @@ print(m.format("YYYY-MM-DD HH:mm:ss.SSSSSS ZZ"))  # 2023-10-01 00:00:00.001234 +
 print(m.format("dddd, DD MMM YYYY HH:mm:ss ZZZ"))  # Sunday, 01 Oct 2023 00:00:00 UTC
 print(m.format("YYYY[Y]MM[M]DD[D]"))  # 2023Y10M01D
 print(Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone.from_utc("UTC")).format("DDD W X x"))  # 60 2024-W09-4 1709175845.123456 1709175845123456
+print(Morrow(2020, 5, 27, 10, 30, 35, 0, TimeZone(0, "UTC")).format(FORMAT_RSS))  # Wed, 27 May 2020 10:30:35 +0000
 print(Morrow(2024, 1, 23).format("Do MMMM YYYY"))  # 23rd January 2024
 print(Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone(19800, "IST")).strftime("%Y-%m-%d %H:%M:%S.%f %z %Z"))  # 2024-02-29 03:04:05.123456 +0530 IST
 

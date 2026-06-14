@@ -1,6 +1,14 @@
 from std.testing import assert_equal, TestSuite
 
-from morrow import Morrow
+from morrow import (
+    FORMAT_ATOM,
+    FORMAT_COOKIE,
+    FORMAT_RSS,
+    FORMAT_RFC822,
+    FORMAT_RFC3339,
+    FORMAT_W3C,
+    Morrow,
+)
 from morrow import TimeZone
 
 
@@ -33,6 +41,18 @@ def test_format() raises:
         Morrow(2024, 2, 29, 3, 4, 5, 0, TimeZone.from_utc("UTC")).format("X"),
         "1709175845.0",
     )
+
+    var standard = Morrow(2020, 5, 27, 10, 30, 35, 0, TimeZone(0, "UTC"))
+    assert_equal(standard.format(FORMAT_ATOM), "2020-05-27 10:30:35+00:00")
+    assert_equal(
+        standard.format(FORMAT_COOKIE), "Wednesday, 27-May-2020 10:30:35 UTC"
+    )
+    assert_equal(standard.format(FORMAT_RSS), "Wed, 27 May 2020 10:30:35 +0000")
+    assert_equal(
+        standard.format(FORMAT_RFC822), "Wed, 27 May 20 10:30:35 +0000"
+    )
+    assert_equal(standard.format(FORMAT_RFC3339), "2020-05-27 10:30:35+00:00")
+    assert_equal(standard.format(FORMAT_W3C), "2020-05-27 10:30:35+00:00")
 
 
 def test_strftime() raises:
