@@ -1448,6 +1448,15 @@ def test_flexible_get_creation_helpers() raises:
         String(normalized_formatted), "2013-05-05T12:30:45.123456+00:00"
     )
 
+    var seven_subseconds = Morrow.get(
+        "2013-05-05 12:30:45.1234567", "YYYY-MM-DD HH:mm:ss.SSSSSSS"
+    )
+    assert_equal(String(seven_subseconds), "2013-05-05T12:30:45.123457+00:00")
+    var nine_subseconds = Morrow.get(
+        "2013-05-05 12:30:45.123456789", "YYYY-MM-DD HH:mm:ss.SSSSSSSSS"
+    )
+    assert_equal(String(nine_subseconds), "2013-05-05T12:30:45.123457+00:00")
+
     var variable_subsecond = Morrow.get(
         "2013-05-05 12:30:45 123456", "YYYY-MM-DD HH:mm:ss S"
     )

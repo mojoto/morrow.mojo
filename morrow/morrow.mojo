@@ -978,36 +978,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 second = parsed.value
                 date_pos = parsed.pos
                 fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "SSSSSS"):
-                var parsed = Self._parse_subsecond(date_str, date_pos, 6)
+            elif fmt[byte=fmt_pos] == "S":
+                var token_end = fmt_pos
+                while (
+                    token_end < fmt.byte_length() and fmt[byte=token_end] == "S"
+                ):
+                    token_end += 1
+                var parsed = Self._parse_subsecond(
+                    date_str, date_pos, token_end - fmt_pos
+                )
                 microsecond = parsed.value
                 date_pos = parsed.pos
-                fmt_pos += 6
-            elif Self._starts_with(fmt, fmt_pos, "SSSSS"):
-                var parsed = Self._parse_subsecond(date_str, date_pos, 5)
-                microsecond = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 5
-            elif Self._starts_with(fmt, fmt_pos, "SSSS"):
-                var parsed = Self._parse_subsecond(date_str, date_pos, 4)
-                microsecond = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 4
-            elif Self._starts_with(fmt, fmt_pos, "SSS"):
-                var parsed = Self._parse_subsecond(date_str, date_pos, 3)
-                microsecond = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 3
-            elif Self._starts_with(fmt, fmt_pos, "SS"):
-                var parsed = Self._parse_subsecond(date_str, date_pos, 2)
-                microsecond = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "S"):
-                var parsed = Self._parse_subsecond(date_str, date_pos, 1)
-                microsecond = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 1
+                fmt_pos = token_end
             elif Self._starts_with(fmt, fmt_pos, "X"):
                 if fmt_pos + 1 != fmt.byte_length():
                     raise Error("timestamp token must be the full format")
