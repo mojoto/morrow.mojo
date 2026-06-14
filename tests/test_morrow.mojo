@@ -230,5 +230,60 @@ def test_clone_weekday_and_naive() raises:
     assert_equal(String(m.naive()), "2024-02-29T03:04:05.000006")
 
 
+def test_range_and_span_range() raises:
+    var utc = TimeZone.from_utc("UTC")
+    var start = Morrow(2013, 5, 5, 12, 30, 0, 0, utc)
+    var end = Morrow(2013, 5, 5, 17, 15, 0, 0, utc)
+
+    var values = Morrow.range("hour", start, end)
+    assert_equal(len(values), 5)
+    assert_equal(String(values[0]), "2013-05-05T12:30:00.000000+00:00")
+    assert_equal(String(values[4]), "2013-05-05T16:30:00.000000+00:00")
+
+    var capped = Morrow.range("hour", start, end, limit=2)
+    assert_equal(len(capped), 2)
+    assert_equal(String(capped[1]), "2013-05-05T13:30:00.000000+00:00")
+
+    var inclusive = Morrow.range(
+        "hour", start, Morrow(2013, 5, 5, 13, 30, 0, 0, utc)
+    )
+    assert_equal(len(inclusive), 2)
+    assert_equal(String(inclusive[1]), "2013-05-05T13:30:00.000000+00:00")
+
+    var spans = Morrow.span_range("hour", start, end)
+    assert_equal(len(spans), 6)
+    assert_equal(String(spans[0].start), "2013-05-05T12:00:00.000000+00:00")
+    assert_equal(String(spans[0].end), "2013-05-05T12:59:59.999999+00:00")
+    assert_equal(String(spans[5].start), "2013-05-05T17:00:00.000000+00:00")
+    assert_equal(String(spans[5].end), "2013-05-05T17:59:59.999999+00:00")
+
+
+def test_interval_exact_range_and_is_between() raises:
+    var utc = TimeZone.from_utc("UTC")
+    var start = Morrow(2013, 5, 5, 12, 30, 0, 0, utc)
+    var end = Morrow(2013, 5, 5, 17, 15, 0, 0, utc)
+
+    var intervals = Morrow.interval("hour", start, end, interval=2)
+    assert_equal(len(intervals), 3)
+    assert_equal(String(intervals[0].start), "2013-05-05T12:00:00.000000+00:00")
+    assert_equal(String(intervals[0].end), "2013-05-05T13:59:59.999999+00:00")
+    assert_equal(String(intervals[2].start), "2013-05-05T16:00:00.000000+00:00")
+    assert_equal(String(intervals[2].end), "2013-05-05T17:59:59.999999+00:00")
+
+    var exact = Morrow.span_range("hour", start, end, exact=True)
+    assert_equal(len(exact), 5)
+    assert_equal(String(exact[0].start), "2013-05-05T12:30:00.000000+00:00")
+    assert_equal(String(exact[0].end), "2013-05-05T13:29:59.999999+00:00")
+    assert_equal(String(exact[4].start), "2013-05-05T16:30:00.000000+00:00")
+    assert_equal(String(exact[4].end), "2013-05-05T17:14:59.999999+00:00")
+
+    var point = Morrow(2013, 5, 5, 12, 30, 27, 0, utc)
+    var low = Morrow(2013, 5, 5, 12, 30, 10, 0, utc)
+    var high = Morrow(2013, 5, 5, 12, 30, 36, 0, utc)
+    assert_true(point.is_between(low, high))
+    assert_true(high.is_between(low, high, bounds="[]"))
+    assert_true(not high.is_between(low, high, bounds="[)"))
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

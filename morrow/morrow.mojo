@@ -10,6 +10,7 @@ from .timezone import TimeZone
 from .timedelta import TimeDelta
 from .formatter import format_morrow
 from .constants import days_before_month
+from std.collections import List
 from std.format import Writable, Writer
 
 
@@ -197,14 +198,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return the POSIX timestamp for this Morrow as UTC seconds.
         """
-        var seconds = (
-            (self.toordinal() - _UNIX_EPOCH_ORDINAL) * 86400
-            + self.hour * 3600
-            + self.minute * 60
-            + self.second
-            - self.tz.offset
-        )
-        return Float64(seconds) + Float64(self.microsecond) / 1000000.0
+        return Float64(self._utc_microseconds()) / 1000000.0
 
     def float_timestamp(self) raises -> Float64:
         """
@@ -349,6 +343,134 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return self.span(frame, week_start=week_start).end
 
     @staticmethod
+    def range(
+        frame: String, start: Self, end: Self, limit: Int = -1
+    ) raises -> List[Self]:
+        """
+        Return points in time between start and end, stepping by frame.
+        """
+        var items = List[Self]()
+        var current = start
+        var emitted = 0
+        while current._utc_microseconds() <= end._utc_microseconds():
+            if limit >= 0 and emitted >= limit:
+                break
+            items.append(current)
+            current = current._shift_frame(frame, 1)
+            emitted += 1
+        return items^
+
+    @staticmethod
+    def span_range(
+        frame: String,
+        start: Self,
+        end: Self,
+        limit: Int = -1,
+        bounds: String = "[)",
+        exact: Bool = False,
+        week_start: Int = 1,
+    ) raises -> List[MorrowSpan]:
+        """
+        Return spans between start and end.
+        """
+        return Self._span_range(
+            frame, start, end, 1, limit, bounds, exact, week_start
+        )
+
+    @staticmethod
+    def interval(
+        frame: String,
+        start: Self,
+        end: Self,
+        interval: Int = 1,
+        limit: Int = -1,
+        bounds: String = "[)",
+        exact: Bool = False,
+        week_start: Int = 1,
+    ) raises -> List[MorrowSpan]:
+        """
+        Return spans between start and end, grouping each span by interval frames.
+        """
+        return Self._span_range(
+            frame, start, end, interval, limit, bounds, exact, week_start
+        )
+
+    @staticmethod
+    def _span_range(
+        frame: String,
+        start: Self,
+        end: Self,
+        interval: Int,
+        limit: Int,
+        bounds: String,
+        exact: Bool,
+        week_start: Int,
+    ) raises -> List[MorrowSpan]:
+        if interval < 1:
+            raise Error("interval must be greater than 0")
+        Self._validate_bounds(bounds)
+
+        var spans = List[MorrowSpan]()
+        var emitted = 0
+        var end_key = end._utc_microseconds()
+        var current = start if exact else start._floor_frame(frame, week_start)
+
+        while current._utc_microseconds() <= end_key:
+            if limit >= 0 and emitted >= limit:
+                break
+
+            if exact:
+                var next = current._shift_frame(frame, interval)
+                var raw_end = next
+                if raw_end._utc_microseconds() > end_key:
+                    raw_end = end
+                spans.append(Self._span_from_bounds(current, raw_end, bounds))
+                current = next
+            else:
+                spans.append(current.span(frame, interval, bounds, week_start))
+                current = current._shift_frame(frame, interval)
+            emitted += 1
+
+        return spans^
+
+    @staticmethod
+    def _span_from_bounds(
+        start: Self, end: Self, bounds: String
+    ) raises -> MorrowSpan:
+        var start_ = start
+        var end_ = end
+        if ord(bounds[byte=0]) == 40:  # (
+            start_ = start_.shift(microseconds=1)
+        if ord(bounds[byte=1]) == 41:  # )
+            end_ = end_.shift(microseconds=-1)
+        return MorrowSpan(start_, end_)
+
+    def is_between(
+        self, start: Self, end: Self, bounds: String = "()"
+    ) raises -> Bool:
+        """
+        Return True when this Morrow is between start and end.
+        """
+        Self._validate_bounds(bounds)
+        var value = self._utc_microseconds()
+        var low = start._utc_microseconds()
+        var high = end._utc_microseconds()
+
+        var left: Bool
+        if ord(bounds[byte=0]) == 91:  # [
+            left = value >= low
+        else:
+            left = value > low
+
+        var right: Bool
+        if ord(bounds[byte=1]) == 93:  # ]
+            right = value <= high
+        else:
+            right = value < high
+
+        return left and right
+
+    @staticmethod
     def _validate_bounds(bounds: String) raises:
         if bounds.byte_length() != 2:
             raise Error("bounds must be one of [), [], (), (]")
@@ -487,6 +609,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             microsecond,
             self.tz,
         )
+
+    def _utc_microseconds(self) raises -> Int:
+        var seconds = (
+            (self.toordinal() - _UNIX_EPOCH_ORDINAL) * 86400
+            + self.hour * 3600
+            + self.minute * 60
+            + self.second
+            - self.tz.offset
+        )
+        return seconds * _US_PER_SECOND + self.microsecond
 
     def format(self, fmt: String = "YYYY-MM-DD HH:mm:ss ZZ") raises -> String:
         """

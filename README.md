@@ -76,6 +76,14 @@ print(str(hour.start))  # 2024-02-29T13:00:00.000000
 print(str(hour.end))  # 2024-02-29T13:59:59.999999
 print(str(Morrow(2024, 2, 29, 13, 14, 15).floor("day")))  # 2024-02-29T00:00:00.000000
 
+# Iterate over ranges and span ranges.
+var start = Morrow(2013, 5, 5, 12, 30, 0, 0, TimeZone.from_utc("UTC"))
+var end = Morrow(2013, 5, 5, 17, 15, 0, 0, TimeZone.from_utc("UTC"))
+var points = Morrow.range("hour", start, end)
+print(str(points[0]))  # 2013-05-05T12:30:00.000000+00:00
+var spans = Morrow.span_range("hour", start, end)
+print(str(spans[0].start))  # 2013-05-05T12:00:00.000000+00:00
+
 # Convert fixed-offset time zones and get POSIX timestamps.
 var utc = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
 print(str(utc.to("+08:00")))  # 2024-03-01T00:30:00.123456+08:00
