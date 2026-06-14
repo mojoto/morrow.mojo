@@ -507,6 +507,10 @@ def test_object_properties_and_serialization() raises:
     var utc = TimeZone.from_utc("UTC")
     var m = Morrow(2019, 1, 24, 16, 35, 27, 276649, utc)
 
+    assert_equal(String(Morrow.min()), "0001-01-01T00:00:00.000000+00:00")
+    assert_equal(String(Morrow.max()), "9999-12-31T23:59:59.999999+00:00")
+    assert_equal(Morrow.resolution().total_seconds(), 0.000001)
+
     assert_equal(m.int_timestamp(), 1548347727)
     assert_equal(m.for_json(), "2019-01-24T16:35:27.276649+00:00")
     assert_equal(m.ctime(), "Thu Jan 24 16:35:27 2019")

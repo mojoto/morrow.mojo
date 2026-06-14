@@ -116,6 +116,27 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self._fromtimestamp(t, True)
 
     @staticmethod
+    def min() -> Self:
+        """
+        Return the minimum supported UTC Morrow value.
+        """
+        return Self(1, 1, 1, 0, 0, 0, 0, Self._utc_timezone())
+
+    @staticmethod
+    def max() -> Self:
+        """
+        Return the maximum supported UTC Morrow value.
+        """
+        return Self(9999, 12, 31, 23, 59, 59, 999999, Self._utc_timezone())
+
+    @staticmethod
+    def resolution() -> TimeDelta:
+        """
+        Return the smallest representable difference between Morrow values.
+        """
+        return TimeDelta(microseconds=1)
+
+    @staticmethod
     def _fromtimestamp(t: CTimeval, utc: Bool) -> Self:
         var tm: CTm
         var tz: TimeZone
