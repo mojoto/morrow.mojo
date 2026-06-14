@@ -545,12 +545,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                     second = Int(date_str[byte = pos : pos + 2])
                     pos += 2
             else:
-                if length < pos + 4:
-                    raise Error("isoformat basic time is invalid")
-                minute = Int(date_str[byte = pos : pos + 2])
-                pos += 2
-                second = Int(date_str[byte = pos : pos + 2])
-                pos += 2
+                if pos < length and Self._is_ascii_digit(
+                    ord(date_str[byte=pos])
+                ):
+                    if length < pos + 2:
+                        raise Error("isoformat minute is invalid")
+                    minute = Int(date_str[byte = pos : pos + 2])
+                    pos += 2
+                    if pos < length and Self._is_ascii_digit(
+                        ord(date_str[byte=pos])
+                    ):
+                        if length < pos + 2:
+                            raise Error("isoformat second is invalid")
+                        second = Int(date_str[byte = pos : pos + 2])
+                        pos += 2
 
             if pos < length and date_str[byte=pos] == ".":
                 pos += 1

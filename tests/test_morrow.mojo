@@ -578,6 +578,14 @@ def test_creation_helpers() raises:
     var slash_month = Morrow.get("2024/02")
     assert_equal(String(slash_month), "2024-02-01T00:00:00.000000+00:00")
 
+    var hour_only_time = Morrow.get("2024-02-29T03Z")
+    assert_equal(String(hour_only_time), "2024-02-29T03:00:00.000000+00:00")
+
+    var basic_hour_minute_time = Morrow.get("2024-02-29T0304+08:00")
+    assert_equal(
+        String(basic_hour_minute_time), "2024-02-29T03:04:00.000000+08:00"
+    )
+
     var normalized_iso = Morrow.get(
         "\t \n  2013-05-05T12:30:45.123456 \t \n",
         normalize_whitespace=True,
