@@ -37,6 +37,14 @@ def assert_string_get_raises(date_str: String) raises:
     assert_true(False)
 
 
+def assert_isoformat_sep_raises(sep: String) raises:
+    try:
+        _ = Morrow(2024, 2, 29, 3, 4, 5).isoformat(sep=sep)
+    except e:
+        return
+    assert_true(False)
+
+
 def test_now() raises:
     var result = Morrow.now()
     assert_true(result.year >= 2020)
@@ -105,6 +113,11 @@ def test_iso_format() raises:
         2024, 2, 29, 3, 4, 5, tz=TimeZone.from_utc("UTC")
     )
     assert_equal(whole_second_tz.isoformat(), "2024-02-29T03:04:05+00:00")
+    assert_equal(
+        whole_second_tz.isoformat(sep=" "), "2024-02-29 03:04:05+00:00"
+    )
+    assert_isoformat_sep_raises("")
+    assert_isoformat_sep_raises("xx")
 
 
 def test_strptime() raises:

@@ -2850,6 +2850,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         terms of the time to include. Valid options are 'auto', 'hours',
         'minutes', 'seconds', 'milliseconds' and 'microseconds'.
         """
+        if sep.byte_length() != 1:
+            raise Error("isoformat separator must be one character")
+
         var date_str = self._date_string()
         var time_str: String
         if timespec == "auto":
