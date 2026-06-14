@@ -609,6 +609,18 @@ def test_humanize_and_dehumanize() raises:
         present.shift(seconds=2).humanize(present, granularity="second"),
         "in 2 seconds",
     )
+    assert_equal(
+        present.shift(seconds=30).humanize(present, granularity="minute"),
+        "in 0 minutes",
+    )
+    assert_equal(
+        present.shift(minutes=30).humanize(present, granularity="hour"),
+        "in 0 hours",
+    )
+    assert_equal(
+        present.shift(hours=1).humanize(present, granularity="day"),
+        "in 0 days",
+    )
     assert_equal(present.shift(hours=-1).humanize(present), "an hour ago")
     assert_equal(present.shift(hours=2).humanize(present), "in 2 hours")
     assert_equal(

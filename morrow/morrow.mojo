@@ -2596,10 +2596,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _humanize_count(seconds: Int, unit: String) raises -> Int:
         var unit_seconds = Self._humanize_unit_seconds(unit)
-        var count = seconds // unit_seconds
-        if count < 1:
-            return 1
-        return count
+        return seconds // unit_seconds
 
     @staticmethod
     def _humanize_unit_seconds(unit: String) raises -> Int:
