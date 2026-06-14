@@ -542,8 +542,32 @@ def test_creation_helpers() raises:
     var component_date = Morrow.get(2013, 5, 5)
     assert_equal(String(component_date), "2013-05-05T00:00:00.000000+00:00")
 
+    var component_date_tz = Morrow.get(2013, 5, 5, TimeZone.from_utc("+05:30"))
+    assert_equal(String(component_date_tz), "2013-05-05T00:00:00.000000+05:30")
+
+    var component_date_tz_str = Morrow.get(2013, 5, 5, "-03:00")
+    assert_equal(
+        String(component_date_tz_str), "2013-05-05T00:00:00.000000-03:00"
+    )
+
     var component_datetime = Morrow.get(2013, 5, 5, 12, 30, 45, 123456)
     assert_equal(String(component_datetime), "2013-05-05T12:30:45.123456+00:00")
+
+    var component_datetime_tz = Morrow.get(
+        2013, 5, 5, 12, 30, 45, 123456, TimeZone.from_utc("+05:30")
+    )
+    assert_equal(
+        String(component_datetime_tz),
+        "2013-05-05T12:30:45.123456+05:30",
+    )
+
+    var component_datetime_tz_str = Morrow.get(
+        2013, 5, 5, 12, 30, 45, 123456, "-03:00"
+    )
+    assert_equal(
+        String(component_datetime_tz_str),
+        "2013-05-05T12:30:45.123456-03:00",
+    )
 
     var ordinal_date = Morrow.get("2024-060")
     assert_equal(String(ordinal_date), "2024-02-29T00:00:00.000000+00:00")
