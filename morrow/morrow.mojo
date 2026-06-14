@@ -675,11 +675,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         if pos < length:
             var separator = ord(date_str[byte=pos])
-            if (
-                separator != ord("T")
-                and separator != ord("t")
-                and separator != ord(" ")
-            ):
+            if separator != ord("T") and separator != ord(" "):
                 raise Error("isoformat date/time separator is invalid")
             pos += 1
             if length < pos + 2:

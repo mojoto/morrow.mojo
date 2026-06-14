@@ -943,6 +943,7 @@ def test_creation_helpers() raises:
     assert_string_get_raises("2024-02-29T24:01")
     assert_string_get_raises("2024-02-29T24:00:01")
     assert_string_get_raises("2024-02-29T24:00:00.000001")
+    assert_string_get_raises("2013-09-29t01:26:43.830580Z")
     assert_string_get_raises("2024-02-29T03:04:05z")
 
     var normalized_iso = Morrow.get(
