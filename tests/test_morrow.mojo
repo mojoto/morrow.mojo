@@ -45,6 +45,14 @@ def assert_isoformat_sep_raises(sep: String) raises:
     assert_true(False)
 
 
+def assert_replace_second_raises(second: Int) raises:
+    try:
+        _ = Morrow(2024, 2, 29, 3, 4, 5).replace(second=second)
+    except e:
+        return
+    assert_true(False)
+
+
 def test_now() raises:
     var result = Morrow.now()
     assert_true(result.year >= 2020)
@@ -250,6 +258,7 @@ def test_replace() raises:
     assert_equal(
         String(replaced_fields_tz_str), "2024-02-29T23:59:05.123456-03:00"
     )
+    assert_replace_second_raises(60)
 
 
 def test_shift_months_clamps_to_last_day() raises:
@@ -952,6 +961,7 @@ def test_flexible_get_creation_helpers() raises:
 
     assert_get_raises("2024-02-29 24:01", "YYYY-MM-DD HH:mm")
     assert_get_raises("2024-02-29 24:00:01", "YYYY-MM-DD HH:mm:ss")
+    assert_get_raises("2024-02-29 23:59:60", "YYYY-MM-DD HH:mm:ss")
     assert_get_raises(
         "2024-02-29 24:00:00.000001", "YYYY-MM-DD HH:mm:ss.SSSSSS"
     )

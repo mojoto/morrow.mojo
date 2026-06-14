@@ -2121,8 +2121,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             raise Error("hour must be in 0..23")
         if minute < 0 or minute > 59:
             raise Error("minute must be in 0..59")
-        if second < 0 or second > 60:
-            raise Error("second must be in 0..60")
+        if second < 0 or second > 59:
+            raise Error("second must be in 0..59")
         if microsecond < 0 or microsecond >= _US_PER_SECOND:
             raise Error("microsecond must be in 0..999999")
 
