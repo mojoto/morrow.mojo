@@ -1,4 +1,3 @@
-from ._py import py_dt_datetime
 from .util import normalize_timestamp, _ymd2ord, _days_before_year
 from ._libc import c_gettimeofday, c_localtime, c_gmtime, c_strptime
 from ._libc import CTimeval, CTm
@@ -7,8 +6,6 @@ from .timedelta import TimeDelta
 from .formatter import format_morrow
 from .constants import days_before_month
 from std.format import Writable, Writer
-from std.python import PythonObject
-from std.python import Python
 
 
 comptime _DI400Y = 146097  # number of days in 400 years
@@ -376,41 +373,3 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             days1 - days2, secs1 - secs2, self.microsecond - other.microsecond
         )
         return base
-
-    fn to_py(self) raises -> PythonObject:
-        # todo: add tz later
-        var dateimte = Python.import_module("datetime")
-        return dateimte.datetime(
-            self.year,
-            self.month,
-            self.day,
-            self.hour,
-            self.minute,
-            self.second,
-            self.microsecond,
-        )
-
-    @staticmethod
-    fn from_py(py_datetime: PythonObject) raises -> Morrow:
-        # Python.is_type not working, use __class__.__name__ instead
-        if py_datetime.__class__.__name__ == "datetime":
-            return Morrow(
-                Int(py=py_datetime.year),
-                Int(py=py_datetime.month),
-                Int(py=py_datetime.day),
-                Int(py=py_datetime.hour),
-                Int(py=py_datetime.minute),
-                Int(py=py_datetime.second),
-                Int(py=py_datetime.microsecond),
-            )
-        elif py_datetime.__class__.__name__ == "date":
-            return Morrow(
-                Int(py=py_datetime.year),
-                Int(py=py_datetime.month),
-                Int(py=py_datetime.day),
-            )
-        else:
-            raise Error(
-                "invalid python object, only support py builtin datetime or"
-                " date"
-            )

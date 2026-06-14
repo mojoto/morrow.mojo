@@ -29,7 +29,7 @@ You have three ways to reference this library:
 
 ## Usage
 
-```python
+```mojo
 from morrow import Morrow, TimeZone
 
 # Get local date and time.
@@ -77,13 +77,5 @@ print(ordinal)  # 738794
 # Construct a Morrow from a proleptic Gregorian ordinal.
 var m_10_1_ = Morrow.fromordinal(ordinal)
 print(str(m_10_1_))  # 2023-10-01T00:00:00.000000
-
-# Convert Morrow to python datetime
-var py_dt = now.to_py()
-print(py_dt.isoformat())  # 2023-10-01T20:10:25.188957
-
-# Convert python datetime to Morrow
-var m_from_py = Morrow.from_py(py_dt)
-print(m_from_py)  # 2023-10-01T20:10:25.188957
 
 ```

@@ -1,8 +1,6 @@
 from std.testing import assert_equal, assert_true, TestSuite
-from std.python import PythonObject
 
 from morrow._libc import c_localtime, CTm
-from morrow._py import py_dt_datetime
 from morrow import Morrow
 from morrow import TimeZone
 from morrow import TimeDelta
@@ -21,16 +19,6 @@ def matches_tm(dt: Morrow, tm: CTm) -> Bool:
 
 def assert_tm_equal(dt: Morrow, tm: CTm) raises:
     assert_true(matches_tm(dt, tm))
-
-
-def assert_python_datetime_equal(dt: Morrow, py_dt: PythonObject) raises:
-    assert_equal(dt.year, Int(py=py_dt.year))
-    assert_equal(dt.month, Int(py=py_dt.month))
-    assert_equal(dt.day, Int(py=py_dt.day))
-    assert_equal(dt.hour, Int(py=py_dt.hour))
-    assert_equal(dt.minute, Int(py=py_dt.minute))
-    assert_equal(dt.second, Int(py=py_dt.second))
-    assert_equal(dt.microsecond, Int(py=py_dt.microsecond))
 
 
 def test_now() raises:
@@ -181,19 +169,6 @@ def test_timedelta() raises:
         ),
         "919 days, 23:28:30",
     )
-
-
-def test_from_to_py() raises:
-    var m = Morrow(2024, 2, 1, 3, 4, 5, 123456)
-    dt = m.to_py()
-    assert_python_datetime_equal(m, dt)
-
-    m2 = Morrow.from_py(dt)
-    assert_python_datetime_equal(m2, dt)
-
-    py_dt = py_dt_datetime()(2024, 2, 1, 3, 4, 5, 123456)
-    m3 = Morrow.from_py(py_dt)
-    assert_equal(m3.microsecond, 123456)
 
 
 def test_format() raises:
