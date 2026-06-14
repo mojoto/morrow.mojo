@@ -1766,9 +1766,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _parse_timezone(
         date_str: String, date_pos: Int
     ) raises -> MorrowParseTimeZone:
-        if Self._starts_with(date_str, date_pos, "UTC"):
-            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
-        if Self._starts_with(date_str, date_pos, "utc"):
+        if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "UTC"):
             return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
         if Self._starts_with(date_str, date_pos, "Z"):
             return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 1)

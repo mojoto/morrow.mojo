@@ -523,6 +523,9 @@ def test_flexible_get_creation_helpers() raises:
     )
     assert_equal(String(formatted), "2023-01-20T15:49:10.123456+05:30")
 
+    var mixed_case_utc = Morrow.get("2024-02-29 Utc", "YYYY-MM-DD ZZZ")
+    assert_equal(String(mixed_case_utc), "2024-02-29T00:00:00.000000+00:00")
+
     var formatted_tz = Morrow.get(
         "2023 year 1 month 20 day 3:4:5",
         "YYYY[ year ]M[ month ]D[ day ]H:m:s",
