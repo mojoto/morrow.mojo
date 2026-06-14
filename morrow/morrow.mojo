@@ -319,7 +319,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Create a Morrow from date components and a timezone string.
         """
-        return Self.get(year, month, day, TimeZone.from_utc(tz_str))
+        return Self.get(year, month, day, Self._parse_timezone_argument(tz_str))
 
     @staticmethod
     def get(
@@ -361,7 +361,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             minute,
             second,
             microsecond,
-            TimeZone.from_utc(tz_str),
+            Self._parse_timezone_argument(tz_str),
         )
 
     @staticmethod
@@ -446,7 +446,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Create a Morrow by trying Arrow format tokens in order and parsed replacement timezone.
         """
         return Self._parse_arrow_formats(
-            date_str, formats, TimeZone.from_utc(tz_str)
+            date_str, formats, Self._parse_timezone_argument(tz_str)
         )
 
     @staticmethod
@@ -482,7 +482,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Create a Morrow by parsing a string with Arrow format tokens and parsed replacement timezone.
         """
-        return Self._parse_arrow(date_str, fmt, TimeZone.from_utc(tz_str))
+        return Self._parse_arrow(
+            date_str, fmt, Self._parse_timezone_argument(tz_str)
+        )
 
     @staticmethod
     def get(date: MorrowDate) -> Self:
@@ -1100,7 +1102,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Construct a Morrow from a date view and parsed replacement timezone.
         """
-        return Self.fromdate(date, TimeZone.from_utc(tz_str))
+        return Self.fromdate(date, Self._parse_timezone_argument(tz_str))
 
     @staticmethod
     def fromdatetime(dt: Self) -> Self:
@@ -1132,7 +1134,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Construct a Morrow from another Morrow object and parsed replacement timezone.
         """
-        return Self.fromdatetime(dt, TimeZone.from_utc(tz_str))
+        return Self.fromdatetime(dt, Self._parse_timezone_argument(tz_str))
 
     @staticmethod
     def strptime(
@@ -1170,7 +1172,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S', '+08:00')
             <Morrow [2019-01-20T15:49:10+08:00]>
         """
-        var tzinfo = TimeZone.from_utc(tz_str)
+        var tzinfo = Self._parse_timezone_argument(tz_str)
         return Self.strptime(date_str, fmt, tzinfo)
 
     def clone(self) -> Self:
@@ -1546,9 +1548,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return this instant converted to a timezone parsed from a UTC offset string.
         """
-        if tz_str == "local":
-            return self.to(TimeZone.local())
-        return self.to(TimeZone.from_utc(tz_str))
+        return self.to(Self._parse_timezone_argument(tz_str))
 
     def astimezone(self, tz: TimeZone) raises -> Self:
         """
@@ -1607,17 +1607,6 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return a new Morrow with timezone parsed and replaced without conversion.
         """
-        if tzinfo == "local":
-            return self.replace(
-                year,
-                month,
-                day,
-                hour,
-                minute,
-                second,
-                microsecond,
-                TimeZone.local(),
-            )
         return self.replace(
             year,
             month,
@@ -1626,7 +1615,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             minute,
             second,
             microsecond,
-            TimeZone.from_utc(tzinfo),
+            Self._parse_timezone_argument(tzinfo),
         )
 
     def shift(
@@ -1789,7 +1778,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return points after replacing start and end with a parsed timezone.
         """
-        return Self.range(frame, start, end, TimeZone.from_utc(tz_str), limit)
+        return Self.range(
+            frame, start, end, Self._parse_timezone_argument(tz_str), limit
+        )
 
     @staticmethod
     def range(
@@ -1813,7 +1804,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return a limited number of points after replacing the start with a parsed timezone.
         """
-        return Self.range(frame, start, TimeZone.from_utc(tz_str), limit)
+        return Self.range(
+            frame, start, Self._parse_timezone_argument(tz_str), limit
+        )
 
     @staticmethod
     def span_range(
@@ -1874,7 +1867,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             frame,
             start,
             end,
-            TimeZone.from_utc(tz_str),
+            Self._parse_timezone_argument(tz_str),
             limit,
             bounds,
             exact,
@@ -1945,7 +1938,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             start,
             end,
             interval,
-            TimeZone.from_utc(tz_str),
+            Self._parse_timezone_argument(tz_str),
             limit,
             bounds,
             exact,
@@ -2164,6 +2157,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _utc_timezone() -> TimeZone:
         return TimeZone(0, "utc")
+
+    @staticmethod
+    def _parse_timezone_argument(tz_str: String) raises -> TimeZone:
+        if tz_str == "local":
+            return TimeZone.local()
+        return TimeZone.from_utc(tz_str)
 
     @staticmethod
     def _from_utc_microseconds_value(total_us: Int) raises -> Self:

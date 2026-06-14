@@ -199,6 +199,11 @@ def test_strptime() raises:
 
     m = Morrow.strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "+09:00")
     assert_equal(String(m), "2023-10-18T15:49:10.000000+09:00")
+    var local_tz = TimeZone.local()
+    m = Morrow.strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "local")
+    assert_equal(m.tz.offset, local_tz.offset)
+    assert_equal(m.tz.name, "local")
+    assert_equal(m.hour, 15)
     assert_strptime_raises("2024-02-29 23:59:60", "%Y-%m-%d %H:%M:%S")
 
 
@@ -548,11 +553,25 @@ def test_range_and_span_range() raises:
     assert_equal(String(tz_values[0]), "2013-05-05T12:30:00.000000+08:00")
     assert_equal(String(tz_values[1]), "2013-05-05T13:30:00.000000+08:00")
 
+    var local_tz = TimeZone.local()
+    var local_values = Morrow.range(
+        "hour", start.naive(), end.naive(), "local", limit=1
+    )
+    assert_equal(local_values[0].tz.offset, local_tz.offset)
+    assert_equal(local_values[0].tz.name, "local")
+    assert_equal(local_values[0].hour, 12)
+
     var tz_spans = Morrow.span_range(
         "hour", start.naive(), end.naive(), beijing, limit=1
     )
     assert_equal(String(tz_spans[0].start), "2013-05-05T12:00:00.000000+08:00")
     assert_equal(String(tz_spans[0].end), "2013-05-05T12:59:59.999999+08:00")
+    var local_spans = Morrow.span_range(
+        "hour", start.naive(), end.naive(), "local", limit=1
+    )
+    assert_equal(local_spans[0].start.tz.offset, local_tz.offset)
+    assert_equal(local_spans[0].start.tz.name, "local")
+    assert_equal(local_spans[0].start.hour, 12)
 
     var limited = Morrow.range("hour", start, limit=3)
     assert_equal(len(limited), 3)
@@ -611,6 +630,13 @@ def test_interval_exact_range_and_is_between() raises:
     assert_equal(
         String(tz_intervals[0].end), "2013-05-05T13:59:59.999999+08:00"
     )
+    var local_tz = TimeZone.local()
+    var local_intervals = Morrow.interval(
+        "hour", start.naive(), end.naive(), 2, "local", limit=1
+    )
+    assert_equal(local_intervals[0].start.tz.offset, local_tz.offset)
+    assert_equal(local_intervals[0].start.tz.name, "local")
+    assert_equal(local_intervals[0].start.hour, 12)
 
     var exact = Morrow.span_range("hour", start, end, exact=True)
     assert_equal(len(exact), 5)
@@ -964,6 +990,12 @@ def test_creation_helpers() raises:
         String(component_date_tz_str), "2013-05-05T00:00:00.000000-03:00"
     )
 
+    var local_tz = TimeZone.local()
+    var component_date_local = Morrow.get(2013, 5, 5, "local")
+    assert_equal(component_date_local.tz.offset, local_tz.offset)
+    assert_equal(component_date_local.tz.name, "local")
+    assert_equal(component_date_local.hour, 0)
+
     var component_datetime = Morrow.get(2013, 5, 5, 12, 30, 45, 123456)
     assert_equal(String(component_datetime), "2013-05-05T12:30:45.123456+00:00")
 
@@ -982,6 +1014,12 @@ def test_creation_helpers() raises:
         String(component_datetime_tz_str),
         "2013-05-05T12:30:45.123456-03:00",
     )
+    var component_datetime_local = Morrow.get(
+        2013, 5, 5, 12, 30, 45, 123456, "local"
+    )
+    assert_equal(component_datetime_local.tz.offset, local_tz.offset)
+    assert_equal(component_datetime_local.tz.name, "local")
+    assert_equal(component_datetime_local.hour, 12)
 
     var ordinal_date = Morrow.get("2024-060")
     assert_equal(String(ordinal_date), "2024-02-29T00:00:00.000000+00:00")
@@ -1338,6 +1376,17 @@ def test_flexible_get_creation_helpers() raises:
         "2023-01-20 15:49:10", tz_formats, TimeZone.from_utc("+08:00")
     )
     assert_equal(String(multi_tz), "2023-01-20T15:49:10.000000+08:00")
+    var local_tz = TimeZone.local()
+    var parsed_local = Morrow.get(
+        "2023-01-20 15:49:10", "YYYY-MM-DD HH:mm:ss", "local"
+    )
+    assert_equal(parsed_local.tz.offset, local_tz.offset)
+    assert_equal(parsed_local.tz.name, "local")
+    assert_equal(parsed_local.hour, 15)
+    var multi_local = Morrow.get("2023-01-20 15:49:10", tz_formats, "local")
+    assert_equal(multi_local.tz.offset, local_tz.offset)
+    assert_equal(multi_local.tz.name, "local")
+    assert_equal(multi_local.hour, 15)
 
     assert_equal(
         String(Morrow.get("1709175845.123456", "X")),
@@ -1362,6 +1411,11 @@ def test_date_and_datetime_creation_helpers() raises:
         String(Morrow.fromdate(date, "+05:30")),
         "2024-02-29T00:00:00.000000+05:30",
     )
+    var local_tz = TimeZone.local()
+    var local_date = Morrow.fromdate(date, "local")
+    assert_equal(local_date.tz.offset, local_tz.offset)
+    assert_equal(local_date.tz.name, "local")
+    assert_equal(local_date.hour, 0)
     assert_equal(
         String(Morrow.get(date, TimeZone.from_utc("+09:00"))),
         "2024-02-29T00:00:00.000000+09:00",
@@ -1377,6 +1431,10 @@ def test_date_and_datetime_creation_helpers() raises:
         String(Morrow.fromdatetime(dt, "UTC")),
         "2024-02-29T03:04:05.123456+00:00",
     )
+    var local_datetime = Morrow.fromdatetime(dt, "local")
+    assert_equal(local_datetime.tz.offset, local_tz.offset)
+    assert_equal(local_datetime.tz.name, "local")
+    assert_equal(local_datetime.hour, 3)
     assert_equal(
         String(Morrow.get(dt, TimeZone.from_utc("+05:30"))),
         "2024-02-29T03:04:05.123456+05:30",
