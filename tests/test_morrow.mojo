@@ -560,6 +560,15 @@ def test_humanize_and_dehumanize() raises:
 
     assert_equal(present.humanize(present), "just now")
     assert_equal(present.humanize(present, only_distance=True), "instantly")
+    assert_equal(present.shift(seconds=9).humanize(present), "just now")
+    assert_equal(
+        present.shift(seconds=9).humanize(present, only_distance=True),
+        "instantly",
+    )
+    assert_equal(
+        present.shift(seconds=9).humanize(present, granularity="second"),
+        "in 9 seconds",
+    )
     assert_equal(present.shift(hours=-1).humanize(present), "an hour ago")
     assert_equal(present.shift(hours=2).humanize(present), "in 2 hours")
     assert_equal(

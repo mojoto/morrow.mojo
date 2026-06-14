@@ -1339,6 +1339,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var seconds = abs(delta_us) // _US_PER_SECOND
         var unit = granularity
         if unit == "auto":
+            if seconds < 10:
+                if only_distance:
+                    return "instantly"
+                return "just now"
             unit = Self._auto_humanize_unit(seconds)
         var count = Self._humanize_count(seconds, unit)
         var distance = Self._format_humanize_distance(count, unit)
