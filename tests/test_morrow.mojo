@@ -247,6 +247,19 @@ def test_timestamp_and_timezone_conversion() raises:
     assert_equal(String(fixed), "2024-02-29T11:30:00.123456-05:00")
 
 
+def test_datetime_interface_aliases() raises:
+    var m = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
+
+    assert_equal(String(m.datetime()), String(m))
+    assert_equal(
+        String(m.astimezone("+08:00")), "2024-03-01T00:30:00.123456+08:00"
+    )
+    assert_equal(
+        String(m.astimezone(TimeZone.from_utc("-05:00"))),
+        "2024-02-29T11:30:00.123456-05:00",
+    )
+
+
 def test_comparisons() raises:
     var utc = TimeZone.from_utc("UTC")
     var base = Morrow(2024, 2, 29, 16, 30, 0, 0, utc)

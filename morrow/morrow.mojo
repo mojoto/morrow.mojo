@@ -439,6 +439,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.tz,
         )
 
+    def datetime(self) -> Self:
+        """
+        Return a datetime representation of this Morrow.
+        """
+        return self.clone()
+
     def naive(self) -> Self:
         """
         Return a copy without timezone information.
@@ -666,6 +672,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if tz_str == "local":
             return self.to(TimeZone.local())
         return self.to(TimeZone.from_utc(tz_str))
+
+    def astimezone(self, tz: TimeZone) raises -> Self:
+        """
+        Return this instant converted to a fixed-offset timezone.
+        """
+        return self.to(tz)
+
+    def astimezone(self, tz_str: String) raises -> Self:
+        """
+        Return this instant converted to a timezone parsed from a UTC offset string.
+        """
+        return self.to(tz_str)
 
     def replace(
         self,

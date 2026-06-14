@@ -101,6 +101,8 @@ print(str(spans[0].start))  # 2013-05-05T12:00:00.000000+00:00
 # Convert fixed-offset time zones and get POSIX timestamps.
 var utc = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
 print(str(utc.to("+08:00")))  # 2024-03-01T00:30:00.123456+08:00
+print(str(utc.astimezone("-05:00")))  # 2024-02-29T11:30:00.123456-05:00
+print(str(utc.datetime()))  # 2024-02-29T16:30:00.123456+00:00
 print(utc.timestamp())  # 1709224200.123456
 print(utc.int_timestamp())  # 1709224200
 print(utc.for_json())  # 2024-02-29T16:30:00.123456+00:00
