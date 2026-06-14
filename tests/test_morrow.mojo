@@ -395,6 +395,14 @@ def test_component_views() raises:
     assert_equal(utc_tuple.isdst, 0)
 
 
+def test_timezone_status_flags() raises:
+    var m = Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone.from_utc("+05:30"))
+
+    assert_equal(m.fold(), 0)
+    assert_true(not m.ambiguous())
+    assert_true(not m.imaginary())
+
+
 def test_humanize_and_dehumanize() raises:
     var utc = TimeZone.from_utc("UTC")
     var present = Morrow(2024, 1, 1, 12, 0, 0, 0, utc)

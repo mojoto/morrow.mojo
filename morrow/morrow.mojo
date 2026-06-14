@@ -542,6 +542,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return TimeDelta()
 
+    def fold(self) -> Int:
+        """
+        Return the fold value. Fixed-offset timezones do not repeat wall times.
+        """
+        return 0
+
+    def ambiguous(self) -> Bool:
+        """
+        Return whether this wall time is ambiguous in its timezone.
+        """
+        return False
+
+    def imaginary(self) -> Bool:
+        """
+        Return whether this wall time is nonexistent in its timezone.
+        """
+        return False
+
     def timetuple(self) raises -> MorrowTimeTuple:
         """
         Return local date and time fields in Python struct_time style.
