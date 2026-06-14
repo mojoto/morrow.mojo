@@ -216,6 +216,16 @@ def test_replace() raises:
     replaced_tz = m.replace(tzinfo="UTC")
     assert_equal(String(replaced_tz), "2024-02-29T03:04:05.123456+00:00")
 
+    var replaced_fields_tz = m.replace(
+        year=2025, month=12, day=31, tzinfo=TimeZone.from_utc("UTC")
+    )
+    assert_equal(String(replaced_fields_tz), "2025-12-31T03:04:05.123456+00:00")
+
+    var replaced_fields_tz_str = m.replace(hour=23, minute=59, tzinfo="-03:00")
+    assert_equal(
+        String(replaced_fields_tz_str), "2024-02-29T23:59:05.123456-03:00"
+    )
+
 
 def test_shift_months_clamps_to_last_day() raises:
     var jan31 = Morrow(2024, 1, 31, 3, 4, 5, 123456)

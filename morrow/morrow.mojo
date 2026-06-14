@@ -955,7 +955,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                     String(date_str[byte=date_pos:])
                 )
                 if not tzinfo.is_none():
-                    return parsed.replace(tzinfo)
+                    return parsed.replace(tzinfo=tzinfo)
                 return parsed
             elif Self._starts_with(fmt, fmt_pos, "x"):
                 if fmt_pos + 1 != fmt.byte_length():
@@ -964,7 +964,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                     Int(date_str[byte=date_pos:])
                 )
                 if not tzinfo.is_none():
-                    return parsed.replace(tzinfo)
+                    return parsed.replace(tzinfo=tzinfo)
                 return parsed
             elif Self._starts_with(fmt, fmt_pos, "ZZZ"):
                 var parsed = Self._parse_timezone_name(date_str, date_pos)
@@ -1483,6 +1483,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         minute: Int = -1,
         second: Int = -1,
         microsecond: Int = -1,
+        tzinfo: TimeZone = TimeZone.none(),
     ) raises -> Self:
         """
         Return a new Morrow with selected fields replaced.
@@ -1496,33 +1497,38 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var microsecond_ = (
             self.microsecond if microsecond == -1 else microsecond
         )
+        var tzinfo_ = self.tz if tzinfo.is_none() else tzinfo
         Self._validate_fields(
             year_, month_, day_, hour_, minute_, second_, microsecond_
         )
         return Self(
-            year_, month_, day_, hour_, minute_, second_, microsecond_, self.tz
+            year_, month_, day_, hour_, minute_, second_, microsecond_, tzinfo_
         )
 
-    def replace(self, tzinfo: TimeZone) -> Self:
-        """
-        Return a new Morrow with timezone replaced without conversion.
-        """
-        return Self(
-            self.year,
-            self.month,
-            self.day,
-            self.hour,
-            self.minute,
-            self.second,
-            self.microsecond,
-            tzinfo,
-        )
-
-    def replace(self, tzinfo: String) raises -> Self:
+    def replace(
+        self,
+        tzinfo: String,
+        year: Int = -1,
+        month: Int = -1,
+        day: Int = -1,
+        hour: Int = -1,
+        minute: Int = -1,
+        second: Int = -1,
+        microsecond: Int = -1,
+    ) raises -> Self:
         """
         Return a new Morrow with timezone parsed and replaced without conversion.
         """
-        return self.replace(TimeZone.from_utc(tzinfo))
+        return self.replace(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            microsecond,
+            TimeZone.from_utc(tzinfo),
+        )
 
     def shift(
         self,
@@ -1662,7 +1668,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return points after replacing start and end timezones.
         """
-        return Self.range(frame, start.replace(tz), end.replace(tz), limit)
+        return Self.range(
+            frame, start.replace(tzinfo=tz), end.replace(tzinfo=tz), limit
+        )
 
     @staticmethod
     def range(
@@ -1687,7 +1695,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return a limited number of points after replacing the start timezone.
         """
-        return Self.range(frame, start.replace(tz), limit)
+        return Self.range(frame, start.replace(tzinfo=tz), limit)
 
     @staticmethod
     def range(
@@ -1734,8 +1742,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return Self.span_range(
             frame,
-            start.replace(tz),
-            end.replace(tz),
+            start.replace(tzinfo=tz),
+            end.replace(tzinfo=tz),
             limit,
             bounds,
             exact,
@@ -1802,8 +1810,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return Self.interval(
             frame,
-            start.replace(tz),
-            end.replace(tz),
+            start.replace(tzinfo=tz),
+            end.replace(tzinfo=tz),
             interval,
             limit,
             bounds,
@@ -2811,7 +2819,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             raise Error("iso_week is out of range for iso_year")
         var ordinal = week1 + (iso_week - 1) * 7 + iso_weekday - 1
         var date = Self.fromordinal(ordinal)
-        return date.replace(Self._utc_timezone())
+        return date.replace(tzinfo=Self._utc_timezone())
 
     def isoweekday(self) raises -> Int:
         """
