@@ -465,6 +465,40 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             day = date.day
             pos = 7
         elif (
+            length >= 6
+            and Self._is_ascii_digit(ord(date_str[byte=0]))
+            and Self._is_ascii_digit(ord(date_str[byte=1]))
+            and Self._is_ascii_digit(ord(date_str[byte=2]))
+            and Self._is_ascii_digit(ord(date_str[byte=3]))
+            and (
+                date_str[byte=4] == "-"
+                or date_str[byte=4] == "/"
+                or date_str[byte=4] == "."
+            )
+            and Self._is_ascii_digit(ord(date_str[byte=5]))
+        ):
+            year = Int(date_str[byte=0:4])
+            var date_separator = ord(date_str[byte=4])
+            var month_parsed = Self._parse_variable_int(date_str, 5, 2)
+            month = month_parsed.value
+            pos = month_parsed.pos
+            if (
+                pos == length
+                or date_str[byte=pos] == "T"
+                or date_str[byte=pos] == "t"
+                or date_str[byte=pos] == " "
+            ):
+                if pos != 7:
+                    raise Error("isoformat month is invalid")
+                day = 1
+            elif ord(date_str[byte=pos]) == date_separator:
+                pos += 1
+                var day_parsed = Self._parse_variable_int(date_str, pos, 2)
+                day = day_parsed.value
+                pos = day_parsed.pos
+            else:
+                raise Error("isoformat date separator is invalid")
+        elif (
             length >= 10 and date_str[byte=4] == "-" and date_str[byte=7] == "-"
         ):
             year = Int(date_str[byte=0:4])

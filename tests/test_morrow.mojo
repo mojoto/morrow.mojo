@@ -566,6 +566,18 @@ def test_creation_helpers() raises:
     var iso_month_datetime = Morrow.get("2024-02T03:04:05Z")
     assert_equal(String(iso_month_datetime), "2024-02-01T03:04:05.000000+00:00")
 
+    var slash_date = Morrow.get("2024/2/29")
+    assert_equal(String(slash_date), "2024-02-29T00:00:00.000000+00:00")
+
+    var dot_date = Morrow.get("2024.2.9")
+    assert_equal(String(dot_date), "2024-02-09T00:00:00.000000+00:00")
+
+    var short_dash_date = Morrow.get("2024-2-9")
+    assert_equal(String(short_dash_date), "2024-02-09T00:00:00.000000+00:00")
+
+    var slash_month = Morrow.get("2024/02")
+    assert_equal(String(slash_month), "2024-02-01T00:00:00.000000+00:00")
+
     var normalized_iso = Morrow.get(
         "\t \n  2013-05-05T12:30:45.123456 \t \n",
         normalize_whitespace=True,
