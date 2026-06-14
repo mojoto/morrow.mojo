@@ -1458,25 +1458,51 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 "humanized string must start with 'in ' or end with ' ago'"
             )
 
-        var count: Int
-        var unit: String
-        if phrase.byte_length() > 2 and phrase[byte=0:2] == "a ":
-            count = 1
-            unit = String(phrase[byte=2:])
-        elif phrase.byte_length() > 3 and phrase[byte=0:3] == "an ":
-            count = 1
-            unit = String(phrase[byte=3:])
-        else:
-            var separator = Self._find_byte(phrase, ord(" "))
-            if separator <= 0:
-                raise Error("humanized distance is invalid")
-            count = Int(phrase[byte=0:separator])
-            unit = String(phrase[byte = separator + 1 :])
+        var result = self
+        var parsed = False
+        var pos = 0
+        while pos < phrase.byte_length():
+            while pos < phrase.byte_length() and phrase[byte=pos] == " ":
+                pos += 1
+            if pos >= phrase.byte_length():
+                break
 
-        unit = Self._normalize_humanize_unit(unit)
-        if not future:
-            count = -count
-        return self._shift_humanize_unit(unit, count)
+            var word_start = pos
+            while pos < phrase.byte_length() and ord(phrase[byte=pos]) != ord(
+                " "
+            ):
+                pos += 1
+            var count_word = String(phrase[byte=word_start:pos])
+            if count_word == "and":
+                continue
+
+            var count: Int
+            if count_word == "a" or count_word == "an":
+                count = 1
+            else:
+                count = Int(count_word)
+
+            while pos < phrase.byte_length() and phrase[byte=pos] == " ":
+                pos += 1
+            if pos >= phrase.byte_length():
+                raise Error("humanized distance is invalid")
+
+            var unit_start = pos
+            while pos < phrase.byte_length() and ord(phrase[byte=pos]) != ord(
+                " "
+            ):
+                pos += 1
+            var unit = Self._normalize_humanize_unit(
+                String(phrase[byte=unit_start:pos])
+            )
+            if not future:
+                count = -count
+            result = result._shift_humanize_unit(unit, count)
+            parsed = True
+
+        if not parsed:
+            raise Error("humanized distance is invalid")
+        return result
 
     def to(self, tz: TimeZone) raises -> Self:
         """
