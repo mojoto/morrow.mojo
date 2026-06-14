@@ -1510,6 +1510,24 @@ def test_flexible_get_creation_helpers() raises:
     var upper_meridian = Morrow.get("2023-01-02 12:05 AM", "YYYY-MM-DD hh:mm a")
     assert_equal(String(upper_meridian), "2023-01-02T00:05:00.000000+00:00")
 
+    var mixed_upper_meridian = Morrow.get("2023-01-02 03 Pm", "YYYY-MM-DD HH A")
+    assert_equal(
+        String(mixed_upper_meridian), "2023-01-02T03:00:00.000000+00:00"
+    )
+
+    var mixed_lower_meridian = Morrow.get("2023-01-02 03 pM", "YYYY-MM-DD HH a")
+    assert_equal(
+        String(mixed_lower_meridian), "2023-01-02T03:00:00.000000+00:00"
+    )
+
+    var mixed_upper_24_hour_meridian = Morrow.get(
+        "2023-01-02 13 Pm", "YYYY-MM-DD HH A"
+    )
+    assert_equal(
+        String(mixed_upper_24_hour_meridian),
+        "2023-01-02T13:00:00.000000+00:00",
+    )
+
     var hour_00_without_meridian = Morrow.get(
         "2023-01-02 00:05", "YYYY-MM-DD hh:mm"
     )

@@ -1144,11 +1144,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "A"):
                 date_pos = Self._parse_am_pm(date_str, date_pos, True)
-                am_pm = 2 if Self._last_am_pm_was_pm(date_str, date_pos) else 1
+                am_pm = Self._parsed_am_pm_marker(date_str, date_pos)
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "a"):
                 date_pos = Self._parse_am_pm(date_str, date_pos, False)
-                am_pm = 2 if Self._last_am_pm_was_pm(date_str, date_pos) else 1
+                am_pm = Self._parsed_am_pm_marker(date_str, date_pos)
                 fmt_pos += 1
             else:
                 Self._parse_literal_char(date_str, date_pos, fmt, fmt_pos)
@@ -3077,11 +3077,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         raise Error("AM/PM marker is invalid")
 
     @staticmethod
-    def _last_am_pm_was_pm(date_str: String, date_pos: Int) -> Bool:
+    def _parsed_am_pm_marker(date_str: String, date_pos: Int) -> Int:
         if date_pos < 2:
-            return False
-        var c = ord(date_str[byte=date_pos - 2])
-        return c == ord("P") or c == ord("p")
+            return 0
+        var first = ord(date_str[byte=date_pos - 2])
+        var second = ord(date_str[byte=date_pos - 1])
+        if (first == ord("A") and second == ord("M")) or (
+            first == ord("a") and second == ord("m")
+        ):
+            return 1
+        if (first == ord("P") and second == ord("M")) or (
+            first == ord("p") and second == ord("m")
+        ):
+            return 2
+        return 0
 
     def _shift_day_time(
         self,
