@@ -1620,8 +1620,15 @@ def test_flexible_get_creation_helpers() raises:
     var formats = List[String]()
     formats.append("YYYY/MM/DD")
     formats.append("YYYY-MM-DD HH:mm:ss")
+    formats.append("YYYY-MM-DD T HH:mm:ss")
     var multi = Morrow.get("2023-01-20 15:49:10", formats)
     assert_equal(String(multi), "2023-01-20T15:49:10.000000+00:00")
+    var normalized_multi = Morrow.get(
+        "2023-01-20  T \n   15:49:10",
+        formats,
+        normalize_whitespace=True,
+    )
+    assert_equal(String(normalized_multi), "2023-01-20T15:49:10.000000+00:00")
 
     var tz_formats = List[String]()
     tz_formats.append("YYYY/MM/DD")
