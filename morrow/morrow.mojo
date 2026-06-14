@@ -925,7 +925,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 ) != ord("]"):
                     literal_end += 1
                 if literal_end >= fmt.byte_length():
-                    raise Error("format literal is missing closing bracket")
+                    Self._parse_literal_char(date_str, date_pos, fmt, fmt_pos)
+                    date_pos += 1
+                    fmt_pos += 1
+                    continue
 
                 if Self._is_whitespace_regex_literal(
                     fmt, literal_start, literal_end

@@ -1514,6 +1514,11 @@ def test_flexible_get_creation_helpers() raises:
     assert_get_raises("2019-10-31,text", "YYYY-MM-DD")
     assert_get_raises("date-2019-10-31", "YYYY-MM-DD")
 
+    var unmatched_open_bracket = Morrow.get("[2024", "[YYYY")
+    assert_equal(
+        String(unmatched_open_bracket), "2024-01-01T00:00:00.000000+00:00"
+    )
+
     var whitespace_regex = Morrow.get(
         "Mon \t Sep 08   16:41:45     2014",
         "ddd[\\s+]MMM[\\s+]DD[\\s+]HH:mm:ss[\\s+]YYYY",
