@@ -1243,8 +1243,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 while digits.byte_length() < 6:
                     digits += "0"
                 microsecond = Int(digits)
-            else:
+            elif directive.value == ord("z"):
                 var parsed = Self._parse_strptime_timezone_offset(
+                    normalized_date, value_start
+                )
+                value_end = parsed.pos
+                parsed_tz = parsed.tz
+            else:
+                var parsed = Self._parse_strptime_timezone_name(
                     normalized_date, value_start
                 )
                 value_end = parsed.pos
@@ -1293,12 +1299,28 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 if fmt[byte=pos + 1] == "%":
                     pos += 2
                     continue
-                if fmt[byte=pos + 1] == "f" or fmt[byte=pos + 1] == "z":
+                if (
+                    fmt[byte=pos + 1] == "f"
+                    or fmt[byte=pos + 1] == "z"
+                    or fmt[byte=pos + 1] == "Z"
+                ):
                     return MorrowParseInt(ord(fmt[byte=pos + 1]), pos)
                 pos += 2
             else:
                 pos += 1
         return MorrowParseInt(0, -1)
+
+    @staticmethod
+    def _parse_strptime_timezone_name(
+        date_str: String, date_pos: Int
+    ) raises -> MorrowParseTimeZone:
+        if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "UTC"):
+            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
+        if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "GMT"):
+            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
+        if date_pos >= date_str.byte_length():
+            raise Error("timezone is missing")
+        raise Error("timezone name is invalid")
 
     @staticmethod
     def _parse_strptime_timezone_offset(
