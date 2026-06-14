@@ -312,10 +312,16 @@ def _replace_strftime_modified_directive(
     directive: Int,
     directive_text: String,
 ) raises -> String:
+    var day_of_year = _day_of_year(year, month, day)
+    var iso_week = _format_iso_week(year, month, day, weekday)
     if directive == ord("d"):
         return _format_modified_number(day, 2, modifier)
     if directive == ord("m"):
         return _format_modified_number(month, 2, modifier)
+    if directive == ord("y"):
+        return String(String(year).ascii_rjust(4, "0")[byte=2:4])
+    if directive == ord("Y"):
+        return String(year).ascii_rjust(4, "0")
     if directive == ord("H"):
         return _format_modified_number(hour, 2, modifier)
     if directive == ord("I"):
@@ -327,6 +333,20 @@ def _replace_strftime_modified_directive(
         return _format_modified_number(minute, 2, modifier)
     if directive == ord("S"):
         return _format_modified_number(second, 2, modifier)
+    if directive == ord("j"):
+        return _format_modified_number(day_of_year, 3, modifier)
+    if directive == ord("U"):
+        return _format_modified_number(
+            _week_number(day_of_year, 0 if weekday == 7 else weekday),
+            2,
+            modifier,
+        )
+    if directive == ord("W"):
+        return _format_modified_number(
+            _week_number(day_of_year, weekday - 1), 2, modifier
+        )
+    if directive == ord("V"):
+        return _format_modified_number(Int(iso_week[byte=6:8]), 2, modifier)
     if modifier == ord("-"):
         return "-" + directive_text
     if modifier == ord("_"):
@@ -652,10 +672,14 @@ def _format_ordinal(value: Int) -> String:
 
 
 def _format_week_number(day_of_year: Int, weekday_zero_based: Int) -> String:
-    var yday_zero_based = day_of_year - 1
-    return String((yday_zero_based + 7 - weekday_zero_based) // 7).ascii_rjust(
+    return String(_week_number(day_of_year, weekday_zero_based)).ascii_rjust(
         2, "0"
     )
+
+
+def _week_number(day_of_year: Int, weekday_zero_based: Int) -> Int:
+    var yday_zero_based = day_of_year - 1
+    return (yday_zero_based + 7 - weekday_zero_based) // 7
 
 
 def _day_of_year(year: Int, month: Int, day: Int) raises -> Int:
