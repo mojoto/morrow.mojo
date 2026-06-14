@@ -537,6 +537,15 @@ def test_creation_helpers() raises:
     var component_datetime = Morrow.get(2013, 5, 5, 12, 30, 45, 123456)
     assert_equal(String(component_datetime), "2013-05-05T12:30:45.123456+00:00")
 
+    var ordinal_date = Morrow.get("2024-060")
+    assert_equal(String(ordinal_date), "2024-02-29T00:00:00.000000+00:00")
+
+    var basic_ordinal_date = Morrow.get("2024060")
+    assert_equal(String(basic_ordinal_date), "2024-02-29T00:00:00.000000+00:00")
+
+    var ordinal_datetime = Morrow.get("2024-060T03:04:05Z")
+    assert_equal(String(ordinal_datetime), "2024-02-29T03:04:05.000000+00:00")
+
     var normalized_iso = Morrow.get(
         "\t \n  2013-05-05T12:30:45.123456 \t \n",
         normalize_whitespace=True,

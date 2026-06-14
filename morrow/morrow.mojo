@@ -383,14 +383,57 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Create a Morrow from an ISO 8601 string.
         """
         var length = date_str.byte_length()
-        if length < 8:
+        if length < 7:
             raise Error("isoformat string is too short")
 
         var year: Int
         var month: Int
         var day: Int
         var pos: Int
-        if length >= 10 and date_str[byte=4] == "-" and date_str[byte=7] == "-":
+        if (
+            length >= 8
+            and date_str[byte=4] == "-"
+            and Self._is_ascii_digit(ord(date_str[byte=5]))
+            and Self._is_ascii_digit(ord(date_str[byte=6]))
+            and Self._is_ascii_digit(ord(date_str[byte=7]))
+        ):
+            year = Int(date_str[byte=0:4])
+            var day_of_year = Int(date_str[byte=5:8])
+            if day_of_year < 1 or day_of_year > 366:
+                raise Error("isoformat day of year is invalid")
+            var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
+            year = date.year
+            month = date.month
+            day = date.day
+            pos = 8
+        elif (
+            length >= 7
+            and Self._is_ascii_digit(ord(date_str[byte=0]))
+            and Self._is_ascii_digit(ord(date_str[byte=1]))
+            and Self._is_ascii_digit(ord(date_str[byte=2]))
+            and Self._is_ascii_digit(ord(date_str[byte=3]))
+            and Self._is_ascii_digit(ord(date_str[byte=4]))
+            and Self._is_ascii_digit(ord(date_str[byte=5]))
+            and Self._is_ascii_digit(ord(date_str[byte=6]))
+            and (
+                length == 7
+                or date_str[byte=7] == "T"
+                or date_str[byte=7] == "t"
+                or date_str[byte=7] == " "
+            )
+        ):
+            year = Int(date_str[byte=0:4])
+            var day_of_year = Int(date_str[byte=4:7])
+            if day_of_year < 1 or day_of_year > 366:
+                raise Error("isoformat day of year is invalid")
+            var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
+            year = date.year
+            month = date.month
+            day = date.day
+            pos = 7
+        elif (
+            length >= 10 and date_str[byte=4] == "-" and date_str[byte=7] == "-"
+        ):
             year = Int(date_str[byte=0:4])
             month = Int(date_str[byte=5:7])
             day = Int(date_str[byte=8:10])
