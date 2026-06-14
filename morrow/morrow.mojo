@@ -1332,6 +1332,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
         if delta_us == 0:
+            if only_distance:
+                return "instantly"
             return "just now"
 
         var seconds = abs(delta_us) // _US_PER_SECOND
@@ -1367,6 +1369,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
         if delta_us == 0:
+            if only_distance:
+                return "instantly"
             return "just now"
 
         var remaining = abs(delta_us) // _US_PER_SECOND

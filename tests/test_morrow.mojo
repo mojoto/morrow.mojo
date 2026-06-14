@@ -559,6 +559,7 @@ def test_humanize_and_dehumanize() raises:
     var present = Morrow(2024, 1, 1, 12, 0, 0, 0, utc)
 
     assert_equal(present.humanize(present), "just now")
+    assert_equal(present.humanize(present, only_distance=True), "instantly")
     assert_equal(present.shift(hours=-1).humanize(present), "an hour ago")
     assert_equal(present.shift(hours=2).humanize(present), "in 2 hours")
     assert_equal(
@@ -580,6 +581,10 @@ def test_humanize_and_dehumanize() raises:
     var hour_minute = List[String]()
     hour_minute.append("hour")
     hour_minute.append("minute")
+    assert_equal(
+        present.humanize(present, only_distance=True, granularity=hour_minute),
+        "instantly",
+    )
     assert_equal(
         present.shift(minutes=66).humanize(present, granularity=hour_minute),
         "in an hour and 6 minutes",
