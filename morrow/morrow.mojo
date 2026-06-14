@@ -884,6 +884,22 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return items^
 
     @staticmethod
+    def range(frame: String, start: Self, limit: Int) raises -> List[Self]:
+        """
+        Return a limited number of points starting at start.
+        """
+        if limit < 0:
+            raise Error("limit must be non-negative")
+        var items = List[Self]()
+        var current = start
+        var emitted = 0
+        while emitted < limit:
+            items.append(current)
+            current = current._shift_frame(frame, 1)
+            emitted += 1
+        return items^
+
+    @staticmethod
     def range(
         frame: String,
         start: Self,
@@ -908,6 +924,30 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Return points after replacing start and end with a parsed timezone.
         """
         return Self.range(frame, start, end, TimeZone.from_utc(tz_str), limit)
+
+    @staticmethod
+    def range(
+        frame: String,
+        start: Self,
+        tz: TimeZone,
+        limit: Int,
+    ) raises -> List[Self]:
+        """
+        Return a limited number of points after replacing the start timezone.
+        """
+        return Self.range(frame, start.replace(tz), limit)
+
+    @staticmethod
+    def range(
+        frame: String,
+        start: Self,
+        tz_str: String,
+        limit: Int,
+    ) raises -> List[Self]:
+        """
+        Return a limited number of points after replacing the start with a parsed timezone.
+        """
+        return Self.range(frame, start, TimeZone.from_utc(tz_str), limit)
 
     @staticmethod
     def span_range(

@@ -333,6 +333,14 @@ def test_range_and_span_range() raises:
     assert_equal(String(tz_spans[0].start), "2013-05-05T12:00:00.000000+08:00")
     assert_equal(String(tz_spans[0].end), "2013-05-05T12:59:59.999999+08:00")
 
+    var limited = Morrow.range("hour", start, limit=3)
+    assert_equal(len(limited), 3)
+    assert_equal(String(limited[2]), "2013-05-05T14:30:00.000000+00:00")
+
+    var tz_limited = Morrow.range("hour", start.naive(), beijing, limit=2)
+    assert_equal(len(tz_limited), 2)
+    assert_equal(String(tz_limited[0]), "2013-05-05T12:30:00.000000+08:00")
+
 
 def test_interval_exact_range_and_is_between() raises:
     var utc = TimeZone.from_utc("UTC")
