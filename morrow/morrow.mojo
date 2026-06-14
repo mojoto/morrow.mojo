@@ -4,7 +4,13 @@ from .util import (
     _days_before_year,
     _days_in_month,
 )
-from ._libc import c_gettimeofday, c_localtime, c_gmtime, c_strptime
+from ._libc import (
+    c_gettimeofday,
+    c_localtime,
+    c_gmtime,
+    c_strptime,
+    c_strptime_consumed,
+)
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
 from .timedelta import TimeDelta
@@ -1198,7 +1204,48 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S')
             <Morrow [2019-01-20T15:49:10+00:00]>
         """
+        var microsecond_directive = Self._find_strptime_microsecond_directive(
+            fmt
+        )
+        if microsecond_directive != -1:
+            var prefix_fmt = String(fmt[byte=0:microsecond_directive])
+            var microsecond_start = c_strptime_consumed(date_str, prefix_fmt)
+            var microsecond_end = microsecond_start
+            while (
+                microsecond_end < date_str.byte_length()
+                and Self._is_ascii_digit(ord(date_str[byte=microsecond_end]))
+                and microsecond_end - microsecond_start < 6
+            ):
+                microsecond_end += 1
+            if microsecond_end == microsecond_start:
+                raise Error("microsecond is missing")
+            if (
+                microsecond_end < date_str.byte_length()
+                and Self._is_ascii_digit(ord(date_str[byte=microsecond_end]))
+            ):
+                raise Error("unconverted data remains")
+
+            var digits = String(
+                date_str[byte=microsecond_start:microsecond_end]
+            )
+            while digits.byte_length() < 6:
+                digits += "0"
+            var normalized_date = String(
+                date_str[byte=0:microsecond_start]
+            ) + String(date_str[byte=microsecond_end:])
+            var normalized_fmt = prefix_fmt + String(
+                fmt[byte = microsecond_directive + 2 :]
+            )
+            var tm = c_strptime(normalized_date, normalized_fmt)
+            return Self._from_strptime_tm(tm, Int(digits), tzinfo)
+
         var tm = c_strptime(date_str, fmt)
+        return Self._from_strptime_tm(tm, 0, tzinfo)
+
+    @staticmethod
+    def _from_strptime_tm(
+        tm: CTm, microsecond: Int, tzinfo: TimeZone
+    ) raises -> Self:
         var tz = TimeZone(Int(tm.tm_gmtoff)) if tzinfo.is_none() else tzinfo
         return Self._from_components(
             Int(tm.tm_year) + 1900,
@@ -1207,9 +1254,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             Int(tm.tm_hour),
             Int(tm.tm_min),
             Int(tm.tm_sec),
-            0,
+            microsecond,
             tz,
         )
+
+    @staticmethod
+    def _find_strptime_microsecond_directive(fmt: String) -> Int:
+        var pos = 0
+        while pos + 1 < fmt.byte_length():
+            if fmt[byte=pos] == "%":
+                if fmt[byte=pos + 1] == "%":
+                    pos += 2
+                    continue
+                if fmt[byte=pos + 1] == "f":
+                    return pos
+                pos += 2
+            else:
+                pos += 1
+        return -1
 
     @staticmethod
     def strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:

@@ -100,6 +100,32 @@ def c_strptime(time_str: String, time_format: String) raises -> CTm:
 
 
 @always_inline
+def c_strptime_consumed(time_str: String, time_format: String) raises -> Int:
+    """Return the number of bytes consumed by strptime for a prefix format."""
+    var time_str_ = time_str
+    var empty_format = String("")
+    var start_tm = CTm()
+    var start_addr = external_call["strptime", Int](
+        time_str_.as_c_string_slice().unsafe_ptr(),
+        empty_format.as_c_string_slice().unsafe_ptr(),
+        UnsafePointer(to=start_tm),
+    )
+    if start_addr == 0:
+        raise Error("time data does not match format")
+
+    var time_format_ = time_format
+    var tm = CTm()
+    var end_addr = external_call["strptime", Int](
+        time_str_.as_c_string_slice().unsafe_ptr(),
+        time_format_.as_c_string_slice().unsafe_ptr(),
+        UnsafePointer(to=tm),
+    )
+    if end_addr == 0:
+        raise Error("time data does not match format")
+    return end_addr - start_addr
+
+
+@always_inline
 def c_gmtime(tv_sec: Int) -> CTm:
     """Wrapper for the C function gmtime."""
     var tv_sec_ = tv_sec

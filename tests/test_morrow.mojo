@@ -220,9 +220,20 @@ def test_strptime() raises:
     assert_equal(m.tz.offset, local_tz.offset)
     assert_equal(m.tz.name, "local")
     assert_equal(m.hour, 15)
+    m = Morrow.strptime("2024-02-29 03:04:05.123456", "%Y-%m-%d %H:%M:%S.%f")
+    assert_equal(String(m), "2024-02-29T03:04:05.123456+00:00")
+    m = Morrow.strptime("2024-02-29 03:04:05.1", "%Y-%m-%d %H:%M:%S.%f")
+    assert_equal(String(m), "2024-02-29T03:04:05.100000+00:00")
+    m = Morrow.strptime(
+        "2024-02-29 03:04:05.123456 +0800", "%Y-%m-%d %H:%M:%S.%f %z"
+    )
+    assert_equal(String(m), "2024-02-29T03:04:05.123456+08:00")
     assert_strptime_raises("2024-02-29 23:59:60", "%Y-%m-%d %H:%M:%S")
     assert_strptime_raises("2024-02-29abc", "%Y-%m-%d")
     assert_strptime_raises("2024-02-29 24:00", "%Y-%m-%d %H:%M")
+    assert_strptime_raises(
+        "2024-02-29 03:04:05.1234567", "%Y-%m-%d %H:%M:%S.%f"
+    )
 
 
 def test_ordinal() raises:
