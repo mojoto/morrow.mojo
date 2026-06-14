@@ -10,6 +10,9 @@ from .timezone import TimeZone
 from .timedelta import TimeDelta
 from .formatter import format_morrow, format_strftime
 from .constants import (
+    MAX_TIMESTAMP,
+    MAX_TIMESTAMP_MS,
+    MAX_TIMESTAMP_US,
     days_before_month,
     day_abbreviation,
     day_name,
@@ -674,7 +677,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             elif Self._starts_with(fmt, fmt_pos, "x"):
                 if fmt_pos + 1 != fmt.byte_length():
                     raise Error("timestamp token must be the full format")
-                var parsed = Self._from_utc_microseconds_value(
+                var parsed = Self._from_expanded_timestamp_value(
                     Int(date_str[byte=date_pos:])
                 )
                 if not tzinfo.is_none():
@@ -1765,6 +1768,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             microsecond,
             Self._utc_timezone(),
         )
+
+    @staticmethod
+    def _from_expanded_timestamp_value(timestamp: Int) raises -> Self:
+        if timestamp > MAX_TIMESTAMP:
+            if timestamp < MAX_TIMESTAMP_MS:
+                return Self._from_utc_microseconds_value(timestamp * 1000)
+            if timestamp < MAX_TIMESTAMP_US:
+                return Self._from_utc_microseconds_value(timestamp)
+            raise Error("timestamp is too large")
+        return Self.utcfromtimestamp(Float64(timestamp))
 
     @staticmethod
     def _starts_with(s: String, pos: Int, pattern: String) -> Bool:

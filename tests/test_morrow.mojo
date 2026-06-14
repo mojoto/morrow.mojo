@@ -755,6 +755,10 @@ def test_flexible_get_creation_helpers() raises:
         String(Morrow.get("1709175845123456", "x")),
         "2024-02-29T03:04:05.123456+00:00",
     )
+    assert_equal(
+        String(Morrow.get("1709175845123", "x")),
+        "2024-02-29T03:04:05.123000+00:00",
+    )
 
 
 def test_date_and_datetime_creation_helpers() raises:
