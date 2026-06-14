@@ -586,6 +586,12 @@ def test_creation_helpers() raises:
         String(basic_hour_minute_time), "2024-02-29T03:04:00.000000+08:00"
     )
 
+    var comma_fraction = Morrow.get("2024-02-29T03:04:05,123456Z")
+    assert_equal(String(comma_fraction), "2024-02-29T03:04:05.123456+00:00")
+
+    var rounded_fraction = Morrow.get("2024-02-29T03:04:05.1234567Z")
+    assert_equal(String(rounded_fraction), "2024-02-29T03:04:05.123457+00:00")
+
     var normalized_iso = Morrow.get(
         "\t \n  2013-05-05T12:30:45.123456 \t \n",
         normalize_whitespace=True,

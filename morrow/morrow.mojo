@@ -560,22 +560,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                         second = Int(date_str[byte = pos : pos + 2])
                         pos += 2
 
-            if pos < length and date_str[byte=pos] == ".":
+            if pos < length and (
+                date_str[byte=pos] == "." or date_str[byte=pos] == ","
+            ):
                 pos += 1
-                var start = pos
-                while pos < length:
-                    var c = ord(date_str[byte=pos])
-                    if c < ord("0") or c > ord("9"):
-                        break
-                    pos += 1
-                if pos == start:
-                    raise Error("isoformat microsecond is invalid")
-                var digits = String(date_str[byte=start:pos])
-                while digits.byte_length() < 6:
-                    digits += "0"
-                if digits.byte_length() > 6:
-                    digits = String(digits[byte=0:6])
-                microsecond = Int(digits)
+                var parsed = Self._parse_subsecond(date_str, pos, 6)
+                microsecond = parsed.value
+                pos = parsed.pos
 
             if pos < length:
                 if date_str[byte=pos] == "Z" or date_str[byte=pos] == "z":
