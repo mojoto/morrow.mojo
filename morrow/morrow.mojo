@@ -681,17 +681,21 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                     return parsed.replace(tzinfo)
                 return parsed
             elif Self._starts_with(fmt, fmt_pos, "ZZZ"):
-                var parsed = Self._parse_timezone(date_str, date_pos)
+                var parsed = Self._parse_timezone_name(date_str, date_pos)
                 tz = parsed.tz
                 date_pos = parsed.pos
                 fmt_pos += 3
             elif Self._starts_with(fmt, fmt_pos, "ZZ"):
-                var parsed = Self._parse_timezone(date_str, date_pos)
+                var parsed = Self._parse_timezone_offset(
+                    date_str, date_pos, True
+                )
                 tz = parsed.tz
                 date_pos = parsed.pos
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "Z"):
-                var parsed = Self._parse_timezone(date_str, date_pos)
+                var parsed = Self._parse_timezone_offset(
+                    date_str, date_pos, False
+                )
                 tz = parsed.tz
                 date_pos = parsed.pos
                 fmt_pos += 1
@@ -1970,21 +1974,31 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
-    def _parse_timezone(
+    def _parse_timezone_name(
         date_str: String, date_pos: Int
     ) raises -> MorrowParseTimeZone:
         if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "UTC"):
             return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
-        if Self._starts_with(date_str, date_pos, "Z"):
-            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 1)
+        if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "GMT"):
+            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
         if Self._starts_with(date_str, date_pos, "local"):
             return MorrowParseTimeZone(TimeZone.local(), date_pos + 5)
+        if date_pos >= date_str.byte_length():
+            raise Error("timezone is missing")
+        raise Error("timezone name is invalid")
+
+    @staticmethod
+    def _parse_timezone_offset(
+        date_str: String, date_pos: Int, colon: Bool
+    ) raises -> MorrowParseTimeZone:
+        if Self._starts_with(date_str, date_pos, "Z"):
+            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 1)
         if date_pos >= date_str.byte_length():
             raise Error("timezone is missing")
 
         var sign = ord(date_str[byte=date_pos])
         if sign != ord("+") and sign != ord("-"):
-            raise Error("timezone must be UTC, Z, local, or a fixed offset")
+            raise Error("timezone must be Z or a fixed offset")
 
         var pos = date_pos + 1
         if pos + 2 > date_str.byte_length():
@@ -1995,13 +2009,23 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         pos += 2
 
         if pos < date_str.byte_length() and date_str[byte=pos] == ":":
+            if not colon:
+                raise Error("timezone offset must not contain a colon")
             pos += 1
-        if pos + 2 > date_str.byte_length():
-            raise Error("timezone minute is invalid")
-        for i in range(2):
-            if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
+            if pos + 2 > date_str.byte_length():
                 raise Error("timezone minute is invalid")
-        pos += 2
+            for i in range(2):
+                if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
+                    raise Error("timezone minute is invalid")
+            pos += 2
+        elif (
+            pos + 2 <= date_str.byte_length()
+            and Self._is_ascii_digit(ord(date_str[byte=pos]))
+            and Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+        ):
+            if colon:
+                raise Error("timezone offset minutes must contain a colon")
+            pos += 2
         return MorrowParseTimeZone(
             TimeZone.from_utc(String(date_str[byte=date_pos:pos])), pos
         )

@@ -21,6 +21,14 @@ def assert_tm_equal(dt: Morrow, tm: CTm) raises:
     assert_true(matches_tm(dt, tm))
 
 
+def assert_get_raises(date_str: String, fmt: String) raises:
+    try:
+        _ = Morrow.get(date_str, fmt)
+    except e:
+        return
+    assert_true(False)
+
+
 def test_now() raises:
     var result = Morrow.now()
     assert_true(result.year >= 2020)
@@ -554,6 +562,28 @@ def test_flexible_get_creation_helpers() raises:
 
     var mixed_case_utc = Morrow.get("2024-02-29 Utc", "YYYY-MM-DD ZZZ")
     assert_equal(String(mixed_case_utc), "2024-02-29T00:00:00.000000+00:00")
+
+    var lower_gmt = Morrow.get("2024-02-29 gmt", "YYYY-MM-DD ZZZ")
+    assert_equal(String(lower_gmt), "2024-02-29T00:00:00.000000+00:00")
+
+    var compact_offset = Morrow.get("2024-02-29 +0530", "YYYY-MM-DD Z")
+    assert_equal(String(compact_offset), "2024-02-29T00:00:00.000000+05:30")
+
+    var short_offset = Morrow.get("2024-02-29 +08", "YYYY-MM-DD Z")
+    assert_equal(String(short_offset), "2024-02-29T00:00:00.000000+08:00")
+
+    var colon_offset = Morrow.get("2024-02-29 +05:30", "YYYY-MM-DD ZZ")
+    assert_equal(String(colon_offset), "2024-02-29T00:00:00.000000+05:30")
+
+    var short_colon_offset = Morrow.get("2024-02-29 +08", "YYYY-MM-DD ZZ")
+    assert_equal(String(short_colon_offset), "2024-02-29T00:00:00.000000+08:00")
+
+    assert_get_raises("2024-02-29 +05:30", "YYYY-MM-DD Z")
+    assert_get_raises("2024-02-29 UTC", "YYYY-MM-DD Z")
+    assert_get_raises("2024-02-29 +0530", "YYYY-MM-DD ZZ")
+    assert_get_raises("2024-02-29 UTC", "YYYY-MM-DD ZZ")
+    assert_get_raises("2024-02-29 +0530", "YYYY-MM-DD ZZZ")
+    assert_get_raises("2024-02-29 +05:30", "YYYY-MM-DD ZZZ")
 
     var formatted_tz = Morrow.get(
         "2023 year 1 month 20 day 3:4:5",
