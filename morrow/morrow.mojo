@@ -2113,6 +2113,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         second: Int,
         microsecond: Int,
     ) raises:
+        if year < 1 or year > 9999:
+            raise Error("year must be in 1..9999")
         if month < 1 or month > 12:
             raise Error("month must be in 1..12")
         if day < 1 or day > _days_in_month(year, month):

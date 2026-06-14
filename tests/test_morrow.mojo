@@ -37,6 +37,14 @@ def assert_string_get_raises(date_str: String) raises:
     assert_true(False)
 
 
+def assert_component_get_raises(year: Int, month: Int, day: Int) raises:
+    try:
+        _ = Morrow.get(year, month, day)
+    except e:
+        return
+    assert_true(False)
+
+
 def assert_isoformat_sep_raises(sep: String) raises:
     try:
         _ = Morrow(2024, 2, 29, 3, 4, 5).isoformat(sep=sep)
@@ -48,6 +56,14 @@ def assert_isoformat_sep_raises(sep: String) raises:
 def assert_replace_second_raises(second: Int) raises:
     try:
         _ = Morrow(2024, 2, 29, 3, 4, 5).replace(second=second)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_replace_year_raises(year: Int) raises:
+    try:
+        _ = Morrow(2024, 1, 1).replace(year=year)
     except e:
         return
     assert_true(False)
@@ -267,6 +283,8 @@ def test_replace() raises:
     assert_equal(
         String(replaced_fields_tz_str), "2024-02-29T23:59:05.123456-03:00"
     )
+    assert_replace_year_raises(0)
+    assert_replace_year_raises(10000)
     assert_replace_second_raises(60)
 
 
@@ -791,6 +809,10 @@ def test_humanize_and_dehumanize() raises:
 
 
 def test_creation_helpers() raises:
+    assert_component_get_raises(0, 1, 1)
+    assert_component_get_raises(10000, 1, 1)
+    assert_string_get_raises("0000-01-01")
+
     var extended = Morrow.fromisoformat("2013-09-29T01:26:43.830580+08:00")
     assert_equal(String(extended), "2013-09-29T01:26:43.830580+08:00")
 
