@@ -828,7 +828,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 fmt_pos += 4
             elif Self._starts_with(fmt, fmt_pos, "YY"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                year = 2000 + parsed.value
+                year = Self._parse_two_digit_year(parsed.value)
                 date_pos = parsed.pos
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "MMMM"):
@@ -2418,6 +2418,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if suffix == expected:
             return date_pos + 2
         raise Error("ordinal suffix is invalid")
+
+    @staticmethod
+    def _parse_two_digit_year(year: Int) -> Int:
+        if year >= 69:
+            return 1900 + year
+        return 2000 + year
 
     @staticmethod
     def _parse_month_name(

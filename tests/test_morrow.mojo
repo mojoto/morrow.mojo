@@ -1215,6 +1215,15 @@ def test_flexible_get_creation_helpers() raises:
     var compact = Morrow.get("23/1/2 3:04", "YY/M/D H:mm")
     assert_equal(String(compact), "2023-01-02T03:04:00.000000+00:00")
 
+    var two_digit_year_68 = Morrow.get("68-01-02", "YY-MM-DD")
+    assert_equal(String(two_digit_year_68), "2068-01-02T00:00:00.000000+00:00")
+
+    var two_digit_year_69 = Morrow.get("69-01-02", "YY-MM-DD")
+    assert_equal(String(two_digit_year_69), "1969-01-02T00:00:00.000000+00:00")
+
+    var two_digit_year_99 = Morrow.get("99-01-02", "YY-MM-DD")
+    assert_equal(String(two_digit_year_99), "1999-01-02T00:00:00.000000+00:00")
+
     var named = Morrow.get(
         "Jan 2nd, 2023 12:05 PM UTC", "MMM Do, YYYY h:mm A ZZZ"
     )
