@@ -322,6 +322,13 @@ def test_replace() raises:
     assert_equal(
         String(replaced_fields_tz_str), "2024-02-29T23:59:05.123456-03:00"
     )
+
+    var local_tz = TimeZone.local()
+    var replaced_local = m.replace(tzinfo="local")
+    assert_equal(replaced_local.tz.offset, local_tz.offset)
+    assert_equal(replaced_local.tz.name, "local")
+    assert_equal(replaced_local.hour, 3)
+
     assert_replace_year_raises(0)
     assert_replace_year_raises(10000)
     assert_replace_second_raises(60)

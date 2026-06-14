@@ -1606,6 +1606,17 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return a new Morrow with timezone parsed and replaced without conversion.
         """
+        if tzinfo == "local":
+            return self.replace(
+                year,
+                month,
+                day,
+                hour,
+                minute,
+                second,
+                microsecond,
+                TimeZone.local(),
+            )
         return self.replace(
             year,
             month,
