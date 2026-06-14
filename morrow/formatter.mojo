@@ -352,6 +352,8 @@ def _replace_strftime_modified_directive(
         )
     if directive == ord("V"):
         return _format_modified_number(Int(iso_week[byte=6:8]), 2, modifier)
+    if directive == ord("z") or directive == ord("Z"):
+        return ""
     if modifier == ord("-"):
         return "-" + directive_text
     if modifier == ord("_"):
