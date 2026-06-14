@@ -1805,16 +1805,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _parse_am_pm(
         date_str: String, date_pos: Int, upper: Bool
     ) raises -> Int:
-        if upper:
-            if Self._starts_with(date_str, date_pos, "AM") or Self._starts_with(
-                date_str, date_pos, "PM"
-            ):
-                return date_pos + 2
-        else:
-            if Self._starts_with(date_str, date_pos, "am") or Self._starts_with(
-                date_str, date_pos, "pm"
-            ):
-                return date_pos + 2
+        if Self._starts_with_ascii_case_insensitive(
+            date_str, date_pos, "AM"
+        ) or Self._starts_with_ascii_case_insensitive(date_str, date_pos, "PM"):
+            return date_pos + 2
         raise Error("AM/PM marker is invalid")
 
     @staticmethod
