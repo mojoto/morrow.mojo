@@ -580,6 +580,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         if pos != length:
             raise Error("isoformat string has trailing data")
+        var carried_fraction = False
+        if microsecond >= _US_PER_SECOND:
+            second += microsecond // _US_PER_SECOND
+            microsecond = microsecond % _US_PER_SECOND
+            carried_fraction = True
+        if carried_fraction and second >= 60:
+            Self._validate_fields(
+                year, month, day, hour, minute, 0, microsecond
+            )
+            return Self(
+                year, month, day, hour, minute, 0, microsecond, tz
+            ).shift(seconds=second)
         Self._validate_fields(
             year, month, day, hour, minute, second, microsecond
         )

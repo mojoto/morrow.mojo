@@ -592,6 +592,14 @@ def test_creation_helpers() raises:
     var rounded_fraction = Morrow.get("2024-02-29T03:04:05.1234567Z")
     assert_equal(String(rounded_fraction), "2024-02-29T03:04:05.123457+00:00")
 
+    var carry_fraction = Morrow.get("2024-02-29T03:04:05.9999995Z")
+    assert_equal(String(carry_fraction), "2024-02-29T03:04:06.000000+00:00")
+
+    var carry_fraction_date = Morrow.get("2024-02-29T23:59:59.9999995Z")
+    assert_equal(
+        String(carry_fraction_date), "2024-03-01T00:00:00.000000+00:00"
+    )
+
     var normalized_iso = Morrow.get(
         "\t \n  2013-05-05T12:30:45.123456 \t \n",
         normalize_whitespace=True,
