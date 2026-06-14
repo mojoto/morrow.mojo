@@ -39,6 +39,8 @@ comptime _US_PER_HOUR = 60 * _US_PER_MINUTE
 comptime _US_PER_DAY = 24 * _US_PER_HOUR
 comptime _UNIX_EPOCH_ORDINAL = 719163  # 1970-01-01
 comptime _UNBOUNDED_LIMIT = -2147483648
+comptime _HUMANIZE_SECONDS_PER_MONTH = 2635200  # 30.5 days
+comptime _HUMANIZE_SECONDS_PER_QUARTER = 7905600  # 91.5 days
 
 
 struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -3065,9 +3067,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         elif unit == "week":
             return 604800
         elif unit == "month":
-            return 2592000
+            return _HUMANIZE_SECONDS_PER_MONTH
         elif unit == "quarter":
-            return 7776000
+            return _HUMANIZE_SECONDS_PER_QUARTER
         elif unit == "year":
             return 31536000
         else:
