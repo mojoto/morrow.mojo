@@ -569,7 +569,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 pos = parsed.pos
 
             if pos < length:
-                if date_str[byte=pos] == "Z" or date_str[byte=pos] == "z":
+                if date_str[byte=pos] == "Z":
                     tz = TimeZone.from_utc("UTC")
                     pos += 1
                 elif date_str[byte=pos] == "+" or date_str[byte=pos] == "-":

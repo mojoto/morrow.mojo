@@ -29,6 +29,14 @@ def assert_get_raises(date_str: String, fmt: String) raises:
     assert_true(False)
 
 
+def assert_string_get_raises(date_str: String) raises:
+    try:
+        _ = Morrow.get(date_str)
+    except e:
+        return
+    assert_true(False)
+
+
 def test_now() raises:
     var result = Morrow.now()
     assert_true(result.year >= 2020)
@@ -599,6 +607,8 @@ def test_creation_helpers() raises:
     assert_equal(
         String(carry_fraction_date), "2024-03-01T00:00:00.000000+00:00"
     )
+
+    assert_string_get_raises("2024-02-29T03:04:05z")
 
     var normalized_iso = Morrow.get(
         "\t \n  2013-05-05T12:30:45.123456 \t \n",
