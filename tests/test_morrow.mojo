@@ -97,6 +97,14 @@ def assert_humanize_granularity_raises(
     assert_true(False)
 
 
+def assert_dehumanize_raises(value: Morrow, input_string: String) raises:
+    try:
+        _ = value.dehumanize(input_string)
+    except e:
+        return
+    assert_true(False)
+
+
 def test_now() raises:
     var result = Morrow.now()
     assert_true(result.year >= 2020)
@@ -875,6 +883,10 @@ def test_humanize_and_dehumanize() raises:
         "2024-01-01T12:01:06.000000+00:00",
     )
     assert_equal(
+        String(present.dehumanize("in a minute, 6 seconds")),
+        "2024-01-01T12:01:06.000000+00:00",
+    )
+    assert_equal(
         String(present.dehumanize("an hour and 6 minutes ago")),
         "2024-01-01T10:54:00.000000+00:00",
     )
@@ -886,6 +898,11 @@ def test_humanize_and_dehumanize() raises:
         String(present.dehumanize("in 0 hours a minute and a second")),
         "2024-01-01T12:01:01.000000+00:00",
     )
+    assert_dehumanize_raises(present, "in a hour")
+    assert_dehumanize_raises(present, "in an minute")
+    assert_dehumanize_raises(present, "in 1 hour")
+    assert_dehumanize_raises(present, "in 2 day")
+    assert_dehumanize_raises(present, "2 day ago")
 
 
 def test_creation_helpers() raises:

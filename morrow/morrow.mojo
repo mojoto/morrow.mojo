@@ -1513,8 +1513,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 " "
             ):
                 pos += 1
-            var unit = Self._normalize_humanize_unit(
-                String(phrase[byte=unit_start:pos])
+            var unit = Self._normalize_dehumanize_unit(
+                count_word, count, String(phrase[byte=unit_start:pos])
             )
             if not future:
                 count = -count
@@ -2715,6 +2715,56 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return 31536000
         else:
             raise Error("unsupported granularity")
+
+    @staticmethod
+    def _normalize_dehumanize_unit(
+        count_word: String, count: Int, raw_unit: String
+    ) raises -> String:
+        var unit = raw_unit
+        if unit.byte_length() > 0 and unit[byte=unit.byte_length() - 1] == ",":
+            unit = String(unit[byte = 0 : unit.byte_length() - 1])
+
+        if count_word == "a" or count_word == "an":
+            if not Self._is_singular_humanize_unit(unit):
+                raise Error("humanized distance is invalid")
+            if count_word == "an":
+                if unit != "hour":
+                    raise Error("humanized distance is invalid")
+            elif unit == "hour":
+                raise Error("humanized distance is invalid")
+            return unit
+
+        if count == 1:
+            raise Error("humanized distance is invalid")
+        if not Self._is_plural_humanize_unit(unit):
+            raise Error("humanized distance is invalid")
+        return Self._normalize_humanize_unit(unit)
+
+    @staticmethod
+    def _is_singular_humanize_unit(unit: String) -> Bool:
+        return (
+            unit == "second"
+            or unit == "minute"
+            or unit == "hour"
+            or unit == "day"
+            or unit == "week"
+            or unit == "month"
+            or unit == "quarter"
+            or unit == "year"
+        )
+
+    @staticmethod
+    def _is_plural_humanize_unit(unit: String) -> Bool:
+        return (
+            unit == "seconds"
+            or unit == "minutes"
+            or unit == "hours"
+            or unit == "days"
+            or unit == "weeks"
+            or unit == "months"
+            or unit == "quarters"
+            or unit == "years"
+        )
 
     @staticmethod
     def _normalize_humanize_granularity_list(
