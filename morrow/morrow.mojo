@@ -1897,13 +1897,23 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 " "
             ):
                 pos += 1
-            var unit = Self._normalize_dehumanize_unit(
-                count_word, count, String(phrase[byte=unit_start:pos])
-            )
-            if not future:
-                count = -count
-            result = result._shift_humanize_unit(unit, count)
-            parsed = True
+            var raw_unit = String(phrase[byte=unit_start:pos])
+            try:
+                var unit = Self._normalize_dehumanize_unit(
+                    count_word, count, raw_unit
+                )
+                if not future:
+                    count = -count
+                result = result._shift_humanize_unit(unit, count)
+                parsed = True
+            except e:
+                if (
+                    count_word == "1"
+                    and count == 1
+                    and Self._is_singular_humanize_unit(raw_unit)
+                ):
+                    continue
+                raise Error("humanized distance is invalid")
 
         if not parsed:
             raise Error("humanized distance is invalid")
