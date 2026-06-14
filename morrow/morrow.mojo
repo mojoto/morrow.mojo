@@ -1425,6 +1425,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
         var remaining = abs(delta_us) // _US_PER_SECOND
+        if (
+            len(granularity) == 1
+            and granularity[0] == "second"
+            and remaining < 2
+        ):
+            if only_distance:
+                return "instantly"
+            return "just now"
+
         var parts = List[String]()
         for i in range(len(granularity)):
             var unit = granularity[i]
@@ -1436,7 +1445,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var distance = Self._join_humanize_parts(parts)
         if only_distance:
             return distance
-        if delta_us > 0:
+        if delta_us >= 0:
             return "in " + distance
         return distance + " ago"
 
