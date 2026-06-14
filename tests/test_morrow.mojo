@@ -1829,6 +1829,10 @@ def test_flexible_get_creation_helpers() raises:
         "2024-02-29T03:04:05.123456+00:00",
     )
     assert_equal(
+        String(Morrow.get("17091758451234567", "x")),
+        "2511-08-14T06:40:51.234568+00:00",
+    )
+    assert_equal(
         String(Morrow.get("1709175845123", "x")),
         "2024-02-29T03:04:05.123000+00:00",
     )

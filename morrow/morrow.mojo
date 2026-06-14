@@ -2627,13 +2627,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _from_expanded_timestamp_value(timestamp: Int) raises -> Self:
-        if timestamp > MAX_TIMESTAMP:
-            if timestamp < MAX_TIMESTAMP_MS:
-                return Self._from_utc_microseconds_value(timestamp * 1000)
-            if timestamp < MAX_TIMESTAMP_US:
-                return Self._from_utc_microseconds_value(timestamp)
-            raise Error("timestamp is too large")
-        return Self.utcfromtimestamp(Float64(timestamp))
+        return Self.utcfromtimestamp(normalize_timestamp(Float64(timestamp)))
 
     @staticmethod
     def _starts_with(s: String, pos: Int, pattern: String) -> Bool:
