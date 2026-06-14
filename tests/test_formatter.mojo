@@ -22,7 +22,17 @@ def test_format() raises:
 
     var leap = Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone.from_utc("UTC"))
     assert_equal(leap.format("DDD-DDDD-W"), "60-060-2024-W09-4")
-    assert_equal(leap.format("X-x"), "1709175845-1709175845123456")
+    assert_equal(leap.format("X-x"), "1709175845.123456-1709175845123456")
+    assert_equal(
+        Morrow(2024, 2, 29, 3, 4, 5, 100000, TimeZone.from_utc("UTC")).format(
+            "X"
+        ),
+        "1709175845.1",
+    )
+    assert_equal(
+        Morrow(2024, 2, 29, 3, 4, 5, 0, TimeZone.from_utc("UTC")).format("X"),
+        "1709175845.0",
+    )
 
 
 def test_strftime() raises:

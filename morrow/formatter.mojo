@@ -513,10 +513,11 @@ def _replace_token(
     elif token == _W:
         return _format_iso_week(year, month, day, weekday)
     elif token == _X:
-        return String(
+        return _format_timestamp_seconds(
             _timestamp_seconds(
                 year, month, day, hour, minute, second, tz_offset
-            )
+            ),
+            microsecond,
         )
     elif token == _x:
         return String(
@@ -593,6 +594,14 @@ def _timestamp_seconds(
         + second
         - tz_offset
     )
+
+
+def _format_timestamp_seconds(seconds: Int, microsecond: Int) -> String:
+    var fraction = String(microsecond).ascii_rjust(6, "0")
+    var end = fraction.byte_length()
+    while end > 1 and fraction[byte=end - 1] == "0":
+        end -= 1
+    return String(seconds) + "." + String(fraction[byte=0:end])
 
 
 def _format_iso_week(
