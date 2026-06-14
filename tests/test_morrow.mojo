@@ -1248,9 +1248,13 @@ def test_flexible_get_creation_helpers() raises:
 
     var mixed_case_utc = Morrow.get("2024-02-29 Utc", "YYYY-MM-DD ZZZ")
     assert_equal(String(mixed_case_utc), "2024-02-29T00:00:00.000000+00:00")
+    assert_equal(mixed_case_utc.tzname(), "UTC")
+    assert_equal(mixed_case_utc.format("ZZZ"), "UTC")
 
     var lower_gmt = Morrow.get("2024-02-29 gmt", "YYYY-MM-DD ZZZ")
     assert_equal(String(lower_gmt), "2024-02-29T00:00:00.000000+00:00")
+    assert_equal(lower_gmt.tzname(), "GMT")
+    assert_equal(lower_gmt.format("ZZZ"), "GMT")
 
     var compact_offset = Morrow.get("2024-02-29 +0530", "YYYY-MM-DD Z")
     assert_equal(String(compact_offset), "2024-02-29T00:00:00.000000+05:30")

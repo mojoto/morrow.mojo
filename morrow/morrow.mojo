@@ -2756,7 +2756,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "UTC"):
             return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
         if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "GMT"):
-            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
+            return MorrowParseTimeZone(TimeZone(0, "GMT"), date_pos + 3)
         if Self._starts_with(date_str, date_pos, "local"):
             return MorrowParseTimeZone(TimeZone.local(), date_pos + 5)
         if date_pos >= date_str.byte_length():
