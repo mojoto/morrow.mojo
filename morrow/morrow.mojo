@@ -2315,10 +2315,17 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 var next = current._shift_frame_preserving_day(
                     frame, interval, original_day
                 )
-                var raw_end = next
-                if raw_end._utc_microseconds() > end_key:
-                    raw_end = end
-                spans.append(Self._span_from_bounds(current, raw_end, bounds))
+                var span = Self._span_from_bounds(current, next, bounds)
+                var span_start_key = span.start._utc_microseconds()
+                if span_start_key == end_key or span_start_key - 1 == end_key:
+                    break
+                if span.end._utc_microseconds() > end_key:
+                    var span_end = end
+                    if ord(bounds[byte=1]) == ord(")"):
+                        span_end = end.shift(microseconds=-1)
+                    spans.append(MorrowSpan(span.start, span_end))
+                else:
+                    spans.append(span)
                 current = next
             else:
                 spans.append(

@@ -742,6 +742,41 @@ def test_interval_exact_range_and_is_between() raises:
         String(exact_aligned_end[0].end), "2013-05-05T13:29:59.999999+00:00"
     )
 
+    var exact_end_on_exclusive_boundary = Morrow.span_range(
+        "hour", start, start.shift(hours=1, microseconds=-1), exact=True
+    )
+    assert_equal(len(exact_end_on_exclusive_boundary), 1)
+    assert_equal(
+        String(exact_end_on_exclusive_boundary[0].end),
+        "2013-05-05T13:29:59.999999+00:00",
+    )
+
+    var exact_open_left_boundary = Morrow.span_range(
+        "hour",
+        start,
+        start.shift(hours=1, microseconds=1),
+        exact=True,
+        bounds="()",
+    )
+    assert_equal(len(exact_open_left_boundary), 1)
+    assert_equal(
+        String(exact_open_left_boundary[0].end),
+        "2013-05-05T13:29:59.999999+00:00",
+    )
+
+    var exact_open_left_closed_right_boundary = Morrow.span_range(
+        "hour",
+        start,
+        start.shift(hours=1, microseconds=1),
+        exact=True,
+        bounds="(]",
+    )
+    assert_equal(len(exact_open_left_closed_right_boundary), 1)
+    assert_equal(
+        String(exact_open_left_closed_right_boundary[0].end),
+        "2013-05-05T13:30:00.000000+00:00",
+    )
+
     var point = Morrow(2013, 5, 5, 12, 30, 27, 0, utc)
     var low = Morrow(2013, 5, 5, 12, 30, 10, 0, utc)
     var high = Morrow(2013, 5, 5, 12, 30, 36, 0, utc)
