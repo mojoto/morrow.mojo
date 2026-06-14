@@ -782,6 +782,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var minute = 0
         var second = 0
         var microsecond = 0
+        var has_second = False
         var tz = TimeZone.from_utc("UTC")
 
         if pos < length:
@@ -807,6 +808,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                         raise Error("isoformat second is invalid")
                     second = Int(date_str[byte = pos : pos + 2])
                     pos += 2
+                    has_second = True
             else:
                 if pos < length and Self._is_ascii_digit(
                     ord(date_str[byte=pos])
@@ -822,10 +824,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                             raise Error("isoformat second is invalid")
                         second = Int(date_str[byte = pos : pos + 2])
                         pos += 2
+                        has_second = True
 
             if pos < length and (
                 date_str[byte=pos] == "." or date_str[byte=pos] == ","
             ):
+                if not has_second:
+                    raise Error("isoformat subsecond requires seconds")
                 pos += 1
                 var parsed = Self._parse_subsecond(date_str, pos, 6)
                 microsecond = parsed.value
