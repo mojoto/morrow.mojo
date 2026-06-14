@@ -1634,12 +1634,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         var items = List[Self]()
         var current = start
+        var original_day = start.day
         var emitted = 0
         while current._utc_microseconds() <= end._utc_microseconds():
             if limit >= 0 and emitted >= limit:
                 break
             items.append(current)
-            current = current._shift_frame(frame, 1)
+            current = current._shift_frame_preserving_day(
+                frame, 1, original_day
+            )
             emitted += 1
         return items^
 
@@ -1652,10 +1655,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             raise Error("limit must be non-negative")
         var items = List[Self]()
         var current = start
+        var original_day = start.day
         var emitted = 0
         while emitted < limit:
             items.append(current)
-            current = current._shift_frame(frame, 1)
+            current = current._shift_frame_preserving_day(
+                frame, 1, original_day
+            )
             emitted += 1
         return items^
 
@@ -1867,13 +1873,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var emitted = 0
         var end_key = end._utc_microseconds()
         var current = start if exact else start._floor_frame(frame, week_start)
+        var original_day = start.day
 
         while current._utc_microseconds() <= end_key:
             if limit >= 0 and emitted >= limit:
                 break
 
             if exact:
-                var next = current._shift_frame(frame, interval)
+                var next = current._shift_frame_preserving_day(
+                    frame, interval, original_day
+                )
                 var raw_end = next
                 if raw_end._utc_microseconds() > end_key:
                     raw_end = end
@@ -2010,6 +2019,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return self.shift(microseconds=count)
         else:
             raise Error("unsupported frame")
+
+    def _shift_frame_preserving_day(
+        self, frame: String, count: Int, original_day: Int
+    ) raises -> Self:
+        var shifted = self._shift_frame(frame, count)
+        if (
+            frame == "year"
+            or frame == "years"
+            or frame == "quarter"
+            or frame == "quarters"
+            or frame == "month"
+            or frame == "months"
+        ):
+            if shifted.day < original_day and original_day <= _days_in_month(
+                shifted.year, shifted.month
+            ):
+                return shifted.replace(day=original_day)
+        return shifted
 
     @staticmethod
     def _validate_fields(

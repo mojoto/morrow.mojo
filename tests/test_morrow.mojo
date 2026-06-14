@@ -438,6 +438,32 @@ def test_range_and_span_range() raises:
     assert_equal(len(tz_limited), 2)
     assert_equal(String(tz_limited[0]), "2013-05-05T12:30:00.000000+08:00")
 
+    var month_start = Morrow(2024, 1, 31, tz=utc)
+    var month_end = Morrow(2024, 5, 31, tz=utc)
+    var month_values = Morrow.range("month", month_start, month_end)
+    assert_equal(String(month_values[0]), "2024-01-31T00:00:00.000000+00:00")
+    assert_equal(String(month_values[1]), "2024-02-29T00:00:00.000000+00:00")
+    assert_equal(String(month_values[2]), "2024-03-31T00:00:00.000000+00:00")
+    assert_equal(String(month_values[3]), "2024-04-30T00:00:00.000000+00:00")
+    assert_equal(String(month_values[4]), "2024-05-31T00:00:00.000000+00:00")
+
+    var quarter_values = Morrow.range(
+        "quarter", month_start, Morrow(2025, 1, 31, tz=utc)
+    )
+    assert_equal(String(quarter_values[1]), "2024-04-30T00:00:00.000000+00:00")
+    assert_equal(String(quarter_values[2]), "2024-07-31T00:00:00.000000+00:00")
+    assert_equal(String(quarter_values[3]), "2024-10-31T00:00:00.000000+00:00")
+
+    var exact_month_spans = Morrow.span_range(
+        "month", month_start, month_end, exact=True
+    )
+    assert_equal(
+        String(exact_month_spans[2].start), "2024-03-31T00:00:00.000000+00:00"
+    )
+    assert_equal(
+        String(exact_month_spans[2].end), "2024-04-29T23:59:59.999999+00:00"
+    )
+
 
 def test_interval_exact_range_and_is_between() raises:
     var utc = TimeZone.from_utc("UTC")
