@@ -379,7 +379,7 @@ def _replace_strftime_directive(
             + " "
             + month_abbreviation(month)
             + " "
-            + String(day).ascii_rjust(2, "0")
+            + String(day).ascii_rjust(2, " ")
             + " "
             + String(hour).ascii_rjust(2, "0")
             + ":"
