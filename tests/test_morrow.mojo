@@ -648,11 +648,38 @@ def test_humanize_and_dehumanize() raises:
     hour_minute.append("minute")
     assert_equal(
         present.humanize(present, only_distance=True, granularity=hour_minute),
-        "instantly",
+        "0 hours and 0 minutes",
     )
     assert_equal(
         present.shift(minutes=66).humanize(present, granularity=hour_minute),
         "in an hour and 6 minutes",
+    )
+    assert_equal(
+        present.shift(hours=1).humanize(present, granularity=hour_minute),
+        "in an hour and 0 minutes",
+    )
+
+    var hour_minute_second = List[String]()
+    hour_minute_second.append("hour")
+    hour_minute_second.append("minute")
+    hour_minute_second.append("second")
+    assert_equal(
+        present.shift(seconds=3661).humanize(
+            present, granularity=hour_minute_second
+        ),
+        "in an hour a minute and a second",
+    )
+    assert_equal(
+        present.shift(seconds=61).humanize(
+            present, granularity=hour_minute_second
+        ),
+        "in 0 hours a minute and a second",
+    )
+    assert_equal(
+        present.shift(seconds=3600).humanize(
+            present, granularity=hour_minute_second
+        ),
+        "in an hour 0 minutes and 0 seconds",
     )
     assert_equal(
         present.humanize(present.shift(minutes=66), granularity=hour_minute),

@@ -1368,29 +1368,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             raise Error("granularity cannot be empty")
 
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
-        if delta_us == 0:
-            if only_distance:
-                return "instantly"
-            return "just now"
-
         var remaining = abs(delta_us) // _US_PER_SECOND
-        var distance = ""
+        var parts = List[String]()
         for i in range(len(granularity)):
             var unit = granularity[i]
             var unit_seconds = Self._humanize_unit_seconds(unit)
             var count = remaining // unit_seconds
-            if count > 0 or (
-                distance.byte_length() == 0 and i == len(granularity) - 1
-            ):
-                if count < 1:
-                    count = 1
-                var part = Self._format_humanize_distance(count, unit)
-                if distance.byte_length() == 0:
-                    distance = part
-                else:
-                    distance += " and " + part
+            parts.append(Self._format_humanize_distance(count, unit))
             remaining = remaining % unit_seconds
 
+        var distance = Self._join_humanize_parts(parts)
         if only_distance:
             return distance
         if delta_us > 0:
@@ -2592,6 +2579,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if delta_us > 0:
             return "in " + distance
         return distance + " ago"
+
+    @staticmethod
+    def _join_humanize_parts(parts: List[String]) -> String:
+        if len(parts) == 0:
+            return ""
+        if len(parts) == 1:
+            return String(parts[0])
+
+        var result = String(parts[0])
+        for i in range(1, len(parts) - 1):
+            result += " " + parts[i]
+        return result + " and " + parts[len(parts) - 1]
 
     @staticmethod
     def _humanize_count(seconds: Int, unit: String) raises -> Int:
