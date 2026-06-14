@@ -604,6 +604,9 @@ def test_range_and_span_range() raises:
     assert_equal(len(capped), 2)
     assert_equal(String(capped[1]), "2013-05-05T13:30:00.000000+00:00")
 
+    var negative_limited = Morrow.range("hour", start, end, limit=-1)
+    assert_equal(len(negative_limited), 0)
+
     var inclusive = Morrow.range(
         "hour", start, Morrow(2013, 5, 5, 13, 30, 0, 0, utc)
     )
@@ -616,6 +619,9 @@ def test_range_and_span_range() raises:
     assert_equal(String(spans[0].end), "2013-05-05T12:59:59.999999+00:00")
     assert_equal(String(spans[5].start), "2013-05-05T17:00:00.000000+00:00")
     assert_equal(String(spans[5].end), "2013-05-05T17:59:59.999999+00:00")
+
+    var negative_limited_spans = Morrow.span_range("hour", start, end, limit=-1)
+    assert_equal(len(negative_limited_spans), 0)
 
     var beijing = TimeZone.from_utc("+08:00")
     var tz_values = Morrow.range(
@@ -648,6 +654,9 @@ def test_range_and_span_range() raises:
     var limited = Morrow.range("hour", start, limit=3)
     assert_equal(len(limited), 3)
     assert_equal(String(limited[2]), "2013-05-05T14:30:00.000000+00:00")
+
+    var negative_limited_without_end = Morrow.range("hour", start, limit=-1)
+    assert_equal(len(negative_limited_without_end), 0)
 
     var tz_limited = Morrow.range("hour", start.naive(), beijing, limit=2)
     assert_equal(len(tz_limited), 2)
@@ -691,6 +700,11 @@ def test_interval_exact_range_and_is_between() raises:
     assert_equal(String(intervals[0].end), "2013-05-05T13:59:59.999999+00:00")
     assert_equal(String(intervals[2].start), "2013-05-05T16:00:00.000000+00:00")
     assert_equal(String(intervals[2].end), "2013-05-05T17:59:59.999999+00:00")
+
+    var negative_limited_intervals = Morrow.interval(
+        "hour", start, end, interval=2, limit=-1
+    )
+    assert_equal(len(negative_limited_intervals), 0)
 
     var beijing = TimeZone.from_utc("+08:00")
     var tz_intervals = Morrow.interval(

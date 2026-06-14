@@ -38,6 +38,7 @@ comptime _US_PER_MINUTE = 60 * _US_PER_SECOND
 comptime _US_PER_HOUR = 60 * _US_PER_MINUTE
 comptime _US_PER_DAY = 24 * _US_PER_HOUR
 comptime _UNIX_EPOCH_ORDINAL = 719163  # 1970-01-01
+comptime _UNBOUNDED_LIMIT = -2147483648
 
 
 struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -1932,7 +1933,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def range(
-        frame: String, start: Self, end: Self, limit: Int = -1
+        frame: String,
+        start: Self,
+        end: Self,
+        limit: Int = _UNBOUNDED_LIMIT,
     ) raises -> List[Self]:
         """
         Return points in time between start and end, stepping by frame.
@@ -1942,7 +1946,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var original_day = start.day
         var emitted = 0
         while current._utc_microseconds() <= end._utc_microseconds():
-            if limit >= 0 and emitted >= limit:
+            if limit != _UNBOUNDED_LIMIT and emitted >= limit:
                 break
             items.append(current)
             current = current._shift_frame_preserving_day(
@@ -1956,9 +1960,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return a limited number of points starting at start.
         """
-        if limit < 0:
-            raise Error("limit must be non-negative")
         var items = List[Self]()
+        if limit <= 0:
+            return items^
         var current = start
         var original_day = start.day
         var emitted = 0
@@ -1976,7 +1980,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         start: Self,
         end: Self,
         tz: TimeZone,
-        limit: Int = -1,
+        limit: Int = _UNBOUNDED_LIMIT,
     ) raises -> List[Self]:
         """
         Return points after replacing start and end timezones.
@@ -1991,7 +1995,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         start: Self,
         end: Self,
         tz_str: String,
-        limit: Int = -1,
+        limit: Int = _UNBOUNDED_LIMIT,
     ) raises -> List[Self]:
         """
         Return points after replacing start and end with a parsed timezone.
@@ -2031,7 +2035,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         frame: String,
         start: Self,
         end: Self,
-        limit: Int = -1,
+        limit: Int = _UNBOUNDED_LIMIT,
         bounds: String = "[)",
         exact: Bool = False,
         week_start: Int = 1,
@@ -2049,7 +2053,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         start: Self,
         end: Self,
         tz: TimeZone,
-        limit: Int = -1,
+        limit: Int = _UNBOUNDED_LIMIT,
         bounds: String = "[)",
         exact: Bool = False,
         week_start: Int = 1,
@@ -2073,7 +2077,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         start: Self,
         end: Self,
         tz_str: String,
-        limit: Int = -1,
+        limit: Int = _UNBOUNDED_LIMIT,
         bounds: String = "[)",
         exact: Bool = False,
         week_start: Int = 1,
@@ -2098,7 +2102,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         start: Self,
         end: Self,
         interval: Int = 1,
-        limit: Int = -1,
+        limit: Int = _UNBOUNDED_LIMIT,
         bounds: String = "[)",
         exact: Bool = False,
         week_start: Int = 1,
@@ -2117,7 +2121,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         end: Self,
         interval: Int,
         tz: TimeZone,
-        limit: Int = -1,
+        limit: Int = _UNBOUNDED_LIMIT,
         bounds: String = "[)",
         exact: Bool = False,
         week_start: Int = 1,
@@ -2143,7 +2147,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         end: Self,
         interval: Int,
         tz_str: String,
-        limit: Int = -1,
+        limit: Int = _UNBOUNDED_LIMIT,
         bounds: String = "[)",
         exact: Bool = False,
         week_start: Int = 1,
@@ -2187,7 +2191,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         while current._utc_microseconds() <= end_key:
             if exact and current._utc_microseconds() >= end_key:
                 break
-            if limit >= 0 and emitted >= limit:
+            if limit != _UNBOUNDED_LIMIT and emitted >= limit:
                 break
 
             if exact:
