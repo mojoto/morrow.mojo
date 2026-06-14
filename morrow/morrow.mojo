@@ -145,6 +145,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
+    def fromtimestamp(timestamp: Int) raises -> Self:
+        return Self._fromtimestamp(
+            Self._timeval_from_timestamp(timestamp), False
+        )
+
+    @staticmethod
     def fromtimestamp(timestamp: String) raises -> Self:
         return Self.fromtimestamp(Float64(timestamp))
 
@@ -153,11 +159,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.utcfromtimestamp(timestamp).to(tz)
 
     @staticmethod
+    def fromtimestamp(timestamp: Int, tz: TimeZone) raises -> Self:
+        return Self.utcfromtimestamp(timestamp).to(tz)
+
+    @staticmethod
     def fromtimestamp(timestamp: String, tz: TimeZone) raises -> Self:
         return Self.utcfromtimestamp(timestamp).to(tz)
 
     @staticmethod
     def fromtimestamp(timestamp: Float64, tz_str: String) raises -> Self:
+        return Self.utcfromtimestamp(timestamp).to(tz_str)
+
+    @staticmethod
+    def fromtimestamp(timestamp: Int, tz_str: String) raises -> Self:
         return Self.utcfromtimestamp(timestamp).to(tz_str)
 
     @staticmethod
@@ -171,8 +185,29 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
+    def utcfromtimestamp(timestamp: Int) raises -> Self:
+        return Self._fromtimestamp(
+            Self._timeval_from_timestamp(timestamp), True
+        )
+
+    @staticmethod
     def utcfromtimestamp(timestamp: String) raises -> Self:
         return Self.utcfromtimestamp(Float64(timestamp))
+
+    @staticmethod
+    def _timeval_from_timestamp(timestamp: Int) raises -> CTimeval:
+        var seconds = timestamp
+        var microseconds = 0
+        if timestamp > MAX_TIMESTAMP:
+            if timestamp < MAX_TIMESTAMP_MS:
+                seconds = timestamp // 1000
+                microseconds = (timestamp % 1000) * 1000
+            elif timestamp < MAX_TIMESTAMP_US:
+                seconds = timestamp // _US_PER_SECOND
+                microseconds = timestamp % _US_PER_SECOND
+            else:
+                raise Error("timestamp is too large")
+        return CTimeval(seconds, microseconds)
 
     @staticmethod
     def _timeval_from_timestamp(timestamp: Float64) raises -> CTimeval:
@@ -309,6 +344,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
+    def get(timestamp: Int) raises -> Self:
+        """
+        Create a UTC Morrow from a POSIX timestamp.
+        """
+        return Self.utcfromtimestamp(timestamp)
+
+    @staticmethod
     def get(timestamp: Float64) raises -> Self:
         """
         Create a UTC Morrow from a POSIX timestamp.
@@ -316,11 +358,25 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.utcfromtimestamp(timestamp)
 
     @staticmethod
+    def get(timestamp: Int, tz: TimeZone) raises -> Self:
+        """
+        Create a Morrow from a POSIX timestamp converted to a fixed-offset timezone.
+        """
+        return Self.utcfromtimestamp(timestamp).to(tz)
+
+    @staticmethod
     def get(timestamp: Float64, tz: TimeZone) raises -> Self:
         """
         Create a Morrow from a POSIX timestamp converted to a fixed-offset timezone.
         """
         return Self.utcfromtimestamp(timestamp).to(tz)
+
+    @staticmethod
+    def get(timestamp: Int, tz_str: String) raises -> Self:
+        """
+        Create a Morrow from a POSIX timestamp converted to a timezone string.
+        """
+        return Self.utcfromtimestamp(timestamp).to(tz_str)
 
     @staticmethod
     def get(timestamp: Float64, tz_str: String) raises -> Self:

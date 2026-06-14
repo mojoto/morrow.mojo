@@ -62,12 +62,12 @@ def test_utcnow() raises:
 
 def test_fromtimestamp() raises:
     var timestamp = 1700000000
-    var result = Morrow.fromtimestamp(Float64(timestamp))
+    var result = Morrow.fromtimestamp(timestamp)
     assert_tm_equal(result, c_localtime(timestamp))
 
 
 def test_utcfromtimestamp() raises:
-    var result = Morrow.utcfromtimestamp(1700000000.0)
+    var result = Morrow.utcfromtimestamp(1700000000)
     assert_equal(result.year, 2023)
     assert_equal(result.month, 11)
     assert_equal(result.day, 14)
@@ -75,6 +75,12 @@ def test_utcfromtimestamp() raises:
     assert_equal(result.minute, 13)
     assert_equal(result.second, 20)
     assert_equal(result.tz.offset, 0)
+
+    var millisecond_result = Morrow.utcfromtimestamp(1709175845123)
+    assert_equal(String(millisecond_result), "2024-02-29T03:04:05.123000+00:00")
+
+    var microsecond_result = Morrow.utcfromtimestamp(1709175845123456)
+    assert_equal(String(microsecond_result), "2024-02-29T03:04:05.123456+00:00")
 
 
 def test_iso_format() raises:
@@ -669,6 +675,15 @@ def test_creation_helpers() raises:
     var from_ts = Morrow.get(1700000000.0)
     assert_equal(String(from_ts), "2023-11-14T22:13:20.000000+00:00")
 
+    var from_int_ts = Morrow.get(1700000000)
+    assert_equal(String(from_int_ts), "2023-11-14T22:13:20.000000+00:00")
+
+    var from_int_ms_ts = Morrow.get(1709175845123)
+    assert_equal(String(from_int_ms_ts), "2024-02-29T03:04:05.123000+00:00")
+
+    var from_int_us_ts = Morrow.get(1709175845123456)
+    assert_equal(String(from_int_us_ts), "2024-02-29T03:04:05.123456+00:00")
+
     var beijing_now = Morrow.now("+08:00")
     assert_equal(beijing_now.tz.offset, 28800)
     assert_true(beijing_now.year >= 2020)
@@ -927,9 +942,23 @@ def test_timestamp_creation_with_timezone() raises:
     assert_equal(String(from_timestamp), "2023-11-15T06:13:20.000000+08:00")
     assert_equal(from_timestamp.timestamp(), 1700000000.0)
 
+    var from_int_timestamp = Morrow.fromtimestamp(1700000000, "+05:30")
+    assert_equal(String(from_int_timestamp), "2023-11-15T03:43:20.000000+05:30")
+    assert_equal(from_int_timestamp.timestamp(), 1700000000.0)
+
     var from_get = Morrow.get(1700000000.5, "+05:30")
     assert_equal(String(from_get), "2023-11-15T03:43:20.500000+05:30")
     assert_equal(from_get.timestamp(), 1700000000.5)
+
+    var from_int_get = Morrow.get(1700000000, TimeZone.from_utc("+05:30"))
+    assert_equal(String(from_int_get), "2023-11-15T03:43:20.000000+05:30")
+    assert_equal(from_int_get.timestamp(), 1700000000.0)
+
+    var from_int_get_string_tz = Morrow.get(1700000000, "+05:30")
+    assert_equal(
+        String(from_int_get_string_tz), "2023-11-15T03:43:20.000000+05:30"
+    )
+    assert_equal(from_int_get_string_tz.timestamp(), 1700000000.0)
 
     var before_epoch = Morrow.utcfromtimestamp(-0.75)
     assert_equal(String(before_epoch), "1969-12-31T23:59:59.250000+00:00")
