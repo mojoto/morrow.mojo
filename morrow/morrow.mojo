@@ -1025,7 +1025,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 raise Error("date string does not match format boundary")
         elif date_pos != date_str.byte_length():
             raise Error("date string has trailing data")
-        if hour_is_12:
+        var apply_12_hour = hour_is_12 and am_pm != 0
+        if apply_12_hour:
             if hour < 1 or hour > 12:
                 raise Error("12-hour clock hour must be in 1..12")
             if am_pm == 1 and hour == 12:
@@ -1043,7 +1044,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             second += microsecond // _US_PER_SECOND
             microsecond = microsecond % _US_PER_SECOND
         var midnight_end_of_day = False
-        if not hour_is_12 and hour == 24:
+        if not apply_12_hour and hour == 24:
             if minute != 0:
                 raise Error(
                     "midnight at the end of day must not contain minutes"
