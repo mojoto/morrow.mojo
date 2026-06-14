@@ -100,6 +100,24 @@ def test_strftime() raises:
         "2024-02-29 03:04:05.123456 +0530 IST",
     )
     assert_equal(
+        Morrow(2024, 2, 29, 3, 4, 5, tz=TimeZone.from_utc("UTC")).strftime(
+            "%z %Z"
+        ),
+        "+0000 UTC",
+    )
+    assert_equal(
+        Morrow(2024, 2, 29, 3, 4, 5, tz=TimeZone.from_utc("+05:30")).strftime(
+            "%z %Z"
+        ),
+        "+0530 UTC+05:30",
+    )
+    assert_equal(
+        Morrow(2024, 2, 29, 3, 4, 5, tz=TimeZone.from_utc("-05:00")).strftime(
+            "%z %Z"
+        ),
+        "-0500 UTC-05:00",
+    )
+    assert_equal(
         m.strftime("%a %A %b %B %j %w %u %G-W%V"),
         "Thu Thursday Feb February 060 4 4 2024-W09",
     )

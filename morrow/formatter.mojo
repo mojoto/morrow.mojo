@@ -324,11 +324,13 @@ def _replace_strftime_directive(
     if directive == ord("z"):
         return _format_timezone(0 if tz_is_none else tz_offset, "")
     if directive == ord("Z"):
-        if tz_is_none:
+        if tz_is_none or tz_name == "utc" or tz_name == "UTC":
             return "UTC"
         if tz_name.byte_length() > 0:
             return tz_name
-        return _format_timezone(tz_offset)
+        if tz_offset == 0:
+            return "UTC"
+        return "UTC" + _format_timezone(tz_offset)
     if directive == ord("j"):
         return String(day_of_year).ascii_rjust(3, "0")
     if directive == ord("U"):
