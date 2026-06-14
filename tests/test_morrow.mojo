@@ -221,6 +221,21 @@ def test_timestamp_and_timezone_conversion() raises:
     assert_equal(String(fixed), "2024-02-29T11:30:00.123456-05:00")
 
 
+def test_comparisons() raises:
+    var utc = TimeZone.from_utc("UTC")
+    var base = Morrow(2024, 2, 29, 16, 30, 0, 0, utc)
+    var same = Morrow(2024, 3, 1, 0, 30, 0, 0, TimeZone.from_utc("+08:00"))
+    var earlier = base.shift(microseconds=-1)
+    var later = base.shift(seconds=1)
+
+    assert_true(base.__eq__(same))
+    assert_true(earlier.__lt__(base))
+    assert_true(base.__le__(same))
+    assert_true(later.__gt__(base))
+    assert_true(later.__ge__(same))
+    assert_true(not base.__lt__(same))
+
+
 def test_clone_weekday_and_naive() raises:
     var m = Morrow(2024, 2, 29, 3, 4, 5, 6, TimeZone.from_utc("+05:30"))
 

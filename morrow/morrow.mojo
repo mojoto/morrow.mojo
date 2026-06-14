@@ -1206,6 +1206,21 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def __str__(self) raises -> String:
         return self.isoformat()
 
+    def __eq__(self, other: Self) raises -> Bool:
+        return self._utc_microseconds() == other._utc_microseconds()
+
+    def __le__(self, other: Self) raises -> Bool:
+        return self._utc_microseconds() <= other._utc_microseconds()
+
+    def __lt__(self, other: Self) raises -> Bool:
+        return self._utc_microseconds() < other._utc_microseconds()
+
+    def __ge__(self, other: Self) raises -> Bool:
+        return self._utc_microseconds() >= other._utc_microseconds()
+
+    def __gt__(self, other: Self) raises -> Bool:
+        return self._utc_microseconds() > other._utc_microseconds()
+
     def __sub__(self, other: Self) raises -> TimeDelta:
         var days1 = self.toordinal()
         var days2 = other.toordinal()
