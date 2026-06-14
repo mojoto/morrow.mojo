@@ -61,6 +61,7 @@ print(Morrow.get(TimeZone.from_utc("+08:00")).tz.offset)  # 28800
 print(str(Morrow.get("2023-01-20 15:49:10.123456 +05:30", "YYYY-MM-DD HH:mm:ss.SSSSSS ZZ")))  # 2023-01-20T15:49:10.123456+05:30
 print(str(Morrow.get("2024 060", "YYYY DDDD")))  # 2024-02-29T00:00:00.000000+00:00
 print(str(Morrow.get("2024-W09-4", "W")))  # 2024-02-29T00:00:00.000000+00:00
+print(str(Morrow.get("Thursday 2024-02-29", "dddd YYYY-MM-DD")))  # 2024-02-29T00:00:00.000000+00:00
 print(str(Morrow.get("1709175845123456", "x")))  # 2024-02-29T03:04:05.123456+00:00
 var formats = List[String]()
 formats.append("YYYY/MM/DD")

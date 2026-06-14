@@ -560,6 +560,20 @@ def test_flexible_get_creation_helpers() raises:
     var iso_week_monday = Morrow.get("2024-W09 23:59:58", "W HH:mm:ss")
     assert_equal(String(iso_week_monday), "2024-02-26T23:59:58.000000+00:00")
 
+    var weekday_name = Morrow.get("Thursday 2024-02-29", "dddd YYYY-MM-DD")
+    assert_equal(String(weekday_name), "2024-02-29T00:00:00.000000+00:00")
+
+    var weekday_abbreviation = Morrow.get("Thu 2024-02-29", "ddd YYYY-MM-DD")
+    assert_equal(
+        String(weekday_abbreviation), "2024-02-29T00:00:00.000000+00:00"
+    )
+
+    var weekday_number = Morrow.get("4 2024-02-29", "d YYYY-MM-DD")
+    assert_equal(String(weekday_number), "2024-02-29T00:00:00.000000+00:00")
+
+    var mismatched_weekday = Morrow.get("Friday 2024-02-29", "dddd YYYY-MM-DD")
+    assert_equal(String(mismatched_weekday), "2024-02-29T00:00:00.000000+00:00")
+
     var formats = List[String]()
     formats.append("YYYY/MM/DD")
     formats.append("YYYY-MM-DD HH:mm:ss")

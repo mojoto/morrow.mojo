@@ -12,6 +12,7 @@ from .formatter import format_morrow, format_strftime
 from .constants import (
     days_before_month,
     day_abbreviation,
+    day_name,
     month_abbreviation,
     month_name,
 )
@@ -516,6 +517,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 year = date.year
                 month = date.month
                 day = date.day
+                date_pos = parsed.pos
+                fmt_pos += 1
+            elif Self._starts_with(fmt, fmt_pos, "dddd"):
+                date_pos = Self._parse_weekday_name(date_str, date_pos, False)
+                fmt_pos += 4
+            elif Self._starts_with(fmt, fmt_pos, "ddd"):
+                date_pos = Self._parse_weekday_name(date_str, date_pos, True)
+                fmt_pos += 3
+            elif Self._starts_with(fmt, fmt_pos, "d"):
+                var parsed = Self._parse_fixed_int(date_str, date_pos, 1)
+                if parsed.value < 1 or parsed.value > 7:
+                    raise Error("weekday must be in 1..7")
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "HH"):
@@ -1610,6 +1623,25 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return True
 
     @staticmethod
+    def _starts_with_ascii_case_insensitive(
+        s: String, pos: Int, pattern: String
+    ) -> Bool:
+        if pos + pattern.byte_length() > s.byte_length():
+            return False
+        for i in range(pattern.byte_length()):
+            if Self._ascii_lower(ord(s[byte=pos + i])) != Self._ascii_lower(
+                ord(pattern[byte=i])
+            ):
+                return False
+        return True
+
+    @staticmethod
+    def _ascii_lower(c: Int) -> Int:
+        if c >= ord("A") and c <= ord("Z"):
+            return c + 32
+        return c
+
+    @staticmethod
     def _is_ascii_digit(c: Int) -> Bool:
         return c >= ord("0") and c <= ord("9")
 
@@ -1679,6 +1711,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             if Self._starts_with(date_str, date_pos, name):
                 return MorrowParseInt(value, date_pos + name.byte_length())
         raise Error("month name is invalid")
+
+    @staticmethod
+    def _parse_weekday_name(
+        date_str: String, date_pos: Int, abbreviated: Bool
+    ) raises -> Int:
+        for value in range(1, 8):
+            var name = day_abbreviation(value) if abbreviated else day_name(
+                value
+            )
+            if Self._starts_with_ascii_case_insensitive(
+                date_str, date_pos, name
+            ):
+                return date_pos + name.byte_length()
+        raise Error("weekday name is invalid")
 
     @staticmethod
     def _parse_iso_week_date(
