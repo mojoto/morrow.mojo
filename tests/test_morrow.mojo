@@ -828,6 +828,25 @@ def test_humanize_and_dehumanize() raises:
     assert_humanize_granularity_raises(
         present.shift(minutes=66), present, plural_hour_minute
     )
+    var minute_hour = List[String]()
+    minute_hour.append("minute")
+    minute_hour.append("hour")
+    assert_equal(
+        present.shift(minutes=125).humanize(present, granularity=minute_hour),
+        "in 2 hours and 5 minutes",
+    )
+    var auto_granularity = List[String]()
+    auto_granularity.append("auto")
+    assert_equal(
+        present.shift(hours=2).humanize(present, granularity=auto_granularity),
+        "in 2 hours",
+    )
+    var duplicate_hour = List[String]()
+    duplicate_hour.append("hour")
+    duplicate_hour.append("hour")
+    assert_humanize_granularity_raises(
+        present.shift(hours=2), present, duplicate_hour
+    )
     assert_equal(
         present.humanize(present.shift(minutes=66), granularity=hour_minute),
         "an hour and 6 minutes ago",

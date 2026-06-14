@@ -1422,12 +1422,17 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         if len(granularity) == 0:
             raise Error("granularity cannot be empty")
+        if len(granularity) == 1 and granularity[0] == "auto":
+            return self.humanize(other, only_distance)
 
+        var ordered_granularity = Self._normalize_humanize_granularity_list(
+            granularity
+        )
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
         var remaining = abs(delta_us) // _US_PER_SECOND
         if (
-            len(granularity) == 1
-            and granularity[0] == "second"
+            len(ordered_granularity) == 1
+            and ordered_granularity[0] == "second"
             and remaining < 2
         ):
             if only_distance:
@@ -1435,8 +1440,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return "just now"
 
         var parts = List[String]()
-        for i in range(len(granularity)):
-            var unit = granularity[i]
+        for i in range(len(ordered_granularity)):
+            var unit = ordered_granularity[i]
             var unit_seconds = Self._humanize_unit_seconds(unit)
             var count = remaining // unit_seconds
             parts.append(Self._format_humanize_distance(count, unit))
@@ -2710,6 +2715,74 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return 31536000
         else:
             raise Error("unsupported granularity")
+
+    @staticmethod
+    def _normalize_humanize_granularity_list(
+        granularity: List[String],
+    ) raises -> List[String]:
+        var has_year = False
+        var has_quarter = False
+        var has_month = False
+        var has_week = False
+        var has_day = False
+        var has_hour = False
+        var has_minute = False
+        var has_second = False
+
+        for i in range(len(granularity)):
+            var unit = granularity[i]
+            _ = Self._humanize_unit_seconds(unit)
+            if unit == "year":
+                if has_year:
+                    raise Error("unsupported granularity")
+                has_year = True
+            elif unit == "quarter":
+                if has_quarter:
+                    raise Error("unsupported granularity")
+                has_quarter = True
+            elif unit == "month":
+                if has_month:
+                    raise Error("unsupported granularity")
+                has_month = True
+            elif unit == "week":
+                if has_week:
+                    raise Error("unsupported granularity")
+                has_week = True
+            elif unit == "day":
+                if has_day:
+                    raise Error("unsupported granularity")
+                has_day = True
+            elif unit == "hour":
+                if has_hour:
+                    raise Error("unsupported granularity")
+                has_hour = True
+            elif unit == "minute":
+                if has_minute:
+                    raise Error("unsupported granularity")
+                has_minute = True
+            elif unit == "second":
+                if has_second:
+                    raise Error("unsupported granularity")
+                has_second = True
+
+        var ordered = List[String]()
+        if has_year:
+            ordered.append("year")
+        if has_quarter:
+            ordered.append("quarter")
+        if has_month:
+            ordered.append("month")
+        if has_week:
+            ordered.append("week")
+        if has_day:
+            ordered.append("day")
+        if has_hour:
+            ordered.append("hour")
+        if has_minute:
+            ordered.append("minute")
+        if has_second:
+            ordered.append("second")
+        return ordered^
 
     @staticmethod
     def _format_humanize_distance(count: Int, unit: String) raises -> String:
