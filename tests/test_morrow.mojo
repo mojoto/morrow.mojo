@@ -1259,6 +1259,22 @@ def test_flexible_get_creation_helpers() raises:
     )
     assert_equal(String(lower_named), "2023-01-02T12:05:00.000000+00:00")
 
+    var no_year_month_day = Morrow.get("Jan 2", "MMM D")
+    assert_equal(String(no_year_month_day), "0001-01-02T00:00:00.000000+00:00")
+
+    var no_year_time = Morrow.get("23:04", "HH:mm")
+    assert_equal(String(no_year_time), "0001-01-01T23:04:00.000000+00:00")
+
+    var no_year_ordinal = Morrow.get("1st", "Do")
+    assert_equal(String(no_year_ordinal), "0001-01-01T00:00:00.000000+00:00")
+
+    var no_year_day_literal_o = Morrow.get("01o", "DDo")
+    assert_equal(
+        String(no_year_day_literal_o), "0001-01-01T00:00:00.000000+00:00"
+    )
+
+    assert_get_raises("060", "DDD")
+
     var midnight = Morrow.get(
         "January 2, 2023 12:05 am", "MMMM D, YYYY hh:mm a"
     )

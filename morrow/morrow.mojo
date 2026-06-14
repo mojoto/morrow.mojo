@@ -795,7 +795,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         date_start: Int,
         allow_trailing_text: Bool,
     ) raises -> Self:
-        var year = 0
+        var year = 1
+        var has_year = False
         var month = 1
         var day = 1
         var day_of_year = -1
@@ -835,11 +836,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             elif Self._starts_with(fmt, fmt_pos, "YYYY"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 4)
                 year = parsed.value
+                has_year = True
                 date_pos = parsed.pos
                 fmt_pos += 4
             elif Self._starts_with(fmt, fmt_pos, "YY"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
                 year = Self._parse_two_digit_year(parsed.value)
+                has_year = True
                 date_pos = parsed.pos
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "MMMM"):
@@ -896,6 +899,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 year = date.year
                 month = date.month
                 day = date.day
+                has_year = True
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "dddd"):
@@ -1044,6 +1048,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             if hour < 12:
                 hour += 12
         if day_of_year != -1:
+            if not has_year:
+                raise Error("year component is required with day of year")
             if day_of_year < 1 or day_of_year > 366:
                 raise Error("day of year is invalid")
             var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
