@@ -327,6 +327,10 @@ def _replace_strftime_modified_directive(
         return String(String(year).ascii_rjust(4, "0")[byte=2:4])
     if directive == ord("Y"):
         return String(year).ascii_rjust(4, "0")
+    if directive == ord("C"):
+        return String(year // 100).ascii_rjust(2, "0")
+    if directive == ord("h"):
+        return month_abbreviation(month)
     if directive == ord("H"):
         return _format_modified_number(hour, 2, modifier)
     if directive == ord("I"):
@@ -394,6 +398,8 @@ def _replace_strftime_directive(
         return String(day).ascii_rjust(2, " ")
     if directive == ord("b"):
         return month_abbreviation(month)
+    if directive == ord("h"):
+        return month_abbreviation(month)
     if directive == ord("B"):
         return month_name(month)
     if directive == ord("m"):
@@ -402,6 +408,8 @@ def _replace_strftime_directive(
         return String(String(year).ascii_rjust(4, "0")[byte=2:4])
     if directive == ord("Y"):
         return String(year).ascii_rjust(4, "0")
+    if directive == ord("C"):
+        return String(year // 100).ascii_rjust(2, "0")
     if directive == ord("H"):
         return String(hour).ascii_rjust(2, "0")
     if directive == ord("k"):

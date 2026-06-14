@@ -137,6 +137,10 @@ def test_strftime() raises:
         "Thu Thursday Feb February 060 4 4 2024-W09",
     )
     assert_equal(
+        m.strftime("%C %h %-C %_C %0C %-h %_h %0h"),
+        "20 Feb 20 20 20 Feb Feb Feb",
+    )
+    assert_equal(
         m.strftime("%I:%M %p %% %F %T"), "03:04 AM % 2024-02-29 03:04:05"
     )
     assert_equal(
