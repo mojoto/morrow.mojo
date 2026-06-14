@@ -390,7 +390,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var month: Int
         var day: Int
         var pos: Int
-        if (
+        if length >= 7 and (
+            (date_str[byte=4] == "-" and date_str[byte=5] == "W")
+            or date_str[byte=4] == "W"
+        ):
+            var iso_week = Self._parse_iso_week_date(date_str, 0)
+            var date = Self.fromisocalendar(
+                iso_week.year, iso_week.week, iso_week.weekday
+            )
+            year = date.year
+            month = date.month
+            day = date.day
+            pos = iso_week.pos
+        elif (
             length >= 8
             and date_str[byte=4] == "-"
             and Self._is_ascii_digit(ord(date_str[byte=5]))
