@@ -79,6 +79,10 @@ def test_format() raises:
         "-1e-06",
     )
     assert_equal(
+        Morrow(1970, 1, 1, 0, 0, 0, 1, TimeZone.from_utc("UTC")).format("X"),
+        "1e-06",
+    )
+    assert_equal(
         Morrow(
             1969, 12, 31, 23, 59, 59, 999999, TimeZone.from_utc("UTC")
         ).format("x"),

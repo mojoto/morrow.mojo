@@ -712,6 +712,8 @@ def _timestamp_seconds(
 
 
 def _format_timestamp_seconds(seconds: Int, microsecond: Int) -> String:
+    if seconds == 0 and microsecond > 0:
+        return String(Float64(microsecond) / Float64(_US_PER_SECOND))
     if seconds < 0 and microsecond > 0:
         var total_us = seconds * _US_PER_SECOND + microsecond
         return String(Float64(total_us) / Float64(_US_PER_SECOND))
