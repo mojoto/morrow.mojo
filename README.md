@@ -47,6 +47,7 @@ print(str(t))  # 2023-10-01T00:00:00.000000+08:00
 # Get UTC time from POSIX timestamp.
 var utc_t = Morrow.utcfromtimestamp(1696089600)
 print(str(utc_t))  # 2023-09-30T16:00:00.000000+00:00
+print(str(Morrow.utcfromtimestamp("1700000000.5")))  # 2023-11-14T22:13:20.500000+00:00
 
 # Create from ISO 8601 strings and timestamps.
 print(str(Morrow.get("2013-05-05")))  # 2013-05-05T00:00:00.000000+00:00

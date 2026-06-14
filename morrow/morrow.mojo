@@ -136,7 +136,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
+    def fromtimestamp(timestamp: String) raises -> Self:
+        return Self.fromtimestamp(Float64(timestamp))
+
+    @staticmethod
     def fromtimestamp(timestamp: Float64, tz: TimeZone) raises -> Self:
+        return Self.utcfromtimestamp(timestamp).to(tz)
+
+    @staticmethod
+    def fromtimestamp(timestamp: String, tz: TimeZone) raises -> Self:
         return Self.utcfromtimestamp(timestamp).to(tz)
 
     @staticmethod
@@ -144,10 +152,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.utcfromtimestamp(timestamp).to(tz_str)
 
     @staticmethod
+    def fromtimestamp(timestamp: String, tz_str: String) raises -> Self:
+        return Self.utcfromtimestamp(timestamp).to(tz_str)
+
+    @staticmethod
     def utcfromtimestamp(timestamp: Float64) raises -> Self:
         return Self._fromtimestamp(
             Self._timeval_from_timestamp(timestamp), True
         )
+
+    @staticmethod
+    def utcfromtimestamp(timestamp: String) raises -> Self:
+        return Self.utcfromtimestamp(Float64(timestamp))
 
     @staticmethod
     def _timeval_from_timestamp(timestamp: Float64) raises -> CTimeval:

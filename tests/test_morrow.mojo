@@ -570,5 +570,26 @@ def test_timestamp_creation_with_timezone() raises:
     assert_equal(String(before_epoch), "1969-12-31T23:59:59.250000+00:00")
 
 
+def test_string_timestamp_creation() raises:
+    var beijing = TimeZone.from_utc("+08:00")
+
+    assert_equal(
+        String(Morrow.utcfromtimestamp("1700000000.5")),
+        "2023-11-14T22:13:20.500000+00:00",
+    )
+    assert_equal(
+        String(Morrow.fromtimestamp("1700000000.5", beijing)),
+        "2023-11-15T06:13:20.500000+08:00",
+    )
+    assert_equal(
+        String(Morrow.fromtimestamp("1700000000.5", "+05:30")),
+        "2023-11-15T03:43:20.500000+05:30",
+    )
+    assert_equal(
+        String(Morrow.utcfromtimestamp("-0.75")),
+        "1969-12-31T23:59:59.250000+00:00",
+    )
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
