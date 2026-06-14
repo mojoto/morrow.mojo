@@ -1339,19 +1339,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var seconds = abs(delta_us) // _US_PER_SECOND
         var unit = granularity
         if unit == "auto":
-            if seconds < 10:
-                if only_distance:
-                    return "instantly"
-                return "just now"
-            unit = Self._auto_humanize_unit(seconds)
+            return self._humanize_auto(other, delta_us, only_distance)
         var count = Self._humanize_count(seconds, unit)
-        var distance = Self._format_humanize_distance(count, unit)
-
-        if only_distance:
-            return distance
-        if delta_us > 0:
-            return "in " + distance
-        return distance + " ago"
+        return Self._format_humanize_result(
+            delta_us, count, unit, only_distance
+        )
 
     def humanize(self, other: Self, granularity: List[String]) raises -> String:
         """
@@ -2455,24 +2447,120 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.tz,
         )
 
-    @staticmethod
-    def _auto_humanize_unit(seconds: Int) raises -> String:
+    def _humanize_auto(
+        self, other: Self, delta_us: Int, only_distance: Bool
+    ) raises -> String:
+        var seconds = abs(delta_us) // _US_PER_SECOND
         if seconds < 60:
-            return "second"
+            if seconds < 10:
+                if only_distance:
+                    return "instantly"
+                return "just now"
+            return Self._format_humanize_result(
+                delta_us, seconds, "second", only_distance
+            )
         elif seconds < 3600:
-            return "minute"
+            if seconds < 120:
+                return Self._format_humanize_result(
+                    delta_us, 1, "minute", only_distance
+                )
+            var minutes = seconds // 60
+            if minutes < 2:
+                minutes = 2
+            return Self._format_humanize_result(
+                delta_us, minutes, "minute", only_distance
+            )
         elif seconds < 86400:
-            return "hour"
+            if seconds < 7200:
+                return Self._format_humanize_result(
+                    delta_us, 1, "hour", only_distance
+                )
+            var hours = seconds // 3600
+            if hours < 2:
+                hours = 2
+            return Self._format_humanize_result(
+                delta_us, hours, "hour", only_distance
+            )
+
+        var calendar_months = self._humanize_calendar_months(other)
+        if seconds < 172800:
+            return Self._format_humanize_result(
+                delta_us, 1, "day", only_distance
+            )
         elif seconds < 604800:
-            return "day"
+            var days = seconds // 86400
+            if days < 2:
+                days = 2
+            return Self._format_humanize_result(
+                delta_us, days, "day", only_distance
+            )
+        elif calendar_months >= 1 and seconds < 31536000:
+            return Self._format_humanize_result(
+                delta_us, calendar_months, "month", only_distance
+            )
+        elif seconds < 1209600:
+            return Self._format_humanize_result(
+                delta_us, 1, "week", only_distance
+            )
         elif seconds < 2592000:
-            return "week"
-        elif seconds < 7776000:
-            return "month"
-        elif seconds < 31536000:
-            return "quarter"
+            var weeks = seconds // 604800
+            if weeks < 2:
+                weeks = 2
+            return Self._format_humanize_result(
+                delta_us, weeks, "week", only_distance
+            )
+        elif seconds < 63072000:
+            return Self._format_humanize_result(
+                delta_us, 1, "year", only_distance
+            )
+
+        var years = seconds // 31536000
+        if years < 2:
+            years = 2
+        return Self._format_humanize_result(
+            delta_us, years, "year", only_distance
+        )
+
+    def _humanize_calendar_months(self, other: Self) raises -> Int:
+        var start = other
+        var end = self
+        if self._utc_microseconds() < other._utc_microseconds():
+            start = self
+            end = other
+
+        var months = (end.year - start.year) * 12 + end.month - start.month
+        var days: Int
+        if end.day >= start.day:
+            days = end.day - start.day
         else:
-            return "year"
+            months -= 1
+            var previous_year = end.year
+            var previous_month = end.month - 1
+            if previous_month < 1:
+                previous_month = 12
+                previous_year -= 1
+            days = (
+                end.day
+                + _days_in_month(previous_year, previous_month)
+                - start.day
+            )
+
+        if days > 14:
+            months += 1
+        if months > 12:
+            return 12
+        return months
+
+    @staticmethod
+    def _format_humanize_result(
+        delta_us: Int, count: Int, unit: String, only_distance: Bool
+    ) raises -> String:
+        var distance = Self._format_humanize_distance(count, unit)
+        if only_distance:
+            return distance
+        if delta_us > 0:
+            return "in " + distance
+        return distance + " ago"
 
     @staticmethod
     def _humanize_count(seconds: Int, unit: String) raises -> Int:

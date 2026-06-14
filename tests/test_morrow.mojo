@@ -581,6 +581,10 @@ def test_humanize_and_dehumanize() raises:
     assert_equal(
         present.shift(days=8).humanize(present, granularity="week"), "in a week"
     )
+    assert_equal(present.shift(days=20).humanize(present), "in a month")
+    assert_equal(present.shift(days=75).humanize(present), "in 3 months")
+    assert_equal(present.shift(days=364).humanize(present), "in 12 months")
+    assert_equal(present.shift(days=730).humanize(present), "in 2 years")
 
     assert_equal(Morrow.utcnow().shift(hours=-1).humanize(), "an hour ago")
     assert_equal(
