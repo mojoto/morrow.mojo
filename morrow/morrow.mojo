@@ -2662,7 +2662,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _is_ascii_whitespace(c: Int) -> Bool:
-        return c == ord(" ") or c == 9 or c == 10 or c == 13
+        return c == ord(" ") or (c >= 9 and c <= 13)
 
     @staticmethod
     def _normalize_whitespace(s: String) -> String:
