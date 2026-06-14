@@ -122,7 +122,11 @@ def format_strftime(
             if i >= fmt.byte_length():
                 ret += "%"
             elif (
-                fmt[byte=i] == "-" or fmt[byte=i] == "_" or fmt[byte=i] == "0"
+                fmt[byte=i] == "-"
+                or fmt[byte=i] == "_"
+                or fmt[byte=i] == "0"
+                or fmt[byte=i] == "E"
+                or fmt[byte=i] == "O"
             ) and i + 1 < fmt.byte_length():
                 var modifier = ord(fmt[byte=i])
                 i += 1
@@ -319,6 +323,22 @@ def _replace_strftime_modified_directive(
 ) raises -> String:
     var day_of_year = _day_of_year(year, month, day)
     var iso_week = _format_iso_week(year, month, day, weekday)
+    if modifier == ord("E") or modifier == ord("O"):
+        return _replace_strftime_directive(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            microsecond,
+            tz_offset,
+            tz_name,
+            tz_is_none,
+            weekday,
+            directive,
+            directive_text,
+        )
     if directive == ord("d"):
         return _format_modified_number(day, 2, modifier)
     if directive == ord("m"):

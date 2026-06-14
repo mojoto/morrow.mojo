@@ -150,6 +150,15 @@ def test_strftime() raises:
         ),
     )
     assert_equal(
+        Morrow(2024, 2, 9, 15, 4, 5, tz=TimeZone.from_utc("UTC")).strftime(
+            "%Ec|%Ex|%EX|%EY|%EC|%Od|%Oe|%Om|%OH|%OI|%OM|%OS|%Ou|%OV|%Oy|%O%|%Eq|%Oq"
+        ),
+        (
+            "Fri Feb  9 15:04:05 2024|02/09/24|15:04:05|2024|20|09|"
+            " 9|02|15|03|04|05|5|06|24|%|q|q"
+        ),
+    )
+    assert_equal(
         m.strftime("%I:%M %p %% %F %T"), "03:04 AM % 2024-02-29 03:04:05"
     )
     assert_equal(
