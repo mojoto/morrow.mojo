@@ -527,6 +527,27 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             year_, month_, day_, hour_, minute_, second_, microsecond_, self.tz
         )
 
+    def replace(self, tzinfo: TimeZone) -> Self:
+        """
+        Return a new Morrow with timezone replaced without conversion.
+        """
+        return Self(
+            self.year,
+            self.month,
+            self.day,
+            self.hour,
+            self.minute,
+            self.second,
+            self.microsecond,
+            tzinfo,
+        )
+
+    def replace(self, tzinfo: String) raises -> Self:
+        """
+        Return a new Morrow with timezone parsed and replaced without conversion.
+        """
+        return self.replace(TimeZone.from_utc(tzinfo))
+
     def shift(
         self,
         years: Int = 0,

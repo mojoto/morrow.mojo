@@ -73,6 +73,7 @@ print(m_beijing.isoformat(timespec="seconds"))  # 2023-10-01T00:00:00+08:00
 # Replace selected fields.
 var replaced = m.replace(year=2024, month=2, day=29)
 print(str(replaced))  # 2024-02-29T00:00:00.001234
+print(str(m.replace(tzinfo="+08:00")))  # 2023-10-01T00:00:00.001234+08:00
 
 # Shift by relative offsets. Month and year shifts clamp to the last valid day.
 var shifted = Morrow(2024, 1, 31).shift(months=1, weeks=1, hours=2)
