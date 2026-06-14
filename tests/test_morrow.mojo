@@ -1201,6 +1201,24 @@ def test_flexible_get_creation_helpers() raises:
         String(hour_24_without_meridian), "2023-01-03T00:00:00.000000+00:00"
     )
 
+    var hour_01_pm = Morrow.get("2023-01-02 01 PM", "YYYY-MM-DD HH A")
+    assert_equal(String(hour_01_pm), "2023-01-02T13:00:00.000000+00:00")
+
+    var hour_00_pm = Morrow.get("2023-01-02 00 PM", "YYYY-MM-DD HH A")
+    assert_equal(String(hour_00_pm), "2023-01-02T12:00:00.000000+00:00")
+
+    var hour_12_am = Morrow.get("2023-01-02 12 AM", "YYYY-MM-DD HH A")
+    assert_equal(String(hour_12_am), "2023-01-02T00:00:00.000000+00:00")
+
+    var hour_24_pm = Morrow.get("2023-01-02 24 PM", "YYYY-MM-DD HH A")
+    assert_equal(String(hour_24_pm), "2023-01-03T00:00:00.000000+00:00")
+
+    var hour_00_pm_12_token = Morrow.get("2023-01-02 00 PM", "YYYY-MM-DD hh A")
+    assert_equal(
+        String(hour_00_pm_12_token), "2023-01-02T12:00:00.000000+00:00"
+    )
+    assert_get_raises("2023-01-02 13 AM", "YYYY-MM-DD HH A")
+
     var searched_month = Morrow.get("June was born in May 1980", "MMMM YYYY")
     assert_equal(String(searched_month), "1980-05-01T00:00:00.000000+00:00")
 

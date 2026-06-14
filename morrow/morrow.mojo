@@ -791,7 +791,6 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var second = 0
         var microsecond = 0
         var tz = Self._utc_timezone()
-        var hour_is_12 = False
         var am_pm = 0
 
         var date_pos = date_start
@@ -911,13 +910,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             elif Self._starts_with(fmt, fmt_pos, "hh"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
                 hour = parsed.value
-                hour_is_12 = True
                 date_pos = parsed.pos
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "h"):
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
                 hour = parsed.value
-                hour_is_12 = True
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "mm"):
@@ -1025,13 +1022,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 raise Error("date string does not match format boundary")
         elif date_pos != date_str.byte_length():
             raise Error("date string has trailing data")
-        var apply_12_hour = hour_is_12 and am_pm != 0
-        if apply_12_hour:
-            if hour < 1 or hour > 12:
-                raise Error("12-hour clock hour must be in 1..12")
-            if am_pm == 1 and hour == 12:
+        if am_pm == 1:
+            if hour > 12:
+                raise Error("hour must be in 0..12 for AM")
+            if hour == 12:
                 hour = 0
-            elif am_pm == 2 and hour != 12:
+        elif am_pm == 2:
+            if hour < 12:
                 hour += 12
         if day_of_year != -1:
             if day_of_year < 1 or day_of_year > 366:
@@ -1044,7 +1041,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             second += microsecond // _US_PER_SECOND
             microsecond = microsecond % _US_PER_SECOND
         var midnight_end_of_day = False
-        if not apply_12_hour and hour == 24:
+        if hour == 24:
             if minute != 0:
                 raise Error(
                     "midnight at the end of day must not contain minutes"
