@@ -940,6 +940,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                     date_pos = Self._parse_optional_whitespace_regex(
                         date_str, date_pos
                     )
+                elif Self._is_single_optional_whitespace_regex_literal(
+                    fmt, literal_start, literal_end
+                ):
+                    date_pos = Self._parse_single_optional_whitespace_regex(
+                        date_str, date_pos
+                    )
                 else:
                     var literal_pos = literal_start
                     while literal_pos < literal_end:
@@ -2708,6 +2714,17 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
+    def _is_single_optional_whitespace_regex_literal(
+        fmt: String, start: Int, end: Int
+    ) -> Bool:
+        return (
+            end - start == 3
+            and ord(fmt[byte=start]) == 92
+            and ord(fmt[byte=start + 1]) == ord("s")
+            and ord(fmt[byte=start + 2]) == ord("?")
+        )
+
+    @staticmethod
     def _parse_whitespace_regex(date_str: String, date_pos: Int) raises -> Int:
         var pos = date_pos
         while pos < date_str.byte_length() and Self._is_ascii_whitespace(
@@ -2728,6 +2745,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         ):
             pos += 1
         return pos
+
+    @staticmethod
+    def _parse_single_optional_whitespace_regex(
+        date_str: String, date_pos: Int
+    ) -> Int:
+        if date_pos < date_str.byte_length() and Self._is_ascii_whitespace(
+            ord(date_str[byte=date_pos])
+        ):
+            return date_pos + 1
+        return date_pos
 
     @staticmethod
     def _parse_literal_char(

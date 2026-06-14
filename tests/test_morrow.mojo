@@ -1549,6 +1549,27 @@ def test_flexible_get_creation_helpers() raises:
         "2014-09-08T16:41:45.000000+00:00",
     )
 
+    var single_optional_whitespace_regex = Morrow.get(
+        "MonSep0816:41:452014",
+        "ddd[\\s?]MMM[\\s?]DD[\\s?]HH:mm:ss[\\s?]YYYY",
+    )
+    assert_equal(
+        String(single_optional_whitespace_regex),
+        "2014-09-08T16:41:45.000000+00:00",
+    )
+    var single_optional_present_whitespace_regex = Morrow.get(
+        "Mon Sep 08 16:41:45 2014",
+        "ddd[\\s?]MMM[\\s?]DD[\\s?]HH:mm:ss[\\s?]YYYY",
+    )
+    assert_equal(
+        String(single_optional_present_whitespace_regex),
+        "2014-09-08T16:41:45.000000+00:00",
+    )
+    assert_get_raises(
+        "Mon  Sep 08 16:41:45 2014",
+        "ddd[\\s?]MMM[\\s?]DD[\\s?]HH:mm:ss[\\s?]YYYY",
+    )
+
     var normalized_formatted = Morrow.get(
         "2013-05-05  T \n   12:30:45\t 123456",
         "YYYY-MM-DD T HH:mm:ss SSSSSS",
