@@ -9,7 +9,7 @@ from ._libc import CTimeval, CTm
 from .timezone import TimeZone
 from .timedelta import TimeDelta
 from .formatter import format_morrow
-from .constants import days_before_month
+from .constants import days_before_month, day_abbreviation, month_abbreviation
 from std.collections import List
 from std.format import Writable, Writer
 
@@ -205,6 +205,38 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Return the POSIX timestamp for this Morrow as a floating point value.
         """
         return self.timestamp()
+
+    def int_timestamp(self) raises -> Int:
+        """
+        Return the POSIX timestamp for this Morrow as integer UTC seconds.
+        """
+        return self._utc_microseconds() // _US_PER_SECOND
+
+    def for_json(self) raises -> String:
+        """
+        Return an ISO 8601 string for JSON serialization.
+        """
+        return self.isoformat()
+
+    def ctime(self) raises -> String:
+        """
+        Return a ctime formatted representation of the date and time.
+        """
+        return (
+            day_abbreviation(self.isoweekday())
+            + " "
+            + month_abbreviation(self.month)
+            + " "
+            + String(self.day).ascii_rjust(2, " ")
+            + " "
+            + String(self.hour).ascii_rjust(2, "0")
+            + ":"
+            + String(self.minute).ascii_rjust(2, "0")
+            + ":"
+            + String(self.second).ascii_rjust(2, "0")
+            + " "
+            + String(self.year).ascii_rjust(4, "0")
+        )
 
     def to(self, tz: TimeZone) raises -> Self:
         """
@@ -828,6 +860,32 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         # 1-Jan-0001 is a Monday
         return self.toordinal() % 7 or 7
 
+    def isocalendar(self) raises -> MorrowIsoCalendar:
+        """
+        Return the ISO year, week number, and ISO weekday.
+        """
+        var ordinal = self.toordinal()
+        var iso_year = self.year
+        var week1 = Self._iso_week1_monday(iso_year)
+        if ordinal < week1:
+            iso_year -= 1
+            week1 = Self._iso_week1_monday(iso_year)
+        else:
+            var next_week1 = Self._iso_week1_monday(iso_year + 1)
+            if ordinal >= next_week1:
+                iso_year += 1
+                week1 = next_week1
+
+        return MorrowIsoCalendar(
+            iso_year, (ordinal - week1) // 7 + 1, self.isoweekday()
+        )
+
+    @staticmethod
+    def _iso_week1_monday(year: Int) raises -> Int:
+        var fourth_jan = _ymd2ord(year, 1, 4)
+        var weekday = fourth_jan % 7 or 7
+        return fourth_jan - weekday + 1
+
     def weekday(self) raises -> Int:
         """
         Return the day of the week as an integer, where Monday is 0 and Sunday is 6.
@@ -863,3 +921,14 @@ struct MorrowSpan(Copyable, ImplicitlyCopyable, Movable):
     def __init__(out self, *, deinit take: Self):
         self.start = take.start^
         self.end = take.end^
+
+
+struct MorrowIsoCalendar(Copyable, ImplicitlyCopyable, Movable):
+    var year: Int
+    var week: Int
+    var weekday: Int
+
+    def __init__(out self, year: Int, week: Int, weekday: Int):
+        self.year = year
+        self.week = week
+        self.weekday = weekday

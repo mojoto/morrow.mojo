@@ -88,6 +88,13 @@ print(str(spans[0].start))  # 2013-05-05T12:00:00.000000+00:00
 var utc = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
 print(str(utc.to("+08:00")))  # 2024-03-01T00:30:00.123456+08:00
 print(utc.timestamp())  # 1709224200.123456
+print(utc.int_timestamp())  # 1709224200
+print(utc.for_json())  # 2024-02-29T16:30:00.123456+00:00
+
+# Get ctime and ISO calendar fields.
+print(utc.ctime())  # Thu Feb 29 16:30:00 2024
+var iso = utc.isocalendar()
+print(iso.week)  # 9
 
 # Get time zone offset.
 print(TimeZone.from_utc('UTC+08:00').offset)  # 28800

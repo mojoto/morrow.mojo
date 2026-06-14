@@ -1,4 +1,4 @@
-from .morrow import Morrow, MorrowSpan
+from .morrow import Morrow, MorrowIsoCalendar, MorrowSpan
 from .timezone import TimeZone
 from .timedelta import TimeDelta
 

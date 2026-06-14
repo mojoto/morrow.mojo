@@ -285,5 +285,25 @@ def test_interval_exact_range_and_is_between() raises:
     assert_true(not high.is_between(low, high, bounds="[)"))
 
 
+def test_object_properties_and_serialization() raises:
+    var utc = TimeZone.from_utc("UTC")
+    var m = Morrow(2019, 1, 24, 16, 35, 27, 276649, utc)
+
+    assert_equal(m.int_timestamp(), 1548347727)
+    assert_equal(m.for_json(), "2019-01-24T16:35:27.276649+00:00")
+    assert_equal(m.ctime(), "Thu Jan 24 16:35:27 2019")
+
+    var leap_day = Morrow(2024, 2, 29)
+    var iso = leap_day.isocalendar()
+    assert_equal(iso.year, 2024)
+    assert_equal(iso.week, 9)
+    assert_equal(iso.weekday, 4)
+
+    var year_edge = Morrow(2018, 12, 31).isocalendar()
+    assert_equal(year_edge.year, 2019)
+    assert_equal(year_edge.week, 1)
+    assert_equal(year_edge.weekday, 1)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
