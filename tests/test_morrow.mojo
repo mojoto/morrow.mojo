@@ -1,3 +1,4 @@
+from std.collections import List
 from std.testing import assert_equal, assert_true, TestSuite
 
 from morrow._libc import c_localtime, CTm
@@ -541,6 +542,20 @@ def test_flexible_get_creation_helpers() raises:
         "January 2, 2023 12:05 am", "MMMM D, YYYY hh:mm a"
     )
     assert_equal(String(midnight), "2023-01-02T00:05:00.000000+00:00")
+
+    var formats = List[String]()
+    formats.append("YYYY/MM/DD")
+    formats.append("YYYY-MM-DD HH:mm:ss")
+    var multi = Morrow.get("2023-01-20 15:49:10", formats)
+    assert_equal(String(multi), "2023-01-20T15:49:10.000000+00:00")
+
+    var tz_formats = List[String]()
+    tz_formats.append("YYYY/MM/DD")
+    tz_formats.append("YYYY-MM-DD HH:mm:ss")
+    var multi_tz = Morrow.get(
+        "2023-01-20 15:49:10", tz_formats, TimeZone.from_utc("+08:00")
+    )
+    assert_equal(String(multi_tz), "2023-01-20T15:49:10.000000+08:00")
 
 
 def test_date_and_datetime_creation_helpers() raises:

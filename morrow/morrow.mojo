@@ -227,6 +227,33 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.fromisoformat(date_str)
 
     @staticmethod
+    def get(date_str: String, formats: List[String]) raises -> Self:
+        """
+        Create a Morrow by trying Arrow format tokens in order.
+        """
+        return Self._parse_arrow_formats(date_str, formats)
+
+    @staticmethod
+    def get(
+        date_str: String, formats: List[String], tz: TimeZone
+    ) raises -> Self:
+        """
+        Create a Morrow by trying Arrow format tokens in order and replacing timezone.
+        """
+        return Self._parse_arrow_formats(date_str, formats, tz)
+
+    @staticmethod
+    def get(
+        date_str: String, formats: List[String], tz_str: String
+    ) raises -> Self:
+        """
+        Create a Morrow by trying Arrow format tokens in order and parsed replacement timezone.
+        """
+        return Self._parse_arrow_formats(
+            date_str, formats, TimeZone.from_utc(tz_str)
+        )
+
+    @staticmethod
     def get(date_str: String, fmt: String) raises -> Self:
         """
         Create a Morrow by parsing a string with Arrow format tokens.
@@ -585,6 +612,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             year, month, day, hour, minute, second, microsecond
         )
         return Self(year, month, day, hour, minute, second, microsecond, tz)
+
+    @staticmethod
+    def _parse_arrow_formats(
+        date_str: String,
+        formats: List[String],
+        tzinfo: TimeZone = TimeZone.none(),
+    ) raises -> Self:
+        for i in range(len(formats)):
+            try:
+                return Self._parse_arrow(date_str, formats[i], tzinfo)
+            except e:
+                pass
+        raise Error("date string does not match any format")
 
     @staticmethod
     def fromdate(date: MorrowDate) -> Self:
