@@ -748,6 +748,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return Self(
                 year, month, day, hour, minute, 0, microsecond, tz
             ).shift(seconds=second)
+        if hour == 24:
+            if minute != 0 or second != 0 or microsecond != 0:
+                raise Error("midnight at the end of day must be exactly 24:00")
+            Self._validate_fields(year, month, day, 0, 0, 0, 0)
+            return Self(year, month, day, 0, 0, 0, 0, tz).shift(days=1)
         Self._validate_fields(
             year, month, day, hour, minute, second, microsecond
         )

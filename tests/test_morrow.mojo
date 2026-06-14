@@ -927,6 +927,22 @@ def test_creation_helpers() raises:
         String(carry_fraction_date), "2024-03-01T00:00:00.000000+00:00"
     )
 
+    var iso_end_of_day = Morrow.get("2024-02-29T24:00")
+    assert_equal(String(iso_end_of_day), "2024-03-01T00:00:00.000000+00:00")
+
+    var iso_end_of_day_seconds = Morrow.get("2024-02-29T24:00:00Z")
+    assert_equal(
+        String(iso_end_of_day_seconds), "2024-03-01T00:00:00.000000+00:00"
+    )
+
+    var basic_iso_end_of_day = Morrow.get("2024-02-29T240000+05:30")
+    assert_equal(
+        String(basic_iso_end_of_day), "2024-03-01T00:00:00.000000+05:30"
+    )
+
+    assert_string_get_raises("2024-02-29T24:01")
+    assert_string_get_raises("2024-02-29T24:00:01")
+    assert_string_get_raises("2024-02-29T24:00:00.000001")
     assert_string_get_raises("2024-02-29T03:04:05z")
 
     var normalized_iso = Morrow.get(
