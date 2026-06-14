@@ -37,6 +37,14 @@ def assert_string_get_raises(date_str: String) raises:
     assert_true(False)
 
 
+def assert_fromisoformat_raises(date_str: String) raises:
+    try:
+        _ = Morrow.fromisoformat(date_str)
+    except e:
+        return
+    assert_true(False)
+
+
 def assert_component_get_raises(year: Int, month: Int, day: Int) raises:
     try:
         _ = Morrow.get(year, month, day)
@@ -1065,6 +1073,10 @@ def test_creation_helpers() raises:
 
     var space_iso_tz = Morrow.get("2024-02-29 03:04:05+05:30")
     assert_equal(String(space_iso_tz), "2024-02-29T03:04:05.000000+05:30")
+    assert_fromisoformat_raises("2024-02-29T03:04:05+053015")
+    assert_fromisoformat_raises("2024-02-29T03:04:05+05:30:15")
+    assert_string_get_raises("2024-02-29T03:04:05+053015")
+    assert_string_get_raises("2024-02-29T03:04:05+05:30:15")
 
     var space_iso_naive = Morrow.get("2024-02-29 03:04:05")
     assert_equal(String(space_iso_naive), "2024-02-29T03:04:05.000000+00:00")

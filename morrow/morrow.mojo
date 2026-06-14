@@ -744,8 +744,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                     tz = TimeZone.from_utc("UTC")
                     pos += 1
                 elif date_str[byte=pos] == "+" or date_str[byte=pos] == "-":
-                    tz = TimeZone.from_utc(String(date_str[byte=pos:]))
-                    pos = length
+                    var parsed = Self._parse_iso_timezone_offset(date_str, pos)
+                    tz = parsed.tz
+                    pos = parsed.pos
                 else:
                     raise Error("isoformat timezone is invalid")
 
@@ -2382,6 +2383,50 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if tz_str == "local":
             return TimeZone.local()
         return TimeZone.from_utc(tz_str)
+
+    @staticmethod
+    def _parse_iso_timezone_offset(
+        date_str: String, date_pos: Int
+    ) raises -> MorrowParseTimeZone:
+        var sign = ord(date_str[byte=date_pos])
+        if sign != ord("+") and sign != ord("-"):
+            raise Error("isoformat timezone must be a fixed offset")
+
+        var pos = date_pos + 1
+        if pos + 2 > date_str.byte_length():
+            raise Error("isoformat timezone hour is invalid")
+        for i in range(2):
+            if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
+                raise Error("isoformat timezone hour is invalid")
+        pos += 2
+
+        if pos == date_str.byte_length():
+            return MorrowParseTimeZone(
+                TimeZone.from_utc(String(date_str[byte=date_pos:pos])), pos
+            )
+
+        if date_str[byte=pos] == ":":
+            pos += 1
+            if pos + 2 > date_str.byte_length():
+                raise Error("isoformat timezone minute is invalid")
+            for i in range(2):
+                if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
+                    raise Error("isoformat timezone minute is invalid")
+            pos += 2
+        elif (
+            pos + 2 <= date_str.byte_length()
+            and Self._is_ascii_digit(ord(date_str[byte=pos]))
+            and Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+        ):
+            pos += 2
+        else:
+            raise Error("isoformat timezone minute is invalid")
+
+        if pos != date_str.byte_length():
+            raise Error("isoformat timezone has trailing data")
+        return MorrowParseTimeZone(
+            TimeZone.from_utc(String(date_str[byte=date_pos:pos])), pos
+        )
 
     @staticmethod
     def _from_utc_microseconds_value(total_us: Int) raises -> Self:
