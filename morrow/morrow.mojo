@@ -2680,21 +2680,21 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _humanize_unit_seconds(unit: String) raises -> Int:
-        if unit == "second" or unit == "seconds":
+        if unit == "second":
             return 1
-        elif unit == "minute" or unit == "minutes":
+        elif unit == "minute":
             return 60
-        elif unit == "hour" or unit == "hours":
+        elif unit == "hour":
             return 3600
-        elif unit == "day" or unit == "days":
+        elif unit == "day":
             return 86400
-        elif unit == "week" or unit == "weeks":
+        elif unit == "week":
             return 604800
-        elif unit == "month" or unit == "months":
+        elif unit == "month":
             return 2592000
-        elif unit == "quarter" or unit == "quarters":
+        elif unit == "quarter":
             return 7776000
-        elif unit == "year" or unit == "years":
+        elif unit == "year":
             return 31536000
         else:
             raise Error("unsupported granularity")

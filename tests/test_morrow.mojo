@@ -77,6 +77,26 @@ def assert_strptime_raises(date_str: String, fmt: String) raises:
     assert_true(False)
 
 
+def assert_humanize_granularity_raises(
+    value: Morrow, other: Morrow, granularity: String
+) raises:
+    try:
+        _ = value.humanize(other, granularity=granularity)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_humanize_granularity_raises(
+    value: Morrow, other: Morrow, granularity: List[String]
+) raises:
+    try:
+        _ = value.humanize(other, granularity=granularity)
+    except e:
+        return
+    assert_true(False)
+
+
 def test_now() raises:
     var result = Morrow.now()
     assert_true(result.year >= 2020)
@@ -719,6 +739,13 @@ def test_humanize_and_dehumanize() raises:
         present.shift(minutes=66).humanize(present, granularity="minute"),
         "in 66 minutes",
     )
+    assert_humanize_granularity_raises(
+        present.shift(seconds=2), present, "seconds"
+    )
+    assert_humanize_granularity_raises(present.shift(hours=2), present, "hours")
+    assert_humanize_granularity_raises(
+        present.shift(months=6), present, "quarters"
+    )
     assert_equal(
         present.shift(days=8).humanize(present, granularity="week"), "in a week"
     )
@@ -769,6 +796,12 @@ def test_humanize_and_dehumanize() raises:
             present, granularity=hour_minute_second
         ),
         "in an hour 0 minutes and 0 seconds",
+    )
+    var plural_hour_minute = List[String]()
+    plural_hour_minute.append("hour")
+    plural_hour_minute.append("minutes")
+    assert_humanize_granularity_raises(
+        present.shift(minutes=66), present, plural_hour_minute
     )
     assert_equal(
         present.humanize(present.shift(minutes=66), granularity=hour_minute),
