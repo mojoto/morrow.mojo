@@ -429,6 +429,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var year = 0
         var month = 1
         var day = 1
+        var day_of_year = 0
         var hour = 0
         var minute = 0
         var second = 0
@@ -481,6 +482,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 month = parsed.value
                 date_pos = parsed.pos
                 fmt_pos += 1
+            elif Self._starts_with(fmt, fmt_pos, "DDDD"):
+                var parsed = Self._parse_fixed_int(date_str, date_pos, 3)
+                day_of_year = parsed.value
+                date_pos = parsed.pos
+                fmt_pos += 4
+            elif Self._starts_with(fmt, fmt_pos, "DDD"):
+                var parsed = Self._parse_variable_int(date_str, date_pos, 3)
+                day_of_year = parsed.value
+                date_pos = parsed.pos
+                fmt_pos += 3
             elif Self._starts_with(fmt, fmt_pos, "Do"):
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
                 day = parsed.value
@@ -624,6 +635,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 hour = 0
             elif am_pm == 2 and hour != 12:
                 hour += 12
+        if day_of_year != 0:
+            var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
+            month = date.month
+            day = date.day
         if not tzinfo.is_none():
             tz = tzinfo
         Self._validate_fields(

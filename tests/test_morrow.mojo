@@ -543,6 +543,14 @@ def test_flexible_get_creation_helpers() raises:
     )
     assert_equal(String(midnight), "2023-01-02T00:05:00.000000+00:00")
 
+    var day_of_year = Morrow.get("2024 60", "YYYY DDD")
+    assert_equal(String(day_of_year), "2024-02-29T00:00:00.000000+00:00")
+
+    var padded_day_of_year = Morrow.get(
+        "2024 060 23:59:58", "YYYY DDDD HH:mm:ss"
+    )
+    assert_equal(String(padded_day_of_year), "2024-02-29T23:59:58.000000+00:00")
+
     var formats = List[String]()
     formats.append("YYYY/MM/DD")
     formats.append("YYYY-MM-DD HH:mm:ss")
