@@ -99,6 +99,8 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
             minutes = Int(utc_str[byte = p : p + 2])
         else:
             raise Error("utc_str format is invalid")
+        if minutes > 59 or seconds > 59:
+            raise Error("utc_str format is invalid")
         var offset: Int = sign * (hours * 3600 + minutes * 60 + seconds)
         if offset <= -86400 or offset >= 86400:
             raise Error("utc offset must be strictly between -24:00 and +24:00")
