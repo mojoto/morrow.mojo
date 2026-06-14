@@ -61,6 +61,7 @@ print(Morrow.get(TimeZone.from_utc("+08:00")).tz.offset)  # 28800
 print(str(Morrow.get("2023-01-20 15:49:10.123456 +05:30", "YYYY-MM-DD HH:mm:ss.SSSSSS ZZ")))  # 2023-01-20T15:49:10.123456+05:30
 print(str(Morrow.get("2024-02-29 Utc", "YYYY-MM-DD ZZZ")))  # 2024-02-29T00:00:00.000000+00:00
 print(str(Morrow.get("jan 2nd, 2023", "MMM Do, YYYY")))  # 2023-01-02T00:00:00.000000+00:00
+print(str(Morrow.get("June was born in May 1980", "MMMM YYYY")))  # 1980-05-01T00:00:00.000000+00:00
 print(str(Morrow.get("2023-01-02 12:05 pm", "YYYY-MM-DD hh:mm A")))  # 2023-01-02T12:05:00.000000+00:00
 print(str(Morrow.get("2024 060", "YYYY DDDD")))  # 2024-02-29T00:00:00.000000+00:00
 print(str(Morrow.get("2024-W09-4", "W")))  # 2024-02-29T00:00:00.000000+00:00

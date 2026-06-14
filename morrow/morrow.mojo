@@ -427,6 +427,30 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _parse_arrow(
         date_str: String, fmt: String, tzinfo: TimeZone = TimeZone.none()
     ) raises -> Self:
+        try:
+            return Self._parse_arrow_at(date_str, fmt, tzinfo, 0, False)
+        except e:
+            pass
+
+        for date_start in range(date_str.byte_length()):
+            if not Self._has_left_parse_boundary(date_str, date_start):
+                continue
+            try:
+                return Self._parse_arrow_at(
+                    date_str, fmt, tzinfo, date_start, True
+                )
+            except e:
+                pass
+        raise Error("date string does not match format")
+
+    @staticmethod
+    def _parse_arrow_at(
+        date_str: String,
+        fmt: String,
+        tzinfo: TimeZone,
+        date_start: Int,
+        allow_trailing_text: Bool,
+    ) raises -> Self:
         var year = 0
         var month = 1
         var day = 1
@@ -439,7 +463,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var hour_is_12 = False
         var am_pm = 0
 
-        var date_pos = 0
+        var date_pos = date_start
         var fmt_pos = 0
         while fmt_pos < fmt.byte_length():
             if fmt[byte=fmt_pos] == "[":
@@ -649,7 +673,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 date_pos += 1
                 fmt_pos += 1
 
-        if date_pos != date_str.byte_length():
+        if allow_trailing_text:
+            if not Self._has_right_parse_boundary(date_str, date_pos):
+                raise Error("date string does not match format boundary")
+        elif date_pos != date_str.byte_length():
             raise Error("date string has trailing data")
         if hour_is_12:
             if hour < 1 or hour > 12:
@@ -1703,6 +1730,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if c >= ord("A") and c <= ord("Z"):
             return c + 32
         return c
+
+    @staticmethod
+    def _has_left_parse_boundary(s: String, pos: Int) -> Bool:
+        return pos == 0 or not Self._is_ascii_alphanumeric(ord(s[byte=pos - 1]))
+
+    @staticmethod
+    def _has_right_parse_boundary(s: String, pos: Int) -> Bool:
+        return pos == s.byte_length() or not Self._is_ascii_alphanumeric(
+            ord(s[byte=pos])
+        )
+
+    @staticmethod
+    def _is_ascii_alphanumeric(c: Int) -> Bool:
+        return (
+            Self._is_ascii_digit(c)
+            or (c >= ord("A") and c <= ord("Z"))
+            or (c >= ord("a") and c <= ord("z"))
+        )
 
     @staticmethod
     def _is_ascii_digit(c: Int) -> Bool:

@@ -585,6 +585,14 @@ def test_flexible_get_creation_helpers() raises:
     var upper_meridian = Morrow.get("2023-01-02 12:05 AM", "YYYY-MM-DD hh:mm a")
     assert_equal(String(upper_meridian), "2023-01-02T00:05:00.000000+00:00")
 
+    var searched_month = Morrow.get("June was born in May 1980", "MMMM YYYY")
+    assert_equal(String(searched_month), "1980-05-01T00:00:00.000000+00:00")
+
+    var searched_datetime = Morrow.get(
+        "created at 2023-01-20 15:49:10 UTC", "YYYY-MM-DD HH:mm:ss"
+    )
+    assert_equal(String(searched_datetime), "2023-01-20T15:49:10.000000+00:00")
+
     var day_of_year = Morrow.get("2024 60", "YYYY DDD")
     assert_equal(String(day_of_year), "2024-02-29T00:00:00.000000+00:00")
 
