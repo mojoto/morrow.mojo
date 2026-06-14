@@ -578,6 +578,20 @@ def test_flexible_get_creation_helpers() raises:
     var short_colon_offset = Morrow.get("2024-02-29 +08", "YYYY-MM-DD ZZ")
     assert_equal(String(short_colon_offset), "2024-02-29T00:00:00.000000+08:00")
 
+    var end_of_day = Morrow.get("2024-02-29 24:00", "YYYY-MM-DD HH:mm")
+    assert_equal(String(end_of_day), "2024-03-01T00:00:00.000000+00:00")
+
+    var end_of_day_tz = Morrow.get(
+        "2024-02-29 24:00 +05:30", "YYYY-MM-DD HH:mm ZZ"
+    )
+    assert_equal(String(end_of_day_tz), "2024-03-01T00:00:00.000000+05:30")
+
+    assert_get_raises("2024-02-29 24:01", "YYYY-MM-DD HH:mm")
+    assert_get_raises("2024-02-29 24:00:01", "YYYY-MM-DD HH:mm:ss")
+    assert_get_raises(
+        "2024-02-29 24:00:00.000001", "YYYY-MM-DD HH:mm:ss.SSSSSS"
+    )
+
     assert_get_raises("2024-02-29 +05:30", "YYYY-MM-DD Z")
     assert_get_raises("2024-02-29 UTC", "YYYY-MM-DD Z")
     assert_get_raises("2024-02-29 +0530", "YYYY-MM-DD ZZ")

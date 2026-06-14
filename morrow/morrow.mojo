@@ -731,12 +731,33 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if microsecond >= _US_PER_SECOND:
             second += microsecond // _US_PER_SECOND
             microsecond = microsecond % _US_PER_SECOND
+        var midnight_end_of_day = False
+        if not hour_is_12 and hour == 24:
+            if minute != 0:
+                raise Error(
+                    "midnight at the end of day must not contain minutes"
+                )
+            if second != 0:
+                raise Error(
+                    "midnight at the end of day must not contain seconds"
+                )
+            if microsecond != 0:
+                raise Error(
+                    "midnight at the end of day must not contain microseconds"
+                )
+            hour = 0
+            midnight_end_of_day = True
         if not tzinfo.is_none():
             tz = tzinfo
         Self._validate_fields(
             year, month, day, hour, minute, second, microsecond
         )
-        return Self(year, month, day, hour, minute, second, microsecond, tz)
+        var parsed = Self(
+            year, month, day, hour, minute, second, microsecond, tz
+        )
+        if midnight_end_of_day:
+            return parsed.shift(days=1)
+        return parsed
 
     @staticmethod
     def _parse_arrow_formats(
