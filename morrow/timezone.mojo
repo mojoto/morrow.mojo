@@ -50,8 +50,10 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         if utc_str.byte_length() == 0:
             raise Error("utc_str is empty")
-        if utc_str == "utc" or utc_str == "UTC" or utc_str == "Z":
+        if _equals_ascii_case_insensitive(utc_str, "UTC") or utc_str == "Z":
             return TimeZone(0, "utc")
+        if _equals_ascii_case_insensitive(utc_str, "GMT"):
+            return TimeZone(0, "GMT")
         var p = (
             3 if utc_str.byte_length() > 3 and utc_str[byte=0:3] == "UTC" else 0
         )
@@ -130,3 +132,18 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
 
 def _is_ascii_digit(c: Int) -> Bool:
     return c >= ord("0") and c <= ord("9")
+
+
+def _equals_ascii_case_insensitive(left: String, right: String) -> Bool:
+    if left.byte_length() != right.byte_length():
+        return False
+    for i in range(left.byte_length()):
+        if _ascii_lower(ord(left[byte=i])) != _ascii_lower(ord(right[byte=i])):
+            return False
+    return True
+
+
+def _ascii_lower(c: Int) -> Int:
+    if c >= ord("A") and c <= ord("Z"):
+        return c + 32
+    return c

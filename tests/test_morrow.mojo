@@ -1582,6 +1582,9 @@ def test_date_and_datetime_creation_helpers() raises:
     assert_equal(local_date.tz.offset, local_tz.offset)
     assert_equal(local_date.tz.name, "local")
     assert_equal(local_date.hour, 0)
+    var gmt_date = Morrow.fromdate(date, "GMT")
+    assert_equal(String(gmt_date), "2024-02-29T00:00:00.000000+00:00")
+    assert_equal(gmt_date.tzname(), "GMT")
     assert_equal(
         String(Morrow.get(date, TimeZone.from_utc("+09:00"))),
         "2024-02-29T00:00:00.000000+09:00",
