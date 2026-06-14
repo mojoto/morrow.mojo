@@ -121,6 +121,27 @@ def format_strftime(
             i += 1
             if i >= fmt.byte_length():
                 ret += "%"
+            elif (
+                fmt[byte=i] == "-" or fmt[byte=i] == "_" or fmt[byte=i] == "0"
+            ) and i + 1 < fmt.byte_length():
+                var modifier = ord(fmt[byte=i])
+                i += 1
+                ret += _replace_strftime_modified_directive(
+                    year,
+                    month,
+                    day,
+                    hour,
+                    minute,
+                    second,
+                    microsecond,
+                    tz_offset,
+                    tz_name,
+                    tz_is_none,
+                    weekday,
+                    modifier,
+                    ord(fmt[byte=i]),
+                    String(fmt[byte=i]),
+                )
             else:
                 ret += _replace_strftime_directive(
                     year,
@@ -265,6 +286,52 @@ def _replace(
             match_count,
         )
     return ret
+
+
+def _format_modified_number(value: Int, width: Int, modifier: Int) -> String:
+    if modifier == ord("-"):
+        return String(value)
+    if modifier == ord("_"):
+        return String(value).ascii_rjust(width, " ")
+    return String(value).ascii_rjust(width, "0")
+
+
+def _replace_strftime_modified_directive(
+    year: Int,
+    month: Int,
+    day: Int,
+    hour: Int,
+    minute: Int,
+    second: Int,
+    microsecond: Int,
+    tz_offset: Int,
+    tz_name: String,
+    tz_is_none: Bool,
+    weekday: Int,
+    modifier: Int,
+    directive: Int,
+    directive_text: String,
+) raises -> String:
+    if directive == ord("d"):
+        return _format_modified_number(day, 2, modifier)
+    if directive == ord("m"):
+        return _format_modified_number(month, 2, modifier)
+    if directive == ord("H"):
+        return _format_modified_number(hour, 2, modifier)
+    if directive == ord("I"):
+        var hour_12 = hour % 12
+        if hour_12 == 0:
+            hour_12 = 12
+        return _format_modified_number(hour_12, 2, modifier)
+    if directive == ord("M"):
+        return _format_modified_number(minute, 2, modifier)
+    if directive == ord("S"):
+        return _format_modified_number(second, 2, modifier)
+    if modifier == ord("-"):
+        return "-" + directive_text
+    if modifier == ord("_"):
+        return "_" + directive_text
+    return "0" + directive_text
 
 
 def _replace_strftime_directive(
@@ -424,7 +491,7 @@ def _replace_strftime_directive(
         return "\n"
     if directive == ord("t"):
         return "\t"
-    return "%" + directive_text
+    return directive_text
 
 
 def _replace_token(
