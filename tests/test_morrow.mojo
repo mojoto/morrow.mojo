@@ -949,6 +949,18 @@ def test_humanize_and_dehumanize() raises:
         "2024-01-01T12:01:06.000000+00:00",
     )
     assert_equal(
+        String(present.dehumanize("in 1 hours")),
+        "2024-01-01T13:00:00.000000+00:00",
+    )
+    assert_equal(
+        String(present.dehumanize("in a seconds")),
+        "2024-01-01T12:00:01.000000+00:00",
+    )
+    assert_equal(
+        String(present.dehumanize("in an hours")),
+        "2024-01-01T13:00:00.000000+00:00",
+    )
+    assert_equal(
         String(present.dehumanize("an hour and 6 minutes ago")),
         "2024-01-01T10:54:00.000000+00:00",
     )

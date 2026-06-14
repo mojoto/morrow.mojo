@@ -2753,17 +2753,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             unit = String(unit[byte = 0 : unit.byte_length() - 1])
 
         if count_word == "a" or count_word == "an":
-            if not Self._is_singular_humanize_unit(unit):
+            if not Self._is_singular_humanize_unit(
+                unit
+            ) and not Self._is_plural_humanize_unit(unit):
                 raise Error("humanized distance is invalid")
+            var normalized = Self._normalize_humanize_unit(unit)
             if count_word == "an":
-                if unit != "hour":
+                if normalized != "hour":
                     raise Error("humanized distance is invalid")
-            elif unit == "hour":
+            elif normalized == "hour":
                 raise Error("humanized distance is invalid")
-            return unit
+            return normalized
 
-        if count == 1:
-            raise Error("humanized distance is invalid")
         if not Self._is_plural_humanize_unit(unit):
             raise Error("humanized distance is invalid")
         return Self._normalize_humanize_unit(unit)
