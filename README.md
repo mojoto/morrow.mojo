@@ -100,6 +100,8 @@ var points = Morrow.range("hour", start, end)
 print(str(points[0]))  # 2013-05-05T12:30:00.000000+00:00
 var spans = Morrow.span_range("hour", start, end)
 print(str(spans[0].start))  # 2013-05-05T12:00:00.000000+00:00
+var tz_points = Morrow.range("hour", start.naive(), end.naive(), TimeZone.from_utc("+08:00"), limit=2)
+print(str(tz_points[0]))  # 2013-05-05T12:30:00.000000+08:00
 
 # Convert fixed-offset time zones and get POSIX timestamps.
 var utc = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))

@@ -884,6 +884,32 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return items^
 
     @staticmethod
+    def range(
+        frame: String,
+        start: Self,
+        end: Self,
+        tz: TimeZone,
+        limit: Int = -1,
+    ) raises -> List[Self]:
+        """
+        Return points after replacing start and end timezones.
+        """
+        return Self.range(frame, start.replace(tz), end.replace(tz), limit)
+
+    @staticmethod
+    def range(
+        frame: String,
+        start: Self,
+        end: Self,
+        tz_str: String,
+        limit: Int = -1,
+    ) raises -> List[Self]:
+        """
+        Return points after replacing start and end with a parsed timezone.
+        """
+        return Self.range(frame, start, end, TimeZone.from_utc(tz_str), limit)
+
+    @staticmethod
     def span_range(
         frame: String,
         start: Self,
@@ -898,6 +924,55 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return Self._span_range(
             frame, start, end, 1, limit, bounds, exact, week_start
+        )
+
+    @staticmethod
+    def span_range(
+        frame: String,
+        start: Self,
+        end: Self,
+        tz: TimeZone,
+        limit: Int = -1,
+        bounds: String = "[)",
+        exact: Bool = False,
+        week_start: Int = 1,
+    ) raises -> List[MorrowSpan]:
+        """
+        Return spans after replacing start and end timezones.
+        """
+        return Self.span_range(
+            frame,
+            start.replace(tz),
+            end.replace(tz),
+            limit,
+            bounds,
+            exact,
+            week_start,
+        )
+
+    @staticmethod
+    def span_range(
+        frame: String,
+        start: Self,
+        end: Self,
+        tz_str: String,
+        limit: Int = -1,
+        bounds: String = "[)",
+        exact: Bool = False,
+        week_start: Int = 1,
+    ) raises -> List[MorrowSpan]:
+        """
+        Return spans after replacing start and end with a parsed timezone.
+        """
+        return Self.span_range(
+            frame,
+            start,
+            end,
+            TimeZone.from_utc(tz_str),
+            limit,
+            bounds,
+            exact,
+            week_start,
         )
 
     @staticmethod
@@ -916,6 +991,59 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return Self._span_range(
             frame, start, end, interval, limit, bounds, exact, week_start
+        )
+
+    @staticmethod
+    def interval(
+        frame: String,
+        start: Self,
+        end: Self,
+        interval: Int,
+        tz: TimeZone,
+        limit: Int = -1,
+        bounds: String = "[)",
+        exact: Bool = False,
+        week_start: Int = 1,
+    ) raises -> List[MorrowSpan]:
+        """
+        Return grouped spans after replacing start and end timezones.
+        """
+        return Self.interval(
+            frame,
+            start.replace(tz),
+            end.replace(tz),
+            interval,
+            limit,
+            bounds,
+            exact,
+            week_start,
+        )
+
+    @staticmethod
+    def interval(
+        frame: String,
+        start: Self,
+        end: Self,
+        interval: Int,
+        tz_str: String,
+        limit: Int = -1,
+        bounds: String = "[)",
+        exact: Bool = False,
+        week_start: Int = 1,
+    ) raises -> List[MorrowSpan]:
+        """
+        Return grouped spans after replacing start and end with a parsed timezone.
+        """
+        return Self.interval(
+            frame,
+            start,
+            end,
+            interval,
+            TimeZone.from_utc(tz_str),
+            limit,
+            bounds,
+            exact,
+            week_start,
         )
 
     @staticmethod

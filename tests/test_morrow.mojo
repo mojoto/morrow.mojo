@@ -319,6 +319,20 @@ def test_range_and_span_range() raises:
     assert_equal(String(spans[5].start), "2013-05-05T17:00:00.000000+00:00")
     assert_equal(String(spans[5].end), "2013-05-05T17:59:59.999999+00:00")
 
+    var beijing = TimeZone.from_utc("+08:00")
+    var tz_values = Morrow.range(
+        "hour", start.naive(), end.naive(), beijing, limit=2
+    )
+    assert_equal(len(tz_values), 2)
+    assert_equal(String(tz_values[0]), "2013-05-05T12:30:00.000000+08:00")
+    assert_equal(String(tz_values[1]), "2013-05-05T13:30:00.000000+08:00")
+
+    var tz_spans = Morrow.span_range(
+        "hour", start.naive(), end.naive(), beijing, limit=1
+    )
+    assert_equal(String(tz_spans[0].start), "2013-05-05T12:00:00.000000+08:00")
+    assert_equal(String(tz_spans[0].end), "2013-05-05T12:59:59.999999+08:00")
+
 
 def test_interval_exact_range_and_is_between() raises:
     var utc = TimeZone.from_utc("UTC")
@@ -331,6 +345,17 @@ def test_interval_exact_range_and_is_between() raises:
     assert_equal(String(intervals[0].end), "2013-05-05T13:59:59.999999+00:00")
     assert_equal(String(intervals[2].start), "2013-05-05T16:00:00.000000+00:00")
     assert_equal(String(intervals[2].end), "2013-05-05T17:59:59.999999+00:00")
+
+    var beijing = TimeZone.from_utc("+08:00")
+    var tz_intervals = Morrow.interval(
+        "hour", start.naive(), end.naive(), 2, beijing, limit=1
+    )
+    assert_equal(
+        String(tz_intervals[0].start), "2013-05-05T12:00:00.000000+08:00"
+    )
+    assert_equal(
+        String(tz_intervals[0].end), "2013-05-05T13:59:59.999999+08:00"
+    )
 
     var exact = Morrow.span_range("hour", start, end, exact=True)
     assert_equal(len(exact), 5)
