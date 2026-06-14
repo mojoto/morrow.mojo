@@ -337,5 +337,23 @@ def test_humanize_and_dehumanize() raises:
     )
 
 
+def test_creation_helpers() raises:
+    var extended = Morrow.fromisoformat("2013-09-29T01:26:43.830580+08:00")
+    assert_equal(String(extended), "2013-09-29T01:26:43.830580+08:00")
+
+    var basic = Morrow.fromisoformat("20160413T133656.456289Z")
+    assert_equal(String(basic), "2016-04-13T13:36:56.456289+00:00")
+
+    var date_only = Morrow.get("2013-05-05")
+    assert_equal(String(date_only), "2013-05-05T00:00:00.000000+00:00")
+
+    var from_ts = Morrow.get(1700000000.0)
+    assert_equal(String(from_ts), "2023-11-14T22:13:20.000000+00:00")
+
+    var beijing_now = Morrow.now("+08:00")
+    assert_equal(beijing_now.tz.offset, 28800)
+    assert_true(beijing_now.year >= 2020)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

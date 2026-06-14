@@ -83,6 +83,22 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self._fromtimestamp(t, False)
 
     @staticmethod
+    def now(tz: TimeZone) raises -> Self:
+        """
+        Return the current time converted to a fixed-offset timezone.
+        """
+        return Self.utcnow().to(tz)
+
+    @staticmethod
+    def now(tz_str: String) raises -> Self:
+        """
+        Return the current time converted to a timezone parsed from a UTC offset string.
+        """
+        if tz_str == "local":
+            return Self.now()
+        return Self.utcnow().to(tz_str)
+
+    @staticmethod
     def utcnow() -> Self:
         """
         Return a Morrow object representing the current UTC date and time.
@@ -124,6 +140,119 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var timestamp_ = normalize_timestamp(timestamp)
         var t = CTimeval(Int(timestamp_))
         return Self._fromtimestamp(t, True)
+
+    @staticmethod
+    def get(timestamp: Float64) raises -> Self:
+        """
+        Create a UTC Morrow from a POSIX timestamp.
+        """
+        return Self.utcfromtimestamp(timestamp)
+
+    @staticmethod
+    def get(date_str: String) raises -> Self:
+        """
+        Create a UTC Morrow from an ISO 8601 string.
+        """
+        return Self.fromisoformat(date_str)
+
+    @staticmethod
+    def fromisoformat(date_str: String) raises -> Self:
+        """
+        Create a Morrow from an ISO 8601 string.
+        """
+        var length = date_str.byte_length()
+        if length < 8:
+            raise Error("isoformat string is too short")
+
+        var year: Int
+        var month: Int
+        var day: Int
+        var pos: Int
+        if length >= 10 and date_str[byte=4] == "-" and date_str[byte=7] == "-":
+            year = Int(date_str[byte=0:4])
+            month = Int(date_str[byte=5:7])
+            day = Int(date_str[byte=8:10])
+            pos = 10
+        else:
+            year = Int(date_str[byte=0:4])
+            month = Int(date_str[byte=4:6])
+            day = Int(date_str[byte=6:8])
+            pos = 8
+
+        var hour = 0
+        var minute = 0
+        var second = 0
+        var microsecond = 0
+        var tz = TimeZone.from_utc("UTC")
+
+        if pos < length:
+            var separator = ord(date_str[byte=pos])
+            if (
+                separator != ord("T")
+                and separator != ord("t")
+                and separator != ord(" ")
+            ):
+                raise Error("isoformat date/time separator is invalid")
+            pos += 1
+            if length < pos + 2:
+                raise Error("isoformat time is invalid")
+
+            hour = Int(date_str[byte = pos : pos + 2])
+            pos += 2
+
+            if pos < length and date_str[byte=pos] == ":":
+                pos += 1
+                if length < pos + 2:
+                    raise Error("isoformat minute is invalid")
+                minute = Int(date_str[byte = pos : pos + 2])
+                pos += 2
+                if pos < length and date_str[byte=pos] == ":":
+                    pos += 1
+                    if length < pos + 2:
+                        raise Error("isoformat second is invalid")
+                    second = Int(date_str[byte = pos : pos + 2])
+                    pos += 2
+            else:
+                if length < pos + 4:
+                    raise Error("isoformat basic time is invalid")
+                minute = Int(date_str[byte = pos : pos + 2])
+                pos += 2
+                second = Int(date_str[byte = pos : pos + 2])
+                pos += 2
+
+            if pos < length and date_str[byte=pos] == ".":
+                pos += 1
+                var start = pos
+                while pos < length:
+                    var c = ord(date_str[byte=pos])
+                    if c < ord("0") or c > ord("9"):
+                        break
+                    pos += 1
+                if pos == start:
+                    raise Error("isoformat microsecond is invalid")
+                var digits = String(date_str[byte=start:pos])
+                while digits.byte_length() < 6:
+                    digits += "0"
+                if digits.byte_length() > 6:
+                    digits = String(digits[byte=0:6])
+                microsecond = Int(digits)
+
+            if pos < length:
+                if date_str[byte=pos] == "Z" or date_str[byte=pos] == "z":
+                    tz = TimeZone.from_utc("UTC")
+                    pos += 1
+                elif date_str[byte=pos] == "+" or date_str[byte=pos] == "-":
+                    tz = TimeZone.from_utc(String(date_str[byte=pos:]))
+                    pos = length
+                else:
+                    raise Error("isoformat timezone is invalid")
+
+        if pos != length:
+            raise Error("isoformat string has trailing data")
+        Self._validate_fields(
+            year, month, day, hour, minute, second, microsecond
+        )
+        return Self(year, month, day, hour, minute, second, microsecond, tz)
 
     @staticmethod
     def strptime(

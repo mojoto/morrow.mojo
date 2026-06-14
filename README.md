@@ -48,6 +48,12 @@ print(str(t))  # 2023-10-01T00:00:00.000000+08:00
 var utc_t = Morrow.utcfromtimestamp(1696089600)
 print(str(utc_t))  # 2023-09-30T16:00:00.000000+00:00
 
+# Create from ISO 8601 strings and timestamps.
+print(str(Morrow.get("2013-05-05")))  # 2013-05-05T00:00:00.000000+00:00
+print(str(Morrow.fromisoformat("20160413T133656.456289Z")))  # 2016-04-13T13:36:56.456289+00:00
+print(str(Morrow.get(1700000000.0)))  # 2023-11-14T22:13:20.000000+00:00
+print(Morrow.now("+08:00").tz.offset)  # 28800
+
 # Get ISO format.
 var m = Morrow(2023, 10, 1, 0, 0, 0, 1234)
 print(m.isoformat())  # 2023-10-01T00:00:00.001234
