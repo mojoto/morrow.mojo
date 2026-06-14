@@ -557,6 +557,15 @@ def test_flexible_get_creation_helpers() raises:
     )
     assert_equal(String(multi_tz), "2023-01-20T15:49:10.000000+08:00")
 
+    assert_equal(
+        String(Morrow.get("1709175845.123456", "X")),
+        "2024-02-29T03:04:05.123456+00:00",
+    )
+    assert_equal(
+        String(Morrow.get("1709175845123456", "x")),
+        "2024-02-29T03:04:05.123456+00:00",
+    )
+
 
 def test_date_and_datetime_creation_helpers() raises:
     var date = Morrow(2024, 2, 29).date()

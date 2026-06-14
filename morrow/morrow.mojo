@@ -569,6 +569,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 microsecond = parsed.value
                 date_pos = parsed.pos
                 fmt_pos += 1
+            elif Self._starts_with(fmt, fmt_pos, "X"):
+                if fmt_pos + 1 != fmt.byte_length():
+                    raise Error("timestamp token must be the full format")
+                var parsed = Self.utcfromtimestamp(
+                    String(date_str[byte=date_pos:])
+                )
+                if not tzinfo.is_none():
+                    return parsed.replace(tzinfo)
+                return parsed
+            elif Self._starts_with(fmt, fmt_pos, "x"):
+                if fmt_pos + 1 != fmt.byte_length():
+                    raise Error("timestamp token must be the full format")
+                var parsed = Self._from_utc_microseconds_value(
+                    Int(date_str[byte=date_pos:])
+                )
+                if not tzinfo.is_none():
+                    return parsed.replace(tzinfo)
+                return parsed
             elif Self._starts_with(fmt, fmt_pos, "ZZZ"):
                 var parsed = Self._parse_timezone(date_str, date_pos)
                 tz = parsed.tz
@@ -1527,6 +1545,35 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _utc_timezone() -> TimeZone:
         return TimeZone(0, "utc")
+
+    @staticmethod
+    def _from_utc_microseconds_value(total_us: Int) raises -> Self:
+        var seconds = total_us // _US_PER_SECOND
+        var microsecond = total_us % _US_PER_SECOND
+        if microsecond < 0:
+            seconds -= 1
+            microsecond += _US_PER_SECOND
+
+        var days = seconds // 86400
+        var seconds_in_day = seconds % 86400
+        if seconds_in_day < 0:
+            days -= 1
+            seconds_in_day += 86400
+
+        var date = Self.fromordinal(_UNIX_EPOCH_ORDINAL + days)
+        var hour = seconds_in_day // 3600
+        var minute = (seconds_in_day % 3600) // 60
+        var second = seconds_in_day % 60
+        return Self(
+            date.year,
+            date.month,
+            date.day,
+            hour,
+            minute,
+            second,
+            microsecond,
+            Self._utc_timezone(),
+        )
 
     @staticmethod
     def _starts_with(s: String, pos: Int, pattern: String) -> Bool:
