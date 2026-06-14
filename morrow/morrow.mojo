@@ -1340,6 +1340,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var unit = granularity
         if unit == "auto":
             return self._humanize_auto(other, delta_us, only_distance)
+        if (unit == "second" or unit == "seconds") and seconds < 2:
+            if only_distance:
+                return "instantly"
+            return "just now"
         var count = Self._humanize_count(seconds, unit)
         return Self._format_humanize_result(
             delta_us, count, unit, only_distance
