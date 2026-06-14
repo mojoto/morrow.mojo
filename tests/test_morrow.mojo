@@ -189,6 +189,10 @@ def test_floor_ceil_and_span() raises:
     assert_equal(String(open.start), "2024-02-29T00:00:00.000001+05:30")
     assert_equal(String(open.end), "2024-02-29T23:59:59.999999+05:30")
 
+    var exact = m.span("hour", count=2, exact=True)
+    assert_equal(String(exact.start), "2024-02-29T13:14:15.123456+05:30")
+    assert_equal(String(exact.end), "2024-02-29T15:14:15.123455+05:30")
+
 
 def test_week_and_quarter_spans() raises:
     var m = Morrow(2024, 2, 29, 13)

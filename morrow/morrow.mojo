@@ -589,6 +589,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         frame: String,
         count: Int = 1,
         bounds: String = "[)",
+        exact: Bool = False,
         week_start: Int = 1,
     ) raises -> MorrowSpan:
         """
@@ -598,15 +599,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             raise Error("count must be greater than 0")
         Self._validate_bounds(bounds)
 
-        var start = self._floor_frame(frame, week_start)
+        var start = self if exact else self._floor_frame(frame, week_start)
         var end = start._shift_frame(frame, count)
-
-        if ord(bounds[byte=0]) == 40:  # (
-            start = start.shift(microseconds=1)
-        if ord(bounds[byte=1]) == 41:  # )
-            end = end.shift(microseconds=-1)
-
-        return MorrowSpan(start, end)
+        return Self._span_from_bounds(start, end, bounds)
 
     def floor(self, frame: String, week_start: Int = 1) raises -> Self:
         """
@@ -705,7 +700,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 spans.append(Self._span_from_bounds(current, raw_end, bounds))
                 current = next
             else:
-                spans.append(current.span(frame, interval, bounds, week_start))
+                spans.append(
+                    current.span(
+                        frame,
+                        count=interval,
+                        bounds=bounds,
+                        week_start=week_start,
+                    )
+                )
                 current = current._shift_frame(frame, interval)
             emitted += 1
 

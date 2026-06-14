@@ -83,6 +83,7 @@ var hour = Morrow(2024, 2, 29, 13, 14, 15).span("hour")
 print(str(hour.start))  # 2024-02-29T13:00:00.000000
 print(str(hour.end))  # 2024-02-29T13:59:59.999999
 print(str(Morrow(2024, 2, 29, 13, 14, 15).floor("day")))  # 2024-02-29T00:00:00.000000
+print(str(Morrow(2024, 2, 29, 13, 14, 15).span("hour", exact=True).start))  # 2024-02-29T13:14:15.000000
 
 # Iterate over ranges and span ranges.
 var start = Morrow(2013, 5, 5, 12, 30, 0, 0, TimeZone.from_utc("UTC"))
