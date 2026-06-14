@@ -338,6 +338,10 @@ def _replace_strftime_modified_directive(
         if hour_12 == 0:
             hour_12 = 12
         return _format_modified_number(hour_12, 2, modifier)
+    if directive == ord("r"):
+        return _format_strftime_12_hour_time(hour, minute, second)
+    if directive == ord("v"):
+        return _format_strftime_v(year, month, day)
     if directive == ord("M"):
         return _format_modified_number(minute, 2, modifier)
     if directive == ord("S"):
@@ -424,6 +428,8 @@ def _replace_strftime_directive(
         if hour_12 == 0:
             hour_12 = 12
         return String(hour_12).ascii_rjust(2, " ")
+    if directive == ord("r"):
+        return _format_strftime_12_hour_time(hour, minute, second)
     if directive == ord("p"):
         return "AM" if hour < 12 else "PM"
     if directive == ord("M"):
@@ -484,6 +490,8 @@ def _replace_strftime_directive(
             + "/"
             + String(String(year).ascii_rjust(4, "0")[byte=2:4])
         )
+    if directive == ord("v"):
+        return _format_strftime_v(year, month, day)
     if directive == ord("c"):
         return (
             day_abbreviation(weekday)
@@ -527,6 +535,33 @@ def _replace_strftime_directive(
     if directive == ord("t"):
         return "\t"
     return directive_text
+
+
+def _format_strftime_12_hour_time(
+    hour: Int, minute: Int, second: Int
+) -> String:
+    var hour_12 = hour % 12
+    if hour_12 == 0:
+        hour_12 = 12
+    return (
+        String(hour_12).ascii_rjust(2, "0")
+        + ":"
+        + String(minute).ascii_rjust(2, "0")
+        + ":"
+        + String(second).ascii_rjust(2, "0")
+        + " "
+        + ("AM" if hour < 12 else "PM")
+    )
+
+
+def _format_strftime_v(year: Int, month: Int, day: Int) -> String:
+    return (
+        String(day).ascii_rjust(2, " ")
+        + "-"
+        + month_abbreviation(month)
+        + "-"
+        + String(year).ascii_rjust(4, "0")
+    )
 
 
 def _replace_token(
