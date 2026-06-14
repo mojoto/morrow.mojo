@@ -508,6 +508,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 day = parsed.value
                 date_pos = parsed.pos
                 fmt_pos += 1
+            elif Self._starts_with(fmt, fmt_pos, "W"):
+                var parsed = Self._parse_iso_week_date(date_str, date_pos)
+                var date = Self.fromisocalendar(
+                    parsed.year, parsed.week, parsed.weekday
+                )
+                year = date.year
+                month = date.month
+                day = date.day
+                date_pos = parsed.pos
+                fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "HH"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
                 hour = parsed.value
@@ -1671,6 +1681,40 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         raise Error("month name is invalid")
 
     @staticmethod
+    def _parse_iso_week_date(
+        date_str: String, date_pos: Int
+    ) raises -> MorrowParseIsoWeek:
+        var year_parsed = Self._parse_fixed_int(date_str, date_pos, 4)
+        var pos = year_parsed.pos
+        if pos < date_str.byte_length() and date_str[byte=pos] == "-":
+            pos += 1
+        if pos >= date_str.byte_length() or ord(date_str[byte=pos]) != ord("W"):
+            raise Error("ISO week date is missing W marker")
+        pos += 1
+        var week_parsed = Self._parse_fixed_int(date_str, pos, 2)
+        pos = week_parsed.pos
+
+        var weekday = 1
+        if pos < date_str.byte_length() and date_str[byte=pos] == "-":
+            if pos + 1 < date_str.byte_length() and Self._is_ascii_digit(
+                ord(date_str[byte=pos + 1])
+            ):
+                pos += 1
+                var weekday_parsed = Self._parse_fixed_int(date_str, pos, 1)
+                weekday = weekday_parsed.value
+                pos = weekday_parsed.pos
+        elif pos < date_str.byte_length() and Self._is_ascii_digit(
+            ord(date_str[byte=pos])
+        ):
+            var weekday_parsed = Self._parse_fixed_int(date_str, pos, 1)
+            weekday = weekday_parsed.value
+            pos = weekday_parsed.pos
+
+        return MorrowParseIsoWeek(
+            year_parsed.value, week_parsed.value, weekday, pos
+        )
+
+    @staticmethod
     def _parse_timezone(
         date_str: String, date_pos: Int
     ) raises -> MorrowParseTimeZone:
@@ -2344,6 +2388,19 @@ struct MorrowParseInt(Copyable, ImplicitlyCopyable, Movable):
 
     def __init__(out self, value: Int, pos: Int):
         self.value = value
+        self.pos = pos
+
+
+struct MorrowParseIsoWeek(Copyable, ImplicitlyCopyable, Movable):
+    var year: Int
+    var week: Int
+    var weekday: Int
+    var pos: Int
+
+    def __init__(out self, year: Int, week: Int, weekday: Int, pos: Int):
+        self.year = year
+        self.week = week
+        self.weekday = weekday
         self.pos = pos
 
 

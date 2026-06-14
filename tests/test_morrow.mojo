@@ -551,6 +551,15 @@ def test_flexible_get_creation_helpers() raises:
     )
     assert_equal(String(padded_day_of_year), "2024-02-29T23:59:58.000000+00:00")
 
+    var iso_week = Morrow.get("2024-W09-4", "W")
+    assert_equal(String(iso_week), "2024-02-29T00:00:00.000000+00:00")
+
+    var basic_iso_week = Morrow.get("2024W094", "W")
+    assert_equal(String(basic_iso_week), "2024-02-29T00:00:00.000000+00:00")
+
+    var iso_week_monday = Morrow.get("2024-W09 23:59:58", "W HH:mm:ss")
+    assert_equal(String(iso_week_monday), "2024-02-26T23:59:58.000000+00:00")
+
     var formats = List[String]()
     formats.append("YYYY/MM/DD")
     formats.append("YYYY-MM-DD HH:mm:ss")
