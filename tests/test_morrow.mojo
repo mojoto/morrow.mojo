@@ -523,6 +523,12 @@ def test_creation_helpers() raises:
     var date_only = Morrow.get("2013-05-05")
     assert_equal(String(date_only), "2013-05-05T00:00:00.000000+00:00")
 
+    var normalized_iso = Morrow.get(
+        "\t \n  2013-05-05T12:30:45.123456 \t \n",
+        normalize_whitespace=True,
+    )
+    assert_equal(String(normalized_iso), "2013-05-05T12:30:45.123456+00:00")
+
     var from_ts = Morrow.get(1700000000.0)
     assert_equal(String(from_ts), "2023-11-14T22:13:20.000000+00:00")
 
@@ -598,6 +604,15 @@ def test_flexible_get_creation_helpers() raises:
         "ddd[\\s+]MMM[\\s+]DD[\\s+]HH:mm:ss[\\s+]YYYY",
     )
     assert_equal(String(whitespace_regex), "2014-09-08T16:41:45.000000+00:00")
+
+    var normalized_formatted = Morrow.get(
+        "2013-05-05  T \n   12:30:45\t 123456",
+        "YYYY-MM-DD T HH:mm:ss SSSSSS",
+        normalize_whitespace=True,
+    )
+    assert_equal(
+        String(normalized_formatted), "2013-05-05T12:30:45.123456+00:00"
+    )
 
     var day_of_year = Morrow.get("2024 60", "YYYY DDD")
     assert_equal(String(day_of_year), "2024-02-29T00:00:00.000000+00:00")

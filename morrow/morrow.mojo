@@ -228,6 +228,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.fromisoformat(date_str)
 
     @staticmethod
+    def get(date_str: String, normalize_whitespace: Bool) raises -> Self:
+        """
+        Create a UTC Morrow from an ISO 8601 string, optionally normalizing ASCII whitespace.
+        """
+        if normalize_whitespace:
+            return Self.fromisoformat(Self._normalize_whitespace(date_str))
+        return Self.fromisoformat(date_str)
+
+    @staticmethod
     def get(date_str: String, formats: List[String]) raises -> Self:
         """
         Create a Morrow by trying Arrow format tokens in order.
@@ -259,6 +268,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Create a Morrow by parsing a string with Arrow format tokens.
         """
+        return Self._parse_arrow(date_str, fmt)
+
+    @staticmethod
+    def get(
+        date_str: String, fmt: String, normalize_whitespace: Bool
+    ) raises -> Self:
+        """
+        Create a Morrow by parsing Arrow tokens, optionally normalizing ASCII whitespace.
+        """
+        if normalize_whitespace:
+            return Self._parse_arrow(
+                Self._normalize_whitespace(date_str),
+                Self._normalize_whitespace(fmt),
+            )
         return Self._parse_arrow(date_str, fmt)
 
     @staticmethod
@@ -1768,6 +1791,21 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _is_ascii_whitespace(c: Int) -> Bool:
         return c == ord(" ") or c == 9 or c == 10 or c == 13
+
+    @staticmethod
+    def _normalize_whitespace(s: String) -> String:
+        var result = ""
+        var pending_space = False
+        for i in range(s.byte_length()):
+            if Self._is_ascii_whitespace(ord(s[byte=i])):
+                if result.byte_length() > 0:
+                    pending_space = True
+            else:
+                if pending_space:
+                    result += " "
+                    pending_space = False
+                result += String(s[byte = i : i + 1])
+        return result
 
     @staticmethod
     def _is_whitespace_regex_literal(fmt: String, start: Int, end: Int) -> Bool:
