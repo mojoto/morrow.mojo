@@ -1275,6 +1275,29 @@ def test_flexible_get_creation_helpers() raises:
 
     assert_get_raises("060", "DDD")
 
+    var weekday_name_only = Morrow.get("Mon", "ddd")
+    assert_equal(String(weekday_name_only), "1970-01-05T00:00:00.000000+00:00")
+
+    var weekday_name_with_time = Morrow.get("Sunday 23:04", "dddd HH:mm")
+    assert_equal(
+        String(weekday_name_with_time), "1970-01-04T23:04:00.000000+00:00"
+    )
+
+    var weekday_name_with_year = Morrow.get("2024 Tue", "YYYY ddd")
+    assert_equal(
+        String(weekday_name_with_year), "2024-01-02T00:00:00.000000+00:00"
+    )
+
+    var weekday_name_with_month = Morrow.get("02 Tue", "MM ddd")
+    assert_equal(
+        String(weekday_name_with_month), "1970-02-03T00:00:00.000000+00:00"
+    )
+
+    var weekday_name_with_day = Morrow.get("15 Tue", "D ddd")
+    assert_equal(
+        String(weekday_name_with_day), "0001-01-15T00:00:00.000000+00:00"
+    )
+
     var midnight = Morrow.get(
         "January 2, 2023 12:05 am", "MMMM D, YYYY hh:mm a"
     )

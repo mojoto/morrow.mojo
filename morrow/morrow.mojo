@@ -800,6 +800,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var month = 1
         var day = 1
         var day_of_year = -1
+        var has_month = False
+        var has_day = False
+        var parsed_weekday_name = 0
         var hour = 0
         var minute = 0
         var second = 0
@@ -848,47 +851,56 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             elif Self._starts_with(fmt, fmt_pos, "MMMM"):
                 var parsed = Self._parse_month_name(date_str, date_pos, False)
                 month = parsed.value
+                has_month = True
                 date_pos = parsed.pos
                 fmt_pos += 4
             elif Self._starts_with(fmt, fmt_pos, "MMM"):
                 var parsed = Self._parse_month_name(date_str, date_pos, True)
                 month = parsed.value
+                has_month = True
                 date_pos = parsed.pos
                 fmt_pos += 3
             elif Self._starts_with(fmt, fmt_pos, "MM"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
                 month = parsed.value
+                has_month = True
                 date_pos = parsed.pos
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "M"):
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
                 month = parsed.value
+                has_month = True
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "DDDD"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 3)
                 day_of_year = parsed.value
+                has_day = True
                 date_pos = parsed.pos
                 fmt_pos += 4
             elif Self._starts_with(fmt, fmt_pos, "DDD"):
                 var parsed = Self._parse_variable_int(date_str, date_pos, 3)
                 day_of_year = parsed.value
+                has_day = True
                 date_pos = parsed.pos
                 fmt_pos += 3
             elif Self._starts_with(fmt, fmt_pos, "Do"):
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
                 day = parsed.value
+                has_day = True
                 date_pos = parsed.pos
                 date_pos = Self._parse_ordinal_suffix(date_str, date_pos, day)
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "DD"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
                 day = parsed.value
+                has_day = True
                 date_pos = parsed.pos
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "D"):
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
                 day = parsed.value
+                has_day = True
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "W"):
@@ -900,13 +912,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 month = date.month
                 day = date.day
                 has_year = True
+                has_month = True
+                has_day = True
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "dddd"):
-                date_pos = Self._parse_weekday_name(date_str, date_pos, False)
+                var parsed = Self._parse_weekday_name(date_str, date_pos, False)
+                parsed_weekday_name = parsed.value
+                date_pos = parsed.pos
                 fmt_pos += 4
             elif Self._starts_with(fmt, fmt_pos, "ddd"):
-                date_pos = Self._parse_weekday_name(date_str, date_pos, True)
+                var parsed = Self._parse_weekday_name(date_str, date_pos, True)
+                parsed_weekday_name = parsed.value
+                date_pos = parsed.pos
                 fmt_pos += 3
             elif Self._starts_with(fmt, fmt_pos, "d"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 1)
@@ -1053,6 +1071,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             if day_of_year < 1 or day_of_year > 366:
                 raise Error("day of year is invalid")
             var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
+            year = date.year
+            month = date.month
+            day = date.day
+        elif parsed_weekday_name != 0 and not has_day:
+            if not has_year:
+                year = 1970
+            if not has_month:
+                month = 1
+            Self._validate_fields(year, month, 1, 0, 0, 0, 0)
+            var first_day = Self(year, month, 1)
+            var weekday_offset = parsed_weekday_name - first_day.isoweekday()
+            if weekday_offset < 0:
+                weekday_offset += 7
+            var date = first_day.shift(days=weekday_offset)
             year = date.year
             month = date.month
             day = date.day
@@ -2459,7 +2491,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _parse_weekday_name(
         date_str: String, date_pos: Int, abbreviated: Bool
-    ) raises -> Int:
+    ) raises -> MorrowParseInt:
         for value in range(1, 8):
             var name = day_abbreviation(value) if abbreviated else day_name(
                 value
@@ -2467,7 +2499,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             if Self._starts_with_ascii_case_insensitive(
                 date_str, date_pos, name
             ):
-                return date_pos + name.byte_length()
+                return MorrowParseInt(value, date_pos + name.byte_length())
         raise Error("weekday name is invalid")
 
     @staticmethod
