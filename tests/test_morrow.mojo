@@ -153,6 +153,28 @@ def test_sub() raises:
     assert_equal(result.days, 2)
     assert_equal(String(result), "2 days, 0:01:01")
 
+    var utc = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
+    var shanghai = Morrow(
+        2024, 3, 1, 0, 30, 0, 123456, TimeZone.from_utc("+08:00")
+    )
+    result = shanghai - utc
+    assert_equal(result.days, 0)
+    assert_equal(result.seconds, 0)
+    assert_equal(result.microseconds, 0)
+
+    var later_shanghai = Morrow(
+        2024, 3, 1, 0, 30, 1, 123457, TimeZone.from_utc("+08:00")
+    )
+    result = later_shanghai - utc
+    assert_equal(result.days, 0)
+    assert_equal(result.seconds, 1)
+    assert_equal(result.microseconds, 1)
+
+    result = utc - later_shanghai
+    assert_equal(result.days, -1)
+    assert_equal(result.seconds, 86398)
+    assert_equal(result.microseconds, 999999)
+
 
 def test_timedelta_arithmetic() raises:
     var base = Morrow(

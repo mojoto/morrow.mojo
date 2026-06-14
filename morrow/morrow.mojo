@@ -2879,14 +2879,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     def __sub__(self, other: Self) raises -> TimeDelta:
-        var days1 = self.toordinal()
-        var days2 = other.toordinal()
-        var secs1 = self.second + self.minute * 60 + self.hour * 3600
-        var secs2 = other.second + other.minute * 60 + other.hour * 3600
-        var base = TimeDelta(
-            days1 - days2, secs1 - secs2, self.microsecond - other.microsecond
+        return TimeDelta(
+            microseconds=self._utc_microseconds() - other._utc_microseconds()
         )
-        return base
 
 
 struct MorrowSpan(Copyable, ImplicitlyCopyable, Movable):
