@@ -1254,6 +1254,10 @@ def test_flexible_get_creation_helpers() raises:
         "2024 060 23:59:58", "YYYY DDDD HH:mm:ss"
     )
     assert_equal(String(padded_day_of_year), "2024-02-29T23:59:58.000000+00:00")
+    var non_leap_day_366 = Morrow.get("2023 366", "YYYY DDDD")
+    assert_equal(String(non_leap_day_366), "2024-01-01T00:00:00.000000+00:00")
+    assert_get_raises("2024 000", "YYYY DDDD")
+    assert_get_raises("2024 367", "YYYY DDDD")
 
     var iso_week = Morrow.get("2024-W09-4", "W")
     assert_equal(String(iso_week), "2024-02-29T00:00:00.000000+00:00")

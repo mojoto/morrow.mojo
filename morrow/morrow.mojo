@@ -785,7 +785,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var year = 0
         var month = 1
         var day = 1
-        var day_of_year = 0
+        var day_of_year = -1
         var hour = 0
         var minute = 0
         var second = 0
@@ -1032,8 +1032,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 hour = 0
             elif am_pm == 2 and hour != 12:
                 hour += 12
-        if day_of_year != 0:
+        if day_of_year != -1:
+            if day_of_year < 1 or day_of_year > 366:
+                raise Error("day of year is invalid")
             var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
+            year = date.year
             month = date.month
             day = date.day
         if microsecond >= _US_PER_SECOND:
