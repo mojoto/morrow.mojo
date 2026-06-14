@@ -516,13 +516,31 @@ def test_flexible_get_creation_helpers() raises:
     assert_true(beijing_now.year >= 2020)
     assert_equal(beijing_now.tz.offset, 28800)
 
-    var formatted = Morrow.get("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S")
-    assert_equal(String(formatted), "2023-01-20T15:49:10.000000+00:00")
+    var formatted = Morrow.get(
+        "2023-01-20 15:49:10.123456 +05:30",
+        "YYYY-MM-DD HH:mm:ss.SSSSSS ZZ",
+    )
+    assert_equal(String(formatted), "2023-01-20T15:49:10.123456+05:30")
 
     var formatted_tz = Morrow.get(
-        "20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", "+05:30"
+        "2023 year 1 month 20 day 3:4:5",
+        "YYYY[ year ]M[ month ]D[ day ]H:m:s",
+        "+05:30",
     )
-    assert_equal(String(formatted_tz), "2023-01-20T15:49:10.000000+05:30")
+    assert_equal(String(formatted_tz), "2023-01-20T03:04:05.000000+05:30")
+
+    var compact = Morrow.get("23/1/2 3:04", "YY/M/D H:mm")
+    assert_equal(String(compact), "2023-01-02T03:04:00.000000+00:00")
+
+    var named = Morrow.get(
+        "Jan 2nd, 2023 12:05 PM UTC", "MMM Do, YYYY h:mm A ZZZ"
+    )
+    assert_equal(String(named), "2023-01-02T12:05:00.000000+00:00")
+
+    var midnight = Morrow.get(
+        "January 2, 2023 12:05 am", "MMMM D, YYYY hh:mm a"
+    )
+    assert_equal(String(midnight), "2023-01-02T00:05:00.000000+00:00")
 
 
 def test_date_and_datetime_creation_helpers() raises:

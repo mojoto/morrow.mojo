@@ -57,7 +57,7 @@ print(str(Morrow.get(1700000000.5, "+05:30")))  # 2023-11-15T03:43:20.500000+05:
 print(Morrow.now("+08:00").tz.offset)  # 28800
 print(Morrow.get().tz.offset)  # 0
 print(Morrow.get(TimeZone.from_utc("+08:00")).tz.offset)  # 28800
-print(str(Morrow.get("20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S")))  # 2023-01-20T15:49:10.000000+00:00
+print(str(Morrow.get("2023-01-20 15:49:10.123456 +05:30", "YYYY-MM-DD HH:mm:ss.SSSSSS ZZ")))  # 2023-01-20T15:49:10.123456+05:30
 var date_view = Morrow(2024, 2, 29).date()
 print(str(Morrow.fromdate(date_view, "+05:30")))  # 2024-02-29T00:00:00.000000+05:30
 print(str(Morrow.fromdatetime(Morrow(2024, 2, 29, 3))))  # 2024-02-29T03:00:00.000000+00:00
