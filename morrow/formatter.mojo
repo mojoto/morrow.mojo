@@ -165,8 +165,31 @@ def _replace(
     var ret: String = ""
     var match_chr_ord = 0
     var match_count = 0
-    for i in range(s.byte_length()):
+    var i = 0
+    while i < s.byte_length():
         var c = ord(s[byte=i])
+        if c == _D and i + 1 < s.byte_length() and s[byte=i + 1] == "o":
+            if match_chr_ord > 0:
+                ret += _replace_token(
+                    year,
+                    month,
+                    day,
+                    hour,
+                    minute,
+                    second,
+                    microsecond,
+                    tz_offset,
+                    tz_name,
+                    tz_is_none,
+                    weekday,
+                    match_chr_ord,
+                    match_count,
+                )
+                match_chr_ord = 0
+                match_count = 0
+            ret += _format_ordinal(day)
+            i += 2
+            continue
         if 0 < c and c < 128 and _sub_chr_max(c) > 0:
             if c == match_chr_ord:
                 match_count += 1
@@ -224,6 +247,7 @@ def _replace(
                 )
                 match_chr_ord = 0
             ret += s[byte=i]
+        i += 1
     if match_chr_ord > 0:
         ret += _replace_token(
             year,
@@ -526,6 +550,20 @@ def _format_timezone(offset: Int, sep: String = ":") -> String:
         + sep
         + String(mm).ascii_rjust(2, "0")
     )
+
+
+def _format_ordinal(value: Int) -> String:
+    var suffix = "th"
+    var last_two = value % 100
+    if last_two < 11 or last_two > 13:
+        var last = value % 10
+        if last == 1:
+            suffix = "st"
+        elif last == 2:
+            suffix = "nd"
+        elif last == 3:
+            suffix = "rd"
+    return String(value) + suffix
 
 
 def _format_week_number(day_of_year: Int, weekday_zero_based: Int) -> String:

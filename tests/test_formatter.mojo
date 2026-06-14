@@ -40,5 +40,19 @@ def test_strftime() raises:
     )
 
 
+def test_ordinal_day_format_token() raises:
+    assert_equal(Morrow(2024, 1, 1).format("Do"), "1st")
+    assert_equal(Morrow(2024, 1, 2).format("Do"), "2nd")
+    assert_equal(Morrow(2024, 1, 3).format("Do"), "3rd")
+    assert_equal(Morrow(2024, 1, 4).format("Do"), "4th")
+    assert_equal(Morrow(2024, 1, 11).format("Do"), "11th")
+    assert_equal(Morrow(2024, 1, 12).format("Do"), "12th")
+    assert_equal(Morrow(2024, 1, 13).format("Do"), "13th")
+    assert_equal(Morrow(2024, 1, 21).format("Do"), "21st")
+    assert_equal(Morrow(2024, 1, 22).format("Do"), "22nd")
+    assert_equal(Morrow(2024, 1, 23).format("Do"), "23rd")
+    assert_equal(Morrow(2024, 1, 31).format("Do"), "31st")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
