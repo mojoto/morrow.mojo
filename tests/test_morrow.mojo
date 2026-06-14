@@ -1541,6 +1541,25 @@ def test_flexible_get_creation_helpers() raises:
     assert_equal(
         String(normalized_formatted), "2013-05-05T12:30:45.123456+00:00"
     )
+    var normalized_formatted_tz = Morrow.get(
+        "2013-05-05  T \n   12:30:45\t 123456",
+        "YYYY-MM-DD T HH:mm:ss SSSSSS",
+        TimeZone.from_utc("+05:30"),
+        normalize_whitespace=True,
+    )
+    assert_equal(
+        String(normalized_formatted_tz), "2013-05-05T12:30:45.123456+05:30"
+    )
+    var normalized_formatted_tz_str = Morrow.get(
+        "2013-05-05  T \n   12:30:45\t 123456",
+        "YYYY-MM-DD T HH:mm:ss SSSSSS",
+        "+05:30",
+        normalize_whitespace=True,
+    )
+    assert_equal(
+        String(normalized_formatted_tz_str),
+        "2013-05-05T12:30:45.123456+05:30",
+    )
 
     var seven_subseconds = Morrow.get(
         "2013-05-05 12:30:45.1234567", "YYYY-MM-DD HH:mm:ss.SSSSSSS"

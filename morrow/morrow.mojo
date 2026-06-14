@@ -552,12 +552,47 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self._parse_arrow(date_str, fmt, tz)
 
     @staticmethod
+    def get(
+        date_str: String,
+        fmt: String,
+        tz: TimeZone,
+        normalize_whitespace: Bool,
+    ) raises -> Self:
+        """
+        Create a Morrow by parsing Arrow tokens with replacement timezone, optionally normalizing ASCII whitespace.
+        """
+        if normalize_whitespace:
+            return Self._parse_arrow(
+                Self._normalize_whitespace(date_str),
+                Self._normalize_whitespace(fmt),
+                tz,
+            )
+        return Self._parse_arrow(date_str, fmt, tz)
+
+    @staticmethod
     def get(date_str: String, fmt: String, tz_str: String) raises -> Self:
         """
         Create a Morrow by parsing a string with Arrow format tokens and parsed replacement timezone.
         """
         return Self._parse_arrow(
             date_str, fmt, Self._parse_timezone_argument(tz_str)
+        )
+
+    @staticmethod
+    def get(
+        date_str: String,
+        fmt: String,
+        tz_str: String,
+        normalize_whitespace: Bool,
+    ) raises -> Self:
+        """
+        Create a Morrow by parsing Arrow tokens with parsed replacement timezone, optionally normalizing ASCII whitespace.
+        """
+        return Self.get(
+            date_str,
+            fmt,
+            Self._parse_timezone_argument(tz_str),
+            normalize_whitespace,
         )
 
     @staticmethod
