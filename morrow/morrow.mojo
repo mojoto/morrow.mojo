@@ -2670,7 +2670,6 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) raises -> Int:
         if date_pos + 2 > date_str.byte_length():
             raise Error("ordinal suffix is missing")
-        var suffix = String(date_str[byte = date_pos : date_pos + 2])
         var expected = "th"
         var mod100 = value % 100
         if mod100 < 11 or mod100 > 13:
@@ -2681,7 +2680,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 expected = "nd"
             elif mod10 == 3:
                 expected = "rd"
-        if suffix == expected:
+        if Self._starts_with_ascii_case_insensitive(
+            date_str, date_pos, expected
+        ):
             return date_pos + 2
         raise Error("ordinal suffix is invalid")
 

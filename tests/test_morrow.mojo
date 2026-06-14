@@ -1516,6 +1516,15 @@ def test_flexible_get_creation_helpers() raises:
     assert_get_raises("2024 000", "YYYY DDDD")
     assert_get_raises("2024 367", "YYYY DDDD")
 
+    var mixed_case_ordinal = Morrow.get("2024 1St", "YYYY Do")
+    assert_equal(String(mixed_case_ordinal), "2024-01-01T00:00:00.000000+00:00")
+    var uppercase_ordinal = Morrow.get("2024 2ND", "YYYY Do")
+    assert_equal(String(uppercase_ordinal), "2024-01-02T00:00:00.000000+00:00")
+    var uppercase_teens_ordinal = Morrow.get("2024 11TH", "YYYY Do")
+    assert_equal(
+        String(uppercase_teens_ordinal), "2024-01-11T00:00:00.000000+00:00"
+    )
+
     assert_get_raises("2024 1th", "YYYY Do")
     assert_get_raises("2024 2st", "YYYY Do")
     assert_get_raises("2024 11st", "YYYY Do")
