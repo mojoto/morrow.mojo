@@ -128,6 +128,12 @@ def test_strftime() raises:
         Morrow(2024, 1, 2, 3, 4, 5, tz=TimeZone.from_utc("UTC")).strftime("%c"),
         "Tue Jan  2 03:04:05 2024",
     )
+    assert_equal(
+        Morrow(2024, 1, 2, 3, 4, 5, tz=TimeZone.from_utc("UTC")).strftime(
+            "%e %k %l"
+        ),
+        " 2  3  3",
+    )
 
 
 def test_ordinal_day_format_token() raises:

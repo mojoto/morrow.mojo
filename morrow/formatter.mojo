@@ -296,6 +296,8 @@ def _replace_strftime_directive(
         return String(weekday)
     if directive == ord("d"):
         return String(day).ascii_rjust(2, "0")
+    if directive == ord("e"):
+        return String(day).ascii_rjust(2, " ")
     if directive == ord("b"):
         return month_abbreviation(month)
     if directive == ord("B"):
@@ -308,11 +310,18 @@ def _replace_strftime_directive(
         return String(year).ascii_rjust(4, "0")
     if directive == ord("H"):
         return String(hour).ascii_rjust(2, "0")
+    if directive == ord("k"):
+        return String(hour).ascii_rjust(2, " ")
     if directive == ord("I"):
         var hour_12 = hour % 12
         if hour_12 == 0:
             hour_12 = 12
         return String(hour_12).ascii_rjust(2, "0")
+    if directive == ord("l"):
+        var hour_12 = hour % 12
+        if hour_12 == 0:
+            hour_12 = 12
+        return String(hour_12).ascii_rjust(2, " ")
     if directive == ord("p"):
         return "AM" if hour < 12 else "PM"
     if directive == ord("M"):
