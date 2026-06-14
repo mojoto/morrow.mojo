@@ -1,5 +1,5 @@
 from .constants import MAX_TIMESTAMP, MAX_TIMESTAMP_MS, MAX_TIMESTAMP_US
-from .constants import _DAYS_IN_MONTH, _DAYS_BEFORE_MONTH
+from .constants import days_in_month, days_before_month
 
 
 fn _is_leap(year: Int) -> Bool:
@@ -23,7 +23,7 @@ def _days_in_month(year: Int, month: Int) -> Int:
     """
     if month == 2 and _is_leap(year):
         return 29
-    return _DAYS_IN_MONTH[month]
+    return days_in_month(month)
 
 
 def _days_before_month(year: Int, month: Int) -> Int:
@@ -31,8 +31,8 @@ def _days_before_month(year: Int, month: Int) -> Int:
     Calculate the number of days in a year preceding the first day of a given month.
     """
     if month > 2 and _is_leap(year):
-        return _DAYS_BEFORE_MONTH[month] + 1
-    return _DAYS_BEFORE_MONTH[month]
+        return days_before_month(month) + 1
+    return days_before_month(month)
 
 
 @always_inline
@@ -40,21 +40,23 @@ def _ymd2ord(year: Int, month: Int, day: Int) -> Int:
     """
     Convert a date to ordinal, considering 01-Jan-0001 as day 1.
     """
-    dim = _days_in_month(year, month)
     return _days_before_year(year) + _days_before_month(year, month) + day
 
 
-def normalize_timestamp(timestamp: Float64) -> Float64:
+def normalize_timestamp(timestamp: Float64) raises -> Float64:
     """
     Normalize millisecond and microsecond timestamps into standard timestamps.
     """
-    if timestamp > MAX_TIMESTAMP:
-        if timestamp < MAX_TIMESTAMP_MS:
-            timestamp /= 1000
-        elif timestamp < MAX_TIMESTAMP_US:
-            timestamp /= 1_000_000
+    var timestamp_ = timestamp
+    if timestamp_ > Float64(MAX_TIMESTAMP):
+        if timestamp_ < Float64(MAX_TIMESTAMP_MS):
+            timestamp_ /= 1000
+        elif timestamp_ < Float64(MAX_TIMESTAMP_US):
+            timestamp_ /= 1_000_000
         else:
             raise Error(
-                "The specified timestamp " + str(timestamp) + "is too large."
+                "The specified timestamp "
+                + String(timestamp_)
+                + "is too large."
             )
-    return timestamp
+    return timestamp_

@@ -1,7 +1,9 @@
-alias SECONDS_OF_DAY = 24 * 3600
+from std.format import Writable, Writer
+
+comptime SECONDS_OF_DAY = 24 * 3600
 
 
-struct TimeDelta(Stringable, Formattable):
+struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
     """
     Represents a duration of time.
     """
@@ -11,7 +13,7 @@ struct TimeDelta(Stringable, Formattable):
     var microseconds: Int
 
     fn __init__(
-        inout self,
+        out self,
         days: Int = 0,
         seconds: Int = 0,
         microseconds: Int = 0,
@@ -56,39 +58,53 @@ struct TimeDelta(Stringable, Formattable):
         self.seconds = self.seconds % SECONDS_OF_DAY
         self.days += days_
 
-    fn __copyinit__(inout self, other: Self):
+    fn __copyinit__(out self, copy: Self):
         """
         Copy constructor for TimeDelta.
         """
-        self.days = other.days
-        self.seconds = other.seconds
-        self.microseconds = other.microseconds
+        self.days = copy.days
+        self.seconds = copy.seconds
+        self.microseconds = copy.microseconds
 
     fn __str__(self) -> String:
-        return String.format_sequence(self)
+        return self.to_string()
 
-    fn format_to(self: Self, inout writer: Formatter):
+    def write_to(self, mut writer: Some[Writer]):
+        writer.write(self.to_string())
+
+    fn to_string(self) -> String:
         var mm = self.seconds // 60
         var ss = self.seconds % 60
         var hh = mm // 60
         mm = mm % 60
-        if self.days:
+        var result = String("")
+        if self.days != 0:
             if abs(self.days) != 1:
-                writer.write(self.days, " days, ")
+                result += String(self.days) + " days, "
             else:
-                writer.write(self.days, " day, ")
+                result += String(self.days) + " day, "
 
-        writer.write(hh, ":", str(mm).rjust(2, "0"), ":", str(ss).rjust(2, "0"))
-        if self.microseconds:
-            writer.write(str(self.microseconds).rjust(6, "0"))
+        result += (
+            String(hh)
+            + ":"
+            + String(mm).ascii_rjust(2, "0")
+            + ":"
+            + String(ss).ascii_rjust(2, "0")
+        )
+        if self.microseconds != 0:
+            result += String(self.microseconds).ascii_rjust(6, "0")
+        return result
 
     fn total_seconds(self) -> Float64:
         """
         Calculate the total number of seconds in the TimeDelta.
         """
         return (
-            (self.days * 86400 + self.seconds) * 10**6 + self.microseconds
-        ) / 10**6
+            Float64(
+                (self.days * 86400 + self.seconds) * 10**6 + self.microseconds
+            )
+            / 1000000.0
+        )
 
     @always_inline
     fn __add__(self, other: Self) -> Self:
@@ -243,6 +259,6 @@ struct TimeDelta(Stringable, Formattable):
         return self.days != 0 or self.seconds != 0 or self.microseconds != 0
 
 
-alias Min = TimeDelta(-99999999)
-alias Max = TimeDelta(days=99999999)
-alias Resolution = TimeDelta(microseconds=1)
+comptime Min = TimeDelta(-99999999)
+comptime Max = TimeDelta(days=99999999)
+comptime Resolution = TimeDelta(microseconds=1)

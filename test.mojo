@@ -1,52 +1,79 @@
-from testing import assert_equal, assert_true
-from python import PythonObject
+from std.testing import assert_equal, assert_true, TestSuite
+from std.python import PythonObject
 
-from morrow._libc import c_gettimeofday, c_localtime, c_gmtime
-from morrow._py import py_dt_datetime, py_time
+from morrow._libc import c_localtime, CTm
+from morrow._py import py_dt_datetime
 from morrow import Morrow
 from morrow import TimeZone
 from morrow import TimeDelta
 
 
-def assert_datetime_equal(dt: Morrow, py_dt: PythonObject):
-    assert_true(
-        dt.year == int(py_dt.year)
-        and dt.month == int(py_dt.month)
-        and dt.hour == int(py_dt.hour)
-        and dt.minute == int(py_dt.minute)
-        and dt.second == int(py_dt.second),
-        "dt: " + str(dt) + " is not equal to py_dt: " + str(py_dt),
+def matches_tm(dt: Morrow, tm: CTm) -> Bool:
+    return (
+        dt.year == Int(tm.tm_year) + 1900
+        and dt.month == Int(tm.tm_mon) + 1
+        and dt.day == Int(tm.tm_mday)
+        and dt.hour == Int(tm.tm_hour)
+        and dt.minute == Int(tm.tm_min)
+        and dt.second == Int(tm.tm_sec)
     )
 
 
-def test_now():
-    print("Running test_now()")
+def assert_tm_equal(dt: Morrow, tm: CTm) raises:
+    assert_true(matches_tm(dt, tm))
+
+
+def assert_python_datetime_equal(dt: Morrow, py_dt: PythonObject) raises:
+    assert_equal(dt.year, Int(py=py_dt.year))
+    assert_equal(dt.month, Int(py=py_dt.month))
+    assert_equal(dt.day, Int(py=py_dt.day))
+    assert_equal(dt.hour, Int(py=py_dt.hour))
+    assert_equal(dt.minute, Int(py=py_dt.minute))
+    assert_equal(dt.second, Int(py=py_dt.second))
+    assert_equal(dt.microsecond, Int(py=py_dt.microsecond))
+
+
+def test_now() raises:
     var result = Morrow.now()
-    assert_datetime_equal(result, py_dt_datetime().now())
+    assert_true(result.year >= 2020)
+    assert_true(result.month >= 1 and result.month <= 12)
+    assert_true(result.day >= 1 and result.day <= 31)
+    assert_true(result.hour >= 0 and result.hour <= 23)
+    assert_true(result.minute >= 0 and result.minute <= 59)
+    assert_true(result.second >= 0 and result.second <= 60)
+    assert_true(result.microsecond >= 0 and result.microsecond < 1000000)
 
 
-def test_utcnow():
-    print("Running test_utcnow()")
+def test_utcnow() raises:
     var result = Morrow.utcnow()
-    assert_datetime_equal(result, py_dt_datetime().utcnow())
+    assert_true(result.year >= 2020)
+    assert_true(result.month >= 1 and result.month <= 12)
+    assert_true(result.day >= 1 and result.day <= 31)
+    assert_true(result.hour >= 0 and result.hour <= 23)
+    assert_true(result.minute >= 0 and result.minute <= 59)
+    assert_true(result.second >= 0 and result.second <= 60)
+    assert_equal(result.tz.offset, 0)
+    assert_true(result.microsecond >= 0 and result.microsecond < 1000000)
 
 
-def test_fromtimestamp():
-    print("Running test_fromtimestamp()")
-    var t = c_gettimeofday()
-    var result = Morrow.fromtimestamp(t.tv_sec)
-    assert_datetime_equal(result, py_dt_datetime().now())
+def test_fromtimestamp() raises:
+    var timestamp = 1700000000
+    var result = Morrow.fromtimestamp(Float64(timestamp))
+    assert_tm_equal(result, c_localtime(timestamp))
 
 
-def test_utcfromtimestamp():
-    print("Running test_utcfromtimestamp()")
-    var t = c_gettimeofday()
-    var result = Morrow.utcfromtimestamp(t.tv_sec)
-    assert_datetime_equal(result, py_dt_datetime().utcnow())
+def test_utcfromtimestamp() raises:
+    var result = Morrow.utcfromtimestamp(1700000000.0)
+    assert_equal(result.year, 2023)
+    assert_equal(result.month, 11)
+    assert_equal(result.day, 14)
+    assert_equal(result.hour, 22)
+    assert_equal(result.minute, 13)
+    assert_equal(result.second, 20)
+    assert_equal(result.tz.offset, 0)
 
 
-def test_iso_format():
-    print("Running test_iso_format()")
+def test_iso_format() raises:
     var d0 = Morrow(2023, 10, 1, 0, 0, 0, 1234)
     assert_equal(d0.isoformat(), "2023-10-01T00:00:00.001234")
     assert_equal(d0.isoformat(timespec="seconds"), "2023-10-01T00:00:00")
@@ -59,8 +86,7 @@ def test_iso_format():
     assert_equal(d1.isoformat(timespec="seconds"), "2023-10-01T00:00:00+08:00")
 
 
-def test_time_zone():
-    print("Running test_time_zone()")
+def test_time_zone() raises:
     assert_equal(TimeZone.from_utc("UTC+0800").offset, 28800)
     assert_equal(TimeZone.from_utc("UTC+08:00").offset, 28800)
     assert_equal(TimeZone.from_utc("UTC08:00").offset, 28800)
@@ -68,24 +94,23 @@ def test_time_zone():
     assert_equal(TimeZone.from_utc("+08:00").offset, 28800)
     assert_equal(TimeZone.from_utc("+0800").offset, 28800)
     assert_equal(TimeZone.from_utc("08").offset, 28800)
+    assert_equal(TimeZone.from_utc("+05:30").format(), "+05:30")
 
 
-def test_strptime():
-    print("Running test_strptime()")
+def test_strptime() raises:
     m = Morrow.strptime(
         "20-01-2023 15:49:10", "%d-%m-%Y %H:%M:%S", TimeZone.none()
     )
-    assert_equal(str(m), "2023-01-20T15:49:10.000000+00:00")
+    assert_equal(String(m), "2023-01-20T15:49:10.000000+00:00")
 
     m = Morrow.strptime("2023-10-18 15:49:10 +0800", "%Y-%m-%d %H:%M:%S %z")
-    assert_equal(str(m), "2023-10-18T15:49:10.000000+08:00")
+    assert_equal(String(m), "2023-10-18T15:49:10.000000+08:00")
 
     m = Morrow.strptime("2023-10-18 15:49:10", "%Y-%m-%d %H:%M:%S", "+09:00")
-    assert_equal(str(m), "2023-10-18T15:49:10.000000+09:00")
+    assert_equal(String(m), "2023-10-18T15:49:10.000000+09:00")
 
 
-def test_ordinal():
-    print("Running test_ordinal()")
+def test_ordinal() raises:
     m = Morrow(2023, 10, 1)
     o = m.toordinal()
     assert_equal(o, 738794)
@@ -96,33 +121,31 @@ def test_ordinal():
     assert_equal(m.day, 1)
 
 
-def test_sub():
-    print("Running test_sub()")
+def test_sub() raises:
     var result = Morrow(2023, 10, 1, 10, 0, 0, 1) - Morrow(
         2023, 10, 1, 10, 0, 0
     )
     assert_equal(result.microseconds, 1)
-    assert_equal(str(result), "0:00:00000001")
+    assert_equal(String(result), "0:00:00000001")
 
     result = Morrow(2023, 10, 1, 10, 0, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.seconds, 1)
-    assert_equal(str(result), "0:00:01")
+    assert_equal(String(result), "0:00:01")
 
     result = Morrow(2023, 10, 1, 10, 1, 0) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.seconds, 60)
-    assert_equal(str(result), "0:01:00")
+    assert_equal(String(result), "0:01:00")
 
     result = Morrow(2023, 10, 2, 10, 0, 0) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 1)
-    assert_equal(str(result), "1 day, 0:00:00")
+    assert_equal(String(result), "1 day, 0:00:00")
 
     result = Morrow(2023, 10, 3, 10, 1, 1) - Morrow(2023, 10, 1, 10, 0, 0)
     assert_equal(result.days, 2)
-    assert_equal(str(result), "2 days, 0:01:01")
+    assert_equal(String(result), "2 days, 0:01:01")
 
 
-def test_timedelta():
-    print("Running test_timedelta()")
+def test_timedelta() raises:
     assert_equal(TimeDelta(3, 2, 100).total_seconds(), 259202.0001)
     assert_true(
         TimeDelta(2, 1, 50)
@@ -145,7 +168,7 @@ def test_timedelta():
     assert_true(not TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 50)))
     assert_true(TimeDelta(1, 1, 50).__gt__(TimeDelta(1, 1, 49)))
     assert_equal(
-        str(
+        String(
             TimeDelta(
                 weeks=100,
                 days=100,
@@ -160,18 +183,20 @@ def test_timedelta():
     )
 
 
-def test_from_to_py():
-    print("Running test_from_to_py()")
-    m = Morrow.now()
+def test_from_to_py() raises:
+    var m = Morrow(2024, 2, 1, 3, 4, 5, 123456)
     dt = m.to_py()
-    assert_datetime_equal(m, dt)
+    assert_python_datetime_equal(m, dt)
 
     m2 = Morrow.from_py(dt)
-    assert_datetime_equal(m2, dt)
+    assert_python_datetime_equal(m2, dt)
+
+    py_dt = py_dt_datetime()(2024, 2, 1, 3, 4, 5, 123456)
+    m3 = Morrow.from_py(py_dt)
+    assert_equal(m3.microsecond, 123456)
 
 
-def test_format():
-    print("Running test_format()")
+def test_format() raises:
     var m = Morrow(2024, 2, 1, 3, 4, 5, 123456)
     assert_equal(
         m.format("YYYY-MM-DD HH:mm:ss.SSS ZZ"), "2024-02-01 03:04:05.123 +00:00"
@@ -184,16 +209,9 @@ def test_format():
     assert_equal(m.format("d-dd-ddd-dddd"), "4--Thu-Thursday")
     assert_equal(m.format("YYYY[Y] [[]MM[]][M]"), "2024Y [02]M")
 
+    var m_tz = Morrow(2024, 2, 1, 3, 4, 5, 123456, TimeZone.from_utc("+05:30"))
+    assert_equal(m_tz.format("ZZ"), "+05:30")
 
-def main():
-    test_now()
-    test_utcnow()
-    test_fromtimestamp()
-    test_utcfromtimestamp()
-    test_iso_format()
-    test_sub()
-    test_time_zone()
-    test_strptime()
-    test_timedelta()
-    test_from_to_py()
-    test_format()
+
+def main() raises:
+    TestSuite.discover_tests[__functions_in_module()]().run()

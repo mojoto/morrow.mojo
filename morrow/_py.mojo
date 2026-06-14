@@ -1,4 +1,4 @@
-from python import Python, PythonObject
+from std.python import Python, PythonObject
 
 
 fn py_dt_datetime() raises -> PythonObject:
