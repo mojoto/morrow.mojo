@@ -189,7 +189,12 @@ def _replace(
     var i = 0
     while i < s.byte_length():
         var c = ord(s[byte=i])
-        if c == _D and i + 1 < s.byte_length() and s[byte=i + 1] == "o":
+        if (
+            c == _D
+            and match_chr_ord != _D
+            and i + 1 < s.byte_length()
+            and s[byte=i + 1] == "o"
+        ):
             if match_chr_ord > 0:
                 ret += _replace_token(
                     year,

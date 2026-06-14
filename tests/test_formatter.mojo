@@ -50,6 +50,11 @@ def test_format() raises:
 
     var leap = Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone.from_utc("UTC"))
     assert_equal(leap.format("DDD-DDDD-W"), "60-060-2024-W09-4")
+    assert_equal(Morrow(2024, 2, 1).format("Do"), "1st")
+    assert_equal(Morrow(2024, 2, 1).format("DDo"), "01o")
+    assert_equal(Morrow(2024, 2, 1).format("DDDo"), "32o")
+    assert_equal(Morrow(2024, 2, 1).format("DDDDo"), "032o")
+    assert_equal(Morrow(2024, 2, 1).format("DDo Do"), "01o 1st")
     assert_equal(leap.format("X-x"), "1709175845.123456-1709175845123456")
     assert_equal(
         Morrow(2024, 2, 29, 3, 4, 5, 100000, TimeZone.from_utc("UTC")).format(
