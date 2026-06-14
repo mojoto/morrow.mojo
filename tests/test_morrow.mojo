@@ -643,6 +643,33 @@ def test_flexible_get_creation_helpers() raises:
     )
     assert_equal(String(searched_datetime), "2023-01-20T15:49:10.000000+00:00")
 
+    var punctuated_datetime = Morrow.get(
+        "Cool date: 2019-10-31T09:12:45.123456+04:30.",
+        "YYYY-MM-DDTHH:mm:ss.SZZ",
+    )
+    assert_equal(
+        String(punctuated_datetime), "2019-10-31T09:12:45.123456+04:30"
+    )
+
+    var fenced_date = Morrow.get(
+        "Tomorrow (2019-10-31) is Halloween!", "YYYY-MM-DD"
+    )
+    assert_equal(String(fenced_date), "2019-10-31T00:00:00.000000+00:00")
+
+    var internal_punctuation = Morrow.get(
+        "Halloween is on 2019.10.31.", "YYYY.MM.DD"
+    )
+    assert_equal(
+        String(internal_punctuation), "2019-10-31T00:00:00.000000+00:00"
+    )
+
+    assert_get_raises("It's Halloween tomorrow (2019-10-31)!", "YYYY-MM-DD")
+    assert_get_raises("((2019-10-31)", "YYYY-MM-DD")
+    assert_get_raises("2019-10-31..", "YYYY-MM-DD")
+    assert_get_raises("date,2019-10-31", "YYYY-MM-DD")
+    assert_get_raises("2019-10-31,text", "YYYY-MM-DD")
+    assert_get_raises("date-2019-10-31", "YYYY-MM-DD")
+
     var whitespace_regex = Morrow.get(
         "Mon \t Sep 08   16:41:45     2014",
         "ddd[\\s+]MMM[\\s+]DD[\\s+]HH:mm:ss[\\s+]YYYY",

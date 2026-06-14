@@ -1796,12 +1796,48 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _has_left_parse_boundary(s: String, pos: Int) -> Bool:
-        return pos == 0 or not Self._is_ascii_alphanumeric(ord(s[byte=pos - 1]))
+        if pos == 0:
+            return True
+        var c = ord(s[byte=pos - 1])
+        if Self._is_ascii_whitespace(c):
+            return True
+        if Self._is_parse_punctuation(c):
+            return pos == 1 or Self._is_ascii_whitespace(ord(s[byte=pos - 2]))
+        return False
 
     @staticmethod
     def _has_right_parse_boundary(s: String, pos: Int) -> Bool:
-        return pos == s.byte_length() or not Self._is_ascii_alphanumeric(
-            ord(s[byte=pos])
+        if pos == s.byte_length():
+            return True
+        var c = ord(s[byte=pos])
+        if Self._is_ascii_whitespace(c):
+            return True
+        if Self._is_parse_punctuation(c):
+            return pos + 1 == s.byte_length() or Self._is_ascii_whitespace(
+                ord(s[byte=pos + 1])
+            )
+        return False
+
+    @staticmethod
+    def _is_parse_punctuation(c: Int) -> Bool:
+        return (
+            c == ord(",")
+            or c == ord(".")
+            or c == ord(";")
+            or c == ord(":")
+            or c == ord("?")
+            or c == ord("!")
+            or c == ord('"')
+            or c == ord("`")
+            or c == ord("'")
+            or c == ord("[")
+            or c == ord("]")
+            or c == ord("{")
+            or c == ord("}")
+            or c == ord("(")
+            or c == ord(")")
+            or c == ord("<")
+            or c == ord(">")
         )
 
     @staticmethod
