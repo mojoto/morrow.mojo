@@ -4,6 +4,9 @@
   <a href="https://github.com/mojoto/morrow.mojo/actions/workflows/test.yml">
     <img src="https://github.com/mojoto/morrow.mojo/actions/workflows/test.yml/badge.svg" alt="Test" />
   </a>
+  <a href="https://github.com/mojoto/morrow.mojo/actions/workflows/pages.yml">
+    <img src="https://github.com/mojoto/morrow.mojo/actions/workflows/pages.yml/badge.svg" alt="Documentation" />
+  </a>
   <a href="https://github.com/mojoto/morrow.mojo/releases">
     <img alt="GitHub release" src="https://img.shields.io/github/v/release/mojoto/morrow.mojo">
   </a>
@@ -12,6 +15,8 @@
 **Morrow** is a Mojo library that provides human-friendly method for managing, formatting, and transforming dates, times, and timestamps.
 
 Morrow is heavily inspired by [arrow](https://github.com/arrow-py/arrow), and thanks for its elegant design.
+
+Documentation: <https://mojoto.github.io/morrow.mojo/>
 
 ## Features
 

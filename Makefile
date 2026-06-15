@@ -3,8 +3,9 @@ MOJO_TEST_FLAGS ?= -I .
 MOJO_PYTHON ?= 3.14
 PACKAGE := morrow.mojopkg
 TEST_FILES := $(sort $(wildcard tests/test_*.mojo))
+DOCS_DIR := website
 
-.PHONY: help install test format build clean
+.PHONY: help install test format build clean docs-install docs-start docs-build docs-clean
 
 help:
 	@printf "Targets:\n"
@@ -13,6 +14,10 @@ help:
 	@printf "  format   Format Mojo sources and tests\n"
 	@printf "  build    Build $(PACKAGE)\n"
 	@printf "  clean    Remove generated build artifacts\n"
+	@printf "  docs-install  Install Docusaurus dependencies\n"
+	@printf "  docs-start    Start the Docusaurus dev server\n"
+	@printf "  docs-build    Build the Docusaurus static site\n"
+	@printf "  docs-clean    Remove Docusaurus generated artifacts\n"
 
 install:
 	@if ! command -v uv >/dev/null 2>&1; then \
@@ -39,3 +44,16 @@ build:
 
 clean:
 	rm -f $(PACKAGE)
+
+docs-install:
+	npm --prefix $(DOCS_DIR) install
+
+docs-start:
+	npm --prefix $(DOCS_DIR) run start
+
+docs-build:
+	npm --prefix $(DOCS_DIR) run build
+
+docs-clean:
+	npm --prefix $(DOCS_DIR) run clear
+	rm -rf $(DOCS_DIR)/build

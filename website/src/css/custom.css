@@ -1,0 +1,212 @@
+:root {
+  --ifm-color-primary: #0f766e;
+  --ifm-color-primary-dark: #115e59;
+  --ifm-color-primary-darker: #134e4a;
+  --ifm-color-primary-darkest: #0f3f3b;
+  --ifm-color-primary-light: #0d9488;
+  --ifm-color-primary-lighter: #14b8a6;
+  --ifm-color-primary-lightest: #2dd4bf;
+  --ifm-code-font-size: 95%;
+  --morrow-ink: #0f172a;
+  --morrow-muted: #475569;
+  --morrow-line: #cbd5e1;
+  --morrow-surface: #f8fafc;
+  --morrow-accent: #f59e0b;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #2dd4bf;
+  --ifm-color-primary-dark: #14b8a6;
+  --ifm-color-primary-darker: #0d9488;
+  --ifm-color-primary-darkest: #0f766e;
+  --ifm-color-primary-light: #5eead4;
+  --ifm-color-primary-lighter: #99f6e4;
+  --ifm-color-primary-lightest: #ccfbf1;
+  --morrow-ink: #e2e8f0;
+  --morrow-muted: #94a3b8;
+  --morrow-line: #334155;
+  --morrow-surface: #111827;
+  --morrow-accent: #fbbf24;
+}
+
+.navbar__logo img {
+  border-radius: 0;
+}
+
+.morrow-home {
+  background: var(--ifm-background-color);
+}
+
+.morrow-hero {
+  border-bottom: 1px solid var(--morrow-line);
+  background: var(--morrow-surface);
+}
+
+.morrow-hero__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
+  gap: 2rem;
+  align-items: center;
+  padding: 4rem 0;
+}
+
+.morrow-hero h1 {
+  color: var(--morrow-ink);
+  font-size: 3rem;
+  line-height: 1.05;
+  margin-bottom: 1rem;
+}
+
+.morrow-hero p {
+  color: var(--morrow-muted);
+  font-size: 1.15rem;
+  line-height: 1.65;
+  margin-bottom: 1.5rem;
+}
+
+.morrow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.morrow-code {
+  background: #08111f;
+  border: 1px solid #172338;
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
+  color: #eaf2ff;
+  overflow: hidden;
+}
+
+.morrow-code__bar {
+  align-items: center;
+  background: #0f172a;
+  border-bottom: 1px solid #243249;
+  color: #b6c4d8;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  padding: 0.75rem 1rem;
+}
+
+.morrow-code__dots {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.morrow-code__dots span {
+  background: #64748b;
+  border-radius: 999px;
+  display: block;
+  height: 0.55rem;
+  width: 0.55rem;
+}
+
+.morrow-code__dots span:first-child {
+  background: #f87171;
+}
+
+.morrow-code__dots span:nth-child(2) {
+  background: #fbbf24;
+}
+
+.morrow-code__dots span:nth-child(3) {
+  background: #34d399;
+}
+
+.morrow-code pre {
+  background: #08111f !important;
+  color: #eaf2ff;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  margin: 0;
+  padding: 1.25rem;
+  white-space: pre-wrap;
+}
+
+.morrow-code code {
+  background: transparent !important;
+  color: #eaf2ff !important;
+  font-family: var(--ifm-font-family-monospace);
+  text-shadow: none;
+}
+
+.morrow-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 2rem 0 4rem;
+}
+
+.morrow-card {
+  border: 1px solid var(--morrow-line);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.morrow-card h2 {
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.morrow-card p {
+  color: var(--morrow-muted);
+  margin: 0;
+}
+
+.footer {
+  padding-bottom: 2rem;
+}
+
+.footer__links {
+  display: grid;
+  gap: 3rem;
+  grid-template-columns: repeat(2, minmax(12rem, 1fr));
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 44rem;
+}
+
+.footer__col {
+  max-width: none;
+  text-align: left;
+}
+
+.footer__title {
+  text-align: left;
+}
+
+.footer__copyright {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+@media (max-width: 996px) {
+  .morrow-hero__inner,
+  .morrow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .morrow-hero__inner {
+    padding: 3rem 0;
+  }
+
+  .morrow-hero h1 {
+    font-size: 2.4rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer__links {
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+    max-width: 18rem;
+  }
+
+  .footer__col,
+  .footer__title {
+    text-align: center;
+  }
+}

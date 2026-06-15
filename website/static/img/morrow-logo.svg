@@ -1,0 +1,17 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">Morrow.mojo logo</title>
+  <defs>
+    <linearGradient id="morrow-flame" x1="25" x2="94" y1="119" y2="12" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f97316"/>
+      <stop offset="0.55" stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#facc15"/>
+    </linearGradient>
+    <linearGradient id="morrow-flame-core" x1="47" x2="77" y1="112" y2="53" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff7ad"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#morrow-flame)" d="M67 7c4 25 34 36 37 69 3 29-18 48-43 48-26 0-47-20-47-46 0-18 11-34 29-46-1 15 6 25 18 30C54 42 56 22 67 7Z"/>
+  <path fill="#ef4444" fill-opacity=".58" d="M31 79c0 17 13 31 31 31 16 0 29-12 29-29 0-16-10-27-25-39 1 20-10 29-20 38-6 5-12 11-15 19Z"/>
+  <path fill="url(#morrow-flame-core)" d="M66 53c11 12 17 22 17 34 0 15-10 26-24 26-13 0-24-11-24-25 0-10 7-20 18-29 0 11 5 20 14 25-6-12-6-22-1-31Z"/>
+</svg>

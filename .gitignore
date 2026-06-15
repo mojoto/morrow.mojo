@@ -3,3 +3,6 @@
 .magic
 .venv
 *.mojopkg
+website/.docusaurus
+website/build
+website/node_modules
