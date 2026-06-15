@@ -47,7 +47,8 @@
   grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
   gap: 2rem;
   align-items: center;
-  padding: 4rem 0;
+  padding-bottom: 4rem;
+  padding-top: 4rem;
 }
 
 .morrow-hero h1 {
@@ -137,7 +138,8 @@
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 2rem 0 4rem;
+  padding-bottom: 4rem;
+  padding-top: 2rem;
 }
 
 .morrow-card {
@@ -160,22 +162,41 @@
   padding-bottom: 2rem;
 }
 
-.footer__links {
-  display: grid;
+.row.footer__links {
+  display: grid !important;
   gap: 3rem;
   grid-template-columns: repeat(2, minmax(12rem, 1fr));
-  margin-left: auto;
-  margin-right: auto;
-  max-width: 44rem;
+  justify-content: center;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  max-width: 38rem;
+  padding-left: 0;
+  padding-right: 0;
+  width: 100%;
 }
 
-.footer__col {
-  max-width: none;
-  text-align: left;
+.footer .footer__col {
+  flex: initial !important;
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  text-align: center;
+  width: auto !important;
 }
 
 .footer__title {
-  text-align: left;
+  text-align: center;
+}
+
+.footer__items {
+  display: grid;
+  justify-items: center;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.footer__item {
+  text-align: center;
 }
 
 .footer__copyright {
@@ -190,7 +211,8 @@
   }
 
   .morrow-hero__inner {
-    padding: 3rem 0;
+    padding-bottom: 3rem;
+    padding-top: 3rem;
   }
 
   .morrow-hero h1 {
@@ -199,13 +221,13 @@
 }
 
 @media (max-width: 640px) {
-  .footer__links {
+  .row.footer__links {
     gap: 1.5rem;
     grid-template-columns: 1fr;
     max-width: 18rem;
   }
 
-  .footer__col,
+  .footer .footer__col,
   .footer__title {
     text-align: center;
   }

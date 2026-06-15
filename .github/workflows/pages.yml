@@ -14,6 +14,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -47,7 +50,6 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: website/build
-          include-hidden-files: true
 
   deploy:
     runs-on: ubuntu-latest
