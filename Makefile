@@ -25,7 +25,7 @@ install:
 		exit 1; \
 	fi
 	uv venv --python $(MOJO_PYTHON) --allow-existing
-	uv pip install mojo
+	uv pip install --prerelease allow mojo
 	.venv/bin/mojo --version
 
 test:
