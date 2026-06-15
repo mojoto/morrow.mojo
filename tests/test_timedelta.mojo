@@ -1,6 +1,7 @@
 from std.testing import assert_equal, assert_true, TestSuite
 
 from morrow import TimeDelta
+from morrow.timedelta import Max, Min, Resolution
 
 
 def test_timedelta() raises:
@@ -43,6 +44,37 @@ def test_timedelta() raises:
         ),
         "919 days, 23:28:30",
     )
+
+
+def test_timedelta_public_operators() raises:
+    var one_day = TimeDelta(days=1)
+    var one_hour = TimeDelta(hours=1)
+
+    assert_true(one_hour.__radd__(one_day).__eq__(TimeDelta(days=1, hours=1)))
+    assert_true(one_hour.__rsub__(one_day).__eq__(TimeDelta(hours=23)))
+    assert_true(one_hour.__pos__().__eq__(one_hour))
+
+    assert_true(TimeDelta(seconds=90).__mul__(2).__eq__(TimeDelta(minutes=3)))
+    assert_true(TimeDelta(seconds=90).__rmul__(2).__eq__(TimeDelta(minutes=3)))
+    assert_true(
+        TimeDelta(hours=2, minutes=5)
+        .__mod__(TimeDelta(hours=1))
+        .__eq__(TimeDelta(minutes=5))
+    )
+
+    assert_true(TimeDelta(seconds=1).__bool__())
+    assert_true(TimeDelta(microseconds=1).__bool__())
+    assert_true(not TimeDelta().__bool__())
+
+
+def test_timedelta_module_constants() raises:
+    assert_equal(Min.days, -99999999)
+    assert_equal(Min.seconds, 0)
+    assert_equal(Min.microseconds, 0)
+    assert_equal(Max.days, 99999999)
+    assert_equal(Max.seconds, 0)
+    assert_equal(Max.microseconds, 0)
+    assert_true(Resolution.__eq__(TimeDelta(microseconds=1)))
 
 
 def main() raises:

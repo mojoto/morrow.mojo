@@ -69,6 +69,46 @@ def assert_replace_second_raises(second: Int) raises:
     assert_true(False)
 
 
+def assert_replace_month_raises(month: Int) raises:
+    try:
+        _ = Morrow(2024, 2, 29, 3, 4, 5).replace(month=month)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_replace_day_raises(day: Int) raises:
+    try:
+        _ = Morrow(2024, 2, 29, 3, 4, 5).replace(day=day)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_replace_hour_raises(hour: Int) raises:
+    try:
+        _ = Morrow(2024, 2, 29, 3, 4, 5).replace(hour=hour)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_replace_minute_raises(minute: Int) raises:
+    try:
+        _ = Morrow(2024, 2, 29, 3, 4, 5).replace(minute=minute)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_replace_microsecond_raises(microsecond: Int) raises:
+    try:
+        _ = Morrow(2024, 2, 29, 3, 4, 5).replace(microsecond=microsecond)
+    except e:
+        return
+    assert_true(False)
+
+
 def assert_replace_year_raises(year: Int) raises:
     try:
         _ = Morrow(2024, 1, 1).replace(year=year)
@@ -88,6 +128,16 @@ def assert_strptime_raises(date_str: String, fmt: String) raises:
 def assert_fromordinal_raises(ordinal: Int) raises:
     try:
         _ = Morrow.fromordinal(ordinal)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_fromisocalendar_raises(
+    iso_year: Int, iso_week: Int, iso_weekday: Int
+) raises:
+    try:
+        _ = Morrow.fromisocalendar(iso_year, iso_week, iso_weekday)
     except e:
         return
     assert_true(False)
@@ -132,6 +182,78 @@ def assert_dehumanize_raises(value: Morrow, input_string: String) raises:
 def assert_shift_weekday_raises(value: Morrow, weekday: Int) raises:
     try:
         _ = value.shift(weekday=weekday)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_span_raises(value: Morrow, frame: String) raises:
+    try:
+        _ = value.span(frame)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_span_bounds_raises(value: Morrow, bounds: String) raises:
+    try:
+        _ = value.span("hour", bounds=bounds)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_floor_week_start_raises(value: Morrow, week_start: Int) raises:
+    try:
+        _ = value.floor("week", week_start=week_start)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_range_raises(frame: String, start: Morrow, end: Morrow) raises:
+    try:
+        _ = Morrow.range(frame, start, end)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_span_range_bounds_raises(
+    start: Morrow, end: Morrow, bounds: String
+) raises:
+    try:
+        _ = Morrow.span_range("hour", start, end, bounds=bounds)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_interval_raises(
+    frame: String, start: Morrow, end: Morrow, interval: Int
+) raises:
+    try:
+        _ = Morrow.interval(frame, start, end, interval=interval)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_interval_bounds_raises(
+    start: Morrow, end: Morrow, bounds: String
+) raises:
+    try:
+        _ = Morrow.interval("hour", start, end, bounds=bounds)
+    except e:
+        return
+    assert_true(False)
+
+
+def assert_is_between_bounds_raises(
+    value: Morrow, start: Morrow, end: Morrow, bounds: String
+) raises:
+    try:
+        _ = value.is_between(start, end, bounds=bounds)
     except e:
         return
     assert_true(False)
@@ -230,6 +352,10 @@ def test_strptime() raises:
     assert_equal(String(m), "2024-02-29T03:04:05.000000+05:30:15")
     m = Morrow.strptime("2024-02-29 03:04:05 +05:30:15", "%Y-%m-%d %H:%M:%S %z")
     assert_equal(String(m), "2024-02-29T03:04:05.000000+05:30:15")
+    m = Morrow.strptime("2024-02-29 03:04:05 -053015", "%Y-%m-%d %H:%M:%S %z")
+    assert_equal(String(m), "2024-02-29T03:04:05.000000-05:30:15")
+    m = Morrow.strptime("2024-02-29 03:04:05 -05:30:15", "%Y-%m-%d %H:%M:%S %z")
+    assert_equal(String(m), "2024-02-29T03:04:05.000000-05:30:15")
     m = Morrow.strptime("2024-02-29 03:04:05 Z", "%Y-%m-%d %H:%M:%S %z")
     assert_equal(String(m), "2024-02-29T03:04:05.000000+00:00")
     m = Morrow.strptime("2024-02-29 03:04:05 UTC", "%Y-%m-%d %H:%M:%S %Z")
@@ -260,11 +386,22 @@ def test_strptime() raises:
     assert_strptime_raises("2024-02-29abc", "%Y-%m-%d")
     assert_strptime_raises("2024-02-29 24:00", "%Y-%m-%d %H:%M")
     assert_strptime_raises("2024-02-29 03:04:05 +05", "%Y-%m-%d %H:%M:%S %z")
+    assert_strptime_raises("2024-02-29 03:04:05 ", "%Y-%m-%d %H:%M:%S %z")
+    assert_strptime_raises("2024-02-29 03:04:05 z", "%Y-%m-%d %H:%M:%S %z")
+    assert_strptime_raises("2024-02-29 03:04:05 +0a00", "%Y-%m-%d %H:%M:%S %z")
+    assert_strptime_raises("2024-02-29 03:04:05 +05:60", "%Y-%m-%d %H:%M:%S %z")
+    assert_strptime_raises(
+        "2024-02-29 03:04:05 +05:30:60", "%Y-%m-%d %H:%M:%S %z"
+    )
+    assert_strptime_raises("2024-02-29 03:04:05 +24:00", "%Y-%m-%d %H:%M:%S %z")
+    assert_strptime_raises("2024-02-29 03:04:05 -24:00", "%Y-%m-%d %H:%M:%S %z")
     assert_strptime_raises(
         "2024-02-29 03:04:05 +05:30:15.5", "%Y-%m-%d %H:%M:%S %z"
     )
     assert_strptime_raises("2024-02-29 03:04:05 EST", "%Y-%m-%d %H:%M:%S %Z")
     assert_strptime_raises("2024-02-29 03:04:05 local", "%Y-%m-%d %H:%M:%S %Z")
+    assert_strptime_raises("2024-02-29 03:04:05 ", "%Y-%m-%d %H:%M:%S %Z")
+    assert_strptime_raises("2024-02-29 03:04:05.", "%Y-%m-%d %H:%M:%S.%f")
     assert_strptime_raises(
         "2024-02-29 03:04:05.1234567", "%Y-%m-%d %H:%M:%S.%f"
     )
@@ -299,6 +436,11 @@ def test_iso_calendar_creation() raises:
 
     var iso = MorrowIsoCalendar(2020, 53, 7)
     assert_equal(String(Morrow.get(iso)), "2021-01-03T00:00:00.000000+00:00")
+
+    assert_fromisocalendar_raises(2024, 0, 1)
+    assert_fromisocalendar_raises(2024, 54, 1)
+    assert_fromisocalendar_raises(2024, 1, 0)
+    assert_fromisocalendar_raises(2024, 1, 8)
 
 
 def test_sub() raises:
@@ -408,7 +550,13 @@ def test_replace() raises:
 
     assert_replace_year_raises(0)
     assert_replace_year_raises(10000)
+    assert_replace_month_raises(0)
+    assert_replace_month_raises(13)
+    assert_replace_day_raises(30)
+    assert_replace_hour_raises(24)
+    assert_replace_minute_raises(60)
     assert_replace_second_raises(60)
+    assert_replace_microsecond_raises(1000000)
 
 
 def test_shift_months_clamps_to_last_day() raises:
@@ -820,6 +968,55 @@ def test_interval_exact_range_and_is_between() raises:
     assert_true(not high.is_between(low, high, bounds="[)"))
 
 
+def test_range_span_interval_errors_and_bounds() raises:
+    var utc = TimeZone.from_utc("UTC")
+    var start = Morrow(2013, 5, 5, 12, 30, 0, 0, utc)
+    var end = Morrow(2013, 5, 5, 17, 15, 0, 0, utc)
+
+    var reversed_values = Morrow.range("hour", end, start)
+    assert_equal(len(reversed_values), 0)
+
+    var zero_limited = Morrow.range("hour", start, end, limit=0)
+    assert_equal(len(zero_limited), 0)
+
+    var zero_limited_without_end = Morrow.range("hour", start, limit=0)
+    assert_equal(len(zero_limited_without_end), 0)
+
+    assert_range_raises("fortnight", start, end)
+    assert_span_raises(start, "fortnight")
+    assert_span_bounds_raises(start, "[")
+    assert_span_bounds_raises(start, "[}")
+    assert_floor_week_start_raises(start, 0)
+    assert_floor_week_start_raises(start, 8)
+
+    assert_interval_raises("hour", start, end, 0)
+    assert_interval_raises("hour", start, end, -2)
+    assert_interval_raises("fortnight", start, end, 1)
+    assert_span_range_bounds_raises(start, end, "xx")
+    assert_interval_bounds_raises(start, end, "(}")
+
+    var exact_limited = Morrow.interval(
+        "hour", start, end, interval=2, limit=1, exact=True
+    )
+    assert_equal(len(exact_limited), 1)
+    assert_equal(
+        String(exact_limited[0].start), "2013-05-05T12:30:00.000000+00:00"
+    )
+    assert_equal(
+        String(exact_limited[0].end), "2013-05-05T14:29:59.999999+00:00"
+    )
+
+    var low = start
+    var middle = start.shift(minutes=1)
+    var high = start.shift(minutes=2)
+    assert_true(low.is_between(low, high, bounds="[)"))
+    assert_true(not low.is_between(low, high, bounds="()"))
+    assert_true(middle.is_between(low, high, bounds="()"))
+    assert_true(high.is_between(low, high, bounds="[]"))
+    assert_true(not high.is_between(low, high, bounds="[)"))
+    assert_is_between_bounds_raises(middle, low, high, "[")
+
+
 def test_object_properties_and_serialization() raises:
     var utc = TimeZone.from_utc("UTC")
     var m = Morrow(2019, 1, 24, 16, 35, 27, 276649, utc)
@@ -860,6 +1057,7 @@ def test_component_views() raises:
     assert_equal(date.month, 2)
     assert_equal(date.day, 29)
     assert_equal(String(date), "2024-02-29")
+    assert_equal(date.to_string(), "2024-02-29")
 
     var time = m.time()
     assert_equal(time.hour, 3)
@@ -868,10 +1066,12 @@ def test_component_views() raises:
     assert_equal(time.microsecond, 123456)
     assert_true(time.tz.is_none())
     assert_equal(String(time), "03:04:05.123456")
+    assert_equal(time.to_string(), "03:04:05.123456")
 
     var timetz = m.timetz()
     assert_equal(timetz.tz.offset, 19800)
     assert_equal(String(timetz), "03:04:05.123456+05:30")
+    assert_equal(timetz.to_string(), "03:04:05.123456+05:30")
 
     var timetz_seconds = Morrow(
         2024, 2, 29, 3, 4, 5, 123456, TimeZone(19815)
@@ -1200,7 +1400,30 @@ def test_humanize_and_dehumanize() raises:
 def test_creation_helpers() raises:
     assert_component_get_raises(0, 1, 1)
     assert_component_get_raises(10000, 1, 1)
+    assert_component_get_raises(2024, 0, 1)
+    assert_component_get_raises(2024, 13, 1)
+    assert_component_get_raises(2024, 2, 30)
     assert_string_get_raises("0000-01-01")
+    assert_fromisoformat_raises("202")
+    assert_fromisoformat_raises("2024-000")
+    assert_fromisoformat_raises("2024-367")
+    assert_fromisoformat_raises("2024000")
+    assert_fromisoformat_raises("2024367")
+    assert_fromisoformat_raises("2024-00")
+    assert_fromisoformat_raises("2024-13")
+    assert_fromisoformat_raises("2024-02-30")
+    assert_fromisoformat_raises("2024-02/29")
+    assert_fromisoformat_raises("2024-02-29t03:04:05")
+    assert_fromisoformat_raises("2024-02-29T0")
+    assert_fromisoformat_raises("2024-02-29T03:")
+    assert_fromisoformat_raises("2024-02-29T03:04:")
+    assert_fromisoformat_raises("2024-02-29T03:04.1")
+    assert_fromisoformat_raises("2024-02-29T03:04:05z")
+    assert_fromisoformat_raises("2024-02-29T03:04:05+0a:00")
+    assert_fromisoformat_raises("2024-02-29T03:04:05+05:3a")
+    assert_fromisoformat_raises("2024-02-29T03:04:05+05:300")
+    assert_fromisoformat_raises("2024-02-29T03:04:05+05:30Z")
+    assert_fromisoformat_raises("2024-02-29T03:04:05Zabc")
 
     var extended = Morrow.fromisoformat("2013-09-29T01:26:43.830580+08:00")
     assert_equal(String(extended), "2013-09-29T01:26:43.830580+08:00")

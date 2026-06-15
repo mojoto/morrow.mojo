@@ -5,7 +5,12 @@ from morrow import (
     FORMAT_COOKIE,
     FORMAT_RSS,
     FORMAT_RFC822,
+    FORMAT_RFC850,
+    FORMAT_RFC1036,
+    FORMAT_RFC1123,
+    FORMAT_RFC2822,
     FORMAT_RFC3339,
+    FORMAT_RFC3339_STRICT,
     FORMAT_W3C,
     Morrow,
 )
@@ -30,7 +35,12 @@ def test_format() raises:
         m.format("S-SS-SSS-SSSS-SSSSS-SSSSSS"), "1-12-123-1234-12345-123456"
     )
     assert_equal(m.format("d-dd-ddd-dddd"), "4--Thu-Thursday")
+    assert_equal(m.format(""), "")
     assert_equal(m.format("YYYY[Y] [[]MM[]][M]"), "2024Y [02]M")
+    assert_equal(m.format("["), "[")
+    assert_equal(m.format("]YYYY"), "]2024")
+    assert_equal(m.format("YYYY[MM"), "2024[02")
+    assert_equal(m.format("YYYY[[MM]]"), "2024[MM]")
 
     var m_tz = Morrow(2024, 2, 1, 3, 4, 5, 123456, TimeZone.from_utc("+05:30"))
     assert_equal(m_tz.format("ZZ"), "+05:30")
@@ -100,7 +110,22 @@ def test_format() raises:
     assert_equal(
         standard.format(FORMAT_RFC822), "Wed, 27 May 20 10:30:35 +0000"
     )
+    assert_equal(
+        standard.format(FORMAT_RFC850), "Wednesday, 27-May-20 10:30:35 UTC"
+    )
+    assert_equal(
+        standard.format(FORMAT_RFC1036), "Wed, 27 May 20 10:30:35 +0000"
+    )
+    assert_equal(
+        standard.format(FORMAT_RFC1123), "Wed, 27 May 2020 10:30:35 +0000"
+    )
+    assert_equal(
+        standard.format(FORMAT_RFC2822), "Wed, 27 May 2020 10:30:35 +0000"
+    )
     assert_equal(standard.format(FORMAT_RFC3339), "2020-05-27 10:30:35+00:00")
+    assert_equal(
+        standard.format(FORMAT_RFC3339_STRICT), "2020-05-27T10:30:35+00:00"
+    )
     assert_equal(standard.format(FORMAT_W3C), "2020-05-27 10:30:35+00:00")
 
 
