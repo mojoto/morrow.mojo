@@ -9,10 +9,10 @@ sidebar_position: 5
 ```text
 from morrow import Morrow, TimeZone
 
-var utc = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
+var utc = Morrow(2026, 1, 1, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
 
-print(str(utc.to("+08:00")))
-print(str(utc.astimezone("-05:00")))
+print(utc.to("+08:00"))
+print(utc.astimezone("-05:00"))
 print(utc.utcoffset().total_seconds())
 ```
 

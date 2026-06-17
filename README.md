@@ -1,4 +1,8 @@
-# Morrow.mojo: Human-friendly date & time for Mojo 🔥
+# Morrow.mojo
+
+Human-friendly date and time utilities for Mojo. Morrow provides an
+Arrow-inspired API for creating, parsing, formatting, shifting, comparing, and
+humanizing date-time values.
 
 <p align="center">
   <a href="https://github.com/mojoto/morrow.mojo/actions/workflows/test.yml">
@@ -12,174 +16,69 @@
   </a>
 </p>
 
-**Morrow** is a Mojo library that provides human-friendly method for managing, formatting, and transforming dates, times, and timestamps.
+> Documentation: https://mojoto.github.io/morrow.mojo/
 
-Morrow is heavily inspired by [arrow](https://github.com/arrow-py/arrow), and thanks for its elegant design.
+## Installation
 
-Documentation: <https://mojoto.github.io/morrow.mojo/>
+Download `morrow.mojopkg` from
+[releases](https://github.com/mojoto/morrow.mojo/releases), build it from this
+repository, or vendor the `morrow` directory in your Mojo project.
 
-## Features
+```bash
+make install
+make build
+```
 
-- TimeZone-aware and UTC by default.
-- Support format and parse strings.
-- Support for the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) standard.
+When using the source directory directly, add the project root to Mojo's import
+path:
 
-## Preparation
-
-You have three ways to reference this library:
-
-- Download morrow.mojopkg from [releases](https://github.com/mojoto/morrow.mojo/releases).
-- Clone this project and execute `make build` to build morrow.mojopkg.
-- Directly copy the `morrow` directory of this project to your own project.
+```bash
+uv run mojo run -I . main.mojo
+```
 
 ## Usage
 
 ```mojo
-from std.collections import List
 from morrow import FORMAT_RSS, Morrow, TimeZone
 
-# Get local date and time.
-var now = Morrow.now()
-print(str(now))  # 2023-10-01T20:10:25.188957+08:00
 
-# Get UTC date and time.
-var utcnow = Morrow.utcnow()
-print(str(utcnow))  # 2023-10-01T20:10:25.954638+00:00
+def main() raises:
+    var now = Morrow.now()
+    print(now)
 
-# Get local time from POSIX timestamp.
-var t = Morrow.fromtimestamp(1696089600)
-print(str(t))  # 2023-10-01T00:00:00.000000+08:00
+    var utc = Morrow.utcnow()
+    print(utc)
 
-# Get UTC time from POSIX timestamp.
-var utc_t = Morrow.utcfromtimestamp(1696089600)
-print(str(utc_t))  # 2023-09-30T16:00:00.000000+00:00
-print(str(Morrow.utcfromtimestamp("1700000000.5")))  # 2023-11-14T22:13:20.500000+00:00
+    var parsed = Morrow.get("2026-01-01 03:04:05Z")
+    print(parsed)
+    print(parsed.format("YYYY-MM-DD HH:mm:ss ZZ"))
 
-# Create from ISO 8601 strings and timestamps.
-print(str(Morrow.get("2013-05-05")))  # 2013-05-05T00:00:00.000000+00:00
-print(str(Morrow.fromisoformat("20160413T133656.456289Z")))  # 2016-04-13T13:36:56.456289+00:00
-print(str(Morrow.get(1700000000.0)))  # 2023-11-14T22:13:20.000000+00:00
-print(str(Morrow.get(1700000000.5, "+05:30")))  # 2023-11-15T03:43:20.500000+05:30
-print(Morrow.now("+08:00").tz.offset)  # 28800
-print(Morrow.get().tz.offset)  # 0
-print(Morrow.get(TimeZone.from_utc("+08:00")).tz.offset)  # 28800
-print(str(Morrow.get("2023-01-20 15:49:10.123456 +05:30", "YYYY-MM-DD HH:mm:ss.SSSSSS ZZ")))  # 2023-01-20T15:49:10.123456+05:30
-print(str(Morrow.get("2024-02-29 Utc", "YYYY-MM-DD ZZZ")))  # 2024-02-29T00:00:00.000000+00:00
-print(str(Morrow.get("jan 2nd, 2023", "MMM Do, YYYY")))  # 2023-01-02T00:00:00.000000+00:00
-print(str(Morrow.get("June was born in May 1980", "MMMM YYYY")))  # 1980-05-01T00:00:00.000000+00:00
-print(str(Morrow.get("Mon \t Sep 08   16:41:45     2014", "ddd[\\s+]MMM[\\s+]DD[\\s+]HH:mm:ss[\\s+]YYYY")))  # 2014-09-08T16:41:45.000000+00:00
-print(str(Morrow.get("\t \n  2013-05-05T12:30:45.123456 \t \n", normalize_whitespace=True)))  # 2013-05-05T12:30:45.123456+00:00
-print(str(Morrow.get("2013-05-05 12:30:45 123456", "YYYY-MM-DD HH:mm:ss S")))  # 2013-05-05T12:30:45.123456+00:00
-print(str(Morrow.get("2023-01-02 12:05 pm", "YYYY-MM-DD hh:mm A")))  # 2023-01-02T12:05:00.000000+00:00
-print(str(Morrow.get("2024 060", "YYYY DDDD")))  # 2024-02-29T00:00:00.000000+00:00
-print(str(Morrow.get("2024-W09-4", "W")))  # 2024-02-29T00:00:00.000000+00:00
-print(str(Morrow.get("Thursday 2024-02-29", "dddd YYYY-MM-DD")))  # 2024-02-29T00:00:00.000000+00:00
-print(str(Morrow.get("1709175845123456", "x")))  # 2024-02-29T03:04:05.123456+00:00
-var formats = List[String]()
-formats.append("YYYY/MM/DD")
-formats.append("YYYY-MM-DD HH:mm:ss")
-print(str(Morrow.get("2023-01-20 15:49:10", formats)))  # 2023-01-20T15:49:10.000000+00:00
-var date_view = Morrow(2024, 2, 29).date()
-print(str(Morrow.fromdate(date_view, "+05:30")))  # 2024-02-29T00:00:00.000000+05:30
-print(str(Morrow.fromdatetime(Morrow(2024, 2, 29, 3))))  # 2024-02-29T03:00:00.000000+00:00
+    var beijing = parsed.to("+08:00")
+    print(beijing)
 
-# Get ISO format.
-var m = Morrow(2023, 10, 1, 0, 0, 0, 1234)
-print(m.isoformat())  # 2023-10-01T00:00:00.001234
+    var hour = beijing.span("hour")
+    print(hour)
 
-# custom format
-var m = Morrow(2023, 10, 1, 0, 0, 0, 1234)
-print(m.format("YYYY-MM-DD HH:mm:ss.SSSSSS ZZ"))  # 2023-10-01 00:00:00.001234 +00:00
-print(m.format("dddd, DD MMM YYYY HH:mm:ss ZZZ"))  # Sunday, 01 Oct 2023 00:00:00 UTC
-print(m.format("YYYY[Y]MM[M]DD[D]"))  # 2023Y10M01D
-print(Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone.from_utc("UTC")).format("DDD W X x"))  # 60 2024-W09-4 1709175845.123456 1709175845123456
-print(Morrow(2020, 5, 27, 10, 30, 35, 0, TimeZone(0, "UTC")).format(FORMAT_RSS))  # Wed, 27 May 2020 10:30:35 +0000
-print(Morrow(2024, 1, 23).format("Do MMMM YYYY"))  # 23rd January 2024
-print(Morrow(2024, 2, 29, 3, 4, 5, 123456, TimeZone(19800, "IST")).strftime("%Y-%m-%d %H:%M:%S.%f %z %Z"))  # 2024-02-29 03:04:05.123456 +0530 IST
+    print(beijing.isocalendar())
+    print(beijing.timetuple())
 
-# Get ISO format with time zone.
-var m_beijing = Morrow(2023, 10, 1, 0, 0, 0, 1234, TimeZone(28800, 'Bejing'))
-print(m_beijing.isoformat(timespec="seconds"))  # 2023-10-01T00:00:00+08:00
+    var rss = Morrow(2026, 1, 1, 10, 30, 35, 0, TimeZone(0, "UTC"))
+    print(rss.format(FORMAT_RSS))
+```
 
-# Replace selected fields.
-var replaced = m.replace(year=2024, month=2, day=29)
-print(str(replaced))  # 2024-02-29T00:00:00.001234
-print(str(m.replace(tzinfo="+08:00")))  # 2023-10-01T00:00:00.001234+08:00
+Morrow is UTC by default, supports fixed-offset time zones, parses ISO 8601
+strings and POSIX timestamps, and formats values with Arrow-style tokens or
+Python-style `strftime`.
 
-# Shift by relative offsets. Month and year shifts clamp to the last valid day.
-var shifted = Morrow(2024, 1, 31).shift(months=1, weeks=1, hours=2)
-print(str(shifted))  # 2024-03-07T02:00:00.000000
+## Contributing
 
-# Get the floor, ceiling, or span of a timeframe.
-var hour = Morrow(2024, 2, 29, 13, 14, 15).span("hour")
-print(str(hour.start))  # 2024-02-29T13:00:00.000000
-print(str(hour.end))  # 2024-02-29T13:59:59.999999
-print(str(Morrow(2024, 2, 29, 13, 14, 15).floor("day")))  # 2024-02-29T00:00:00.000000
-print(str(Morrow(2024, 2, 29, 13, 14, 15).span("hour", exact=True).start))  # 2024-02-29T13:14:15.000000
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
 
-# Iterate over ranges and span ranges.
-var start = Morrow(2013, 5, 5, 12, 30, 0, 0, TimeZone.from_utc("UTC"))
-var end = Morrow(2013, 5, 5, 17, 15, 0, 0, TimeZone.from_utc("UTC"))
-var points = Morrow.range("hour", start, end)
-print(str(points[0]))  # 2013-05-05T12:30:00.000000+00:00
-var spans = Morrow.span_range("hour", start, end)
-print(str(spans[0].start))  # 2013-05-05T12:00:00.000000+00:00
-var tz_points = Morrow.range("hour", start.naive(), end.naive(), TimeZone.from_utc("+08:00"), limit=2)
-print(str(tz_points[0]))  # 2013-05-05T12:30:00.000000+08:00
-var limited_points = Morrow.range("hour", start, limit=3)
-print(str(limited_points[2]))  # 2013-05-05T14:30:00.000000+00:00
-
-# Convert fixed-offset time zones and get POSIX timestamps.
-var utc = Morrow(2024, 2, 29, 16, 30, 0, 123456, TimeZone.from_utc("UTC"))
-print(str(utc.to("+08:00")))  # 2024-03-01T00:30:00.123456+08:00
-print(str(utc.astimezone("-05:00")))  # 2024-02-29T11:30:00.123456-05:00
-print(str(utc.datetime()))  # 2024-02-29T16:30:00.123456+00:00
-print(utc.timestamp())  # 1709224200.123456
-print(utc.int_timestamp())  # 1709224200
-print(utc.for_json())  # 2024-02-29T16:30:00.123456+00:00
-
-# Get ctime and ISO calendar fields.
-print(utc.ctime())  # Thu Feb 29 16:30:00 2024
-var iso = utc.isocalendar()
-print(iso.week)  # 9
-print(str(Morrow.fromisocalendar(2013, 18, 7)))  # 2013-05-05T00:00:00.000000+00:00
-print(str(Morrow.get(iso)))  # 2024-02-29T00:00:00.000000+00:00
-
-# Get date, time, and struct_time-style component views.
-print(str(utc.date()))  # 2024-02-29
-print(str(utc.time()))  # 16:30:00.123456
-print(str(utc.timetz()))  # 16:30:00.123456+00:00
-print(utc.timetuple().yday)  # 60
-print(utc.utctimetuple().hour)  # 16
-print(utc.utcoffset().total_seconds())  # 0.0
-print(utc.fold())  # 0
-print(utc.ambiguous())  # False
-print(utc.imaginary())  # False
-
-# Humanize and dehumanize English relative times.
-var present = Morrow(2024, 1, 1, 12, 0, 0, 0, TimeZone.from_utc("UTC"))
-print(Morrow.utcnow().shift(hours=-1).humanize())  # an hour ago
-print(present.shift(hours=2).humanize(present))  # in 2 hours
-var granularity = List[String]()
-granularity.append("hour")
-granularity.append("minute")
-print(present.shift(minutes=66).humanize(present, granularity=granularity))  # in an hour and 6 minutes
-print(str(present.dehumanize("2 days ago")))  # 2023-12-30T12:00:00.000000+00:00
-
-# Get time zone offset.
-print(TimeZone.from_utc('UTC+08:00').offset)  # 28800
-
-# Subtract two dates.
-var timedelta = Morrow(2023, 10, 2, 10, 0, 0) - Morrow(2023, 10, 1, 10, 0, 0)
-print(str(timedelta))  # 1 day, 0:00:00
-
-# Return proleptic Gregorian ordinal for the year, month and day.
-var m_10_1 = Morrow(2023, 10, 1)
-var ordinal = m_10_1.toordinal()
-print(ordinal)  # 738794
-
-# Construct a Morrow from a proleptic Gregorian ordinal.
-var m_10_1_ = Morrow.fromordinal(ordinal)
-print(str(m_10_1_))  # 2023-10-01T00:00:00.000000
-
+```bash
+make install      # Install Mojo into .venv
+make test         # Run tests
+make format       # Format sources and tests
+make build        # Build morrow.mojopkg
+make doc-install  # Install documentation dependencies
+make doc-serve    # Preview documentation site
 ```

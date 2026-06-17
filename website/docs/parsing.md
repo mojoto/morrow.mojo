@@ -9,10 +9,10 @@ Morrow accepts ISO 8601 strings, timestamps, component values, Arrow-style forma
 ## ISO and timestamps
 
 ```text
-print(str(Morrow.get("2013-05-05")))
-print(str(Morrow.fromisoformat("20160413T133656.456289Z")))
-print(str(Morrow.get(1700000000.0)))
-print(str(Morrow.get("2024-02-29 03:04:05Z")))
+print(Morrow.get("2026-01-01"))
+print(Morrow.fromisoformat("20260101T030405.123456Z"))
+print(Morrow.get(1767225600.0))
+print(Morrow.get("2026-01-01 03:04:05Z"))
 ```
 
 ISO parsing supports extended and basic calendar dates, ordinal dates, ISO week dates, comma or dot subseconds, `24:00` end-of-day notation, and fixed-offset time zones.
@@ -20,16 +20,16 @@ ISO parsing supports extended and basic calendar dates, ordinal dates, ISO week 
 ## Arrow-style formats
 
 ```text
-print(str(Morrow.get("2023-01-20 15:49:10.123456 +05:30", "YYYY-MM-DD HH:mm:ss.SSSSSS ZZ")))
-print(str(Morrow.get("jan 2nd, 2023", "MMM Do, YYYY")))
-print(str(Morrow.get("Thursday 2024-02-29", "dddd YYYY-MM-DD")))
-print(str(Morrow.get("1709175845123456", "x")))
+print(Morrow.get("2026-01-01 15:49:10.123456 +05:30", "YYYY-MM-DD HH:mm:ss.SSSSSS ZZ"))
+print(Morrow.get("Jan 1st, 2026", "MMM Do, YYYY"))
+print(Morrow.get("Thursday 2026-01-01", "dddd YYYY-MM-DD"))
+print(Morrow.get("1767236645123456", "x"))
 ```
 
 When input text may include extra content, Morrow searches for a valid token match with parse boundaries:
 
 ```text
-print(str(Morrow.get("June was born in May 1980", "MMMM YYYY")))
+print(Morrow.get("June was born in January 2026", "MMMM YYYY"))
 ```
 
 ## Multiple formats
@@ -41,5 +41,5 @@ var formats = List[String]()
 formats.append("YYYY/MM/DD")
 formats.append("YYYY-MM-DD HH:mm:ss")
 
-print(str(Morrow.get("2023-01-20 15:49:10", formats)))
+print(Morrow.get("2026-01-01 15:49:10", formats))
 ```
