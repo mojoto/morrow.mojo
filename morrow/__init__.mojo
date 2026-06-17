@@ -9,7 +9,7 @@ from .morrow import (
 from .timezone import TimeZone
 from .timedelta import TimeDelta
 
-comptime __version__ = "0.5.0"
+comptime __version__ = "0.6.0"
 
 comptime FORMAT_ATOM = "YYYY-MM-DD HH:mm:ssZZ"
 comptime FORMAT_COOKIE = "dddd, DD-MMM-YYYY HH:mm:ss ZZZ"

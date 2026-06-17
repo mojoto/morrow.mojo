@@ -82,5 +82,7 @@ make test         # Run tests
 make format       # Format sources and tests
 make build        # Build morrow.mojopkg
 make doc-install  # Install documentation dependencies
-make doc-serve    # Preview documentation site
+make doc-serve    # Serve the built documentation site
 ```
+
+Local docs are served under `/morrow.mojo/`; Chinese docs are at `http://localhost:3000/morrow.mojo/zh-Hans/`.

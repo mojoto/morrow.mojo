@@ -75,5 +75,7 @@ make test         # 运行测试
 make format       # 格式化源码和测试
 make build        # 构建 morrow.mojopkg
 make doc-install  # 安装文档依赖
-make doc-serve    # 预览文档站点
+make doc-serve    # 服务已构建的文档站点
 ```
+
+本地文档服务在 `/morrow.mojo/` 路径下，中文文档地址是 `http://localhost:3000/morrow.mojo/zh-Hans/`。

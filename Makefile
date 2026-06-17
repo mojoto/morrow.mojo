@@ -15,7 +15,7 @@ help:
 	@printf "  build    Build $(PACKAGE)\n"
 	@printf "  clean    Remove generated build artifacts\n"
 	@printf "  doc-install  Install Docusaurus dependencies\n"
-	@printf "  doc-serve    Start the Docusaurus dev server\n"
+	@printf "  doc-serve    Serve the built Docusaurus site\n"
 	@printf "  doc-build    Build the Docusaurus static site\n"
 	@printf "  doc-clean    Remove Docusaurus generated artifacts\n"
 
@@ -49,7 +49,7 @@ doc-install:
 	npm --prefix $(DOCS_DIR) install
 
 doc-serve:
-	npm --prefix $(DOCS_DIR) run start
+	npm --prefix $(DOCS_DIR) run serve
 
 doc-build:
 	npm --prefix $(DOCS_DIR) run build
