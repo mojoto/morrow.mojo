@@ -1040,6 +1040,7 @@ def test_object_properties_and_serialization() raises:
     assert_equal(iso.year, 2024)
     assert_equal(iso.week, 9)
     assert_equal(iso.weekday, 4)
+    assert_equal(String(iso), "MorrowIsoCalendar(year=2024, week=9, weekday=4)")
 
     var year_edge = Morrow(2018, 12, 31).isocalendar()
     assert_equal(Morrow(2018, 12, 31).week(), 1)
@@ -1100,6 +1101,13 @@ def test_component_views() raises:
     assert_equal(tuple.wday, 3)
     assert_equal(tuple.yday, 60)
     assert_equal(tuple.isdst, 0)
+    assert_equal(
+        String(tuple),
+        (
+            "MorrowTimeTuple(year=2024, mon=2, mday=29, hour=3, min=4, sec=5,"
+            " wday=3, yday=60, isdst=0)"
+        ),
+    )
 
     var utc_tuple = m.utctimetuple()
     assert_equal(utc_tuple.year, 2024)
@@ -1119,6 +1127,17 @@ def test_timezone_status_flags() raises:
     assert_equal(m.fold(), 0)
     assert_true(not m.ambiguous())
     assert_true(not m.imaginary())
+
+
+def test_span_string_representation() raises:
+    var span = Morrow(2024, 2, 29, 3, 4, 5).span("hour")
+    assert_equal(
+        String(span),
+        (
+            "MorrowSpan(start=2024-02-29T03:00:00.000000,"
+            " end=2024-02-29T03:59:59.999999)"
+        ),
+    )
 
 
 def test_humanize_and_dehumanize() raises:

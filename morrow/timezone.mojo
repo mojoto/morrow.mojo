@@ -19,8 +19,16 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.offset = take.offset
         self.name = take.name^
 
+    def __str__(self) -> String:
+        return self.to_string()
+
     def write_to(self, mut writer: Some[Writer]):
-        writer.write(self.name)
+        writer.write(self.to_string())
+
+    def to_string(self) -> String:
+        if self.name != "":
+            return self.name
+        return self.format()
 
     def is_none(self) -> Bool:
         """

@@ -3907,7 +3907,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
 
-struct MorrowSpan(Copyable, ImplicitlyCopyable, Movable):
+struct MorrowSpan(Copyable, ImplicitlyCopyable, Movable, Writable):
     var start: Morrow
     var end: Morrow
 
@@ -3923,8 +3923,23 @@ struct MorrowSpan(Copyable, ImplicitlyCopyable, Movable):
         self.start = take.start^
         self.end = take.end^
 
+    def __str__(self) -> String:
+        return self.to_string()
 
-struct MorrowIsoCalendar(Copyable, ImplicitlyCopyable, Movable):
+    def write_to(self, mut writer: Some[Writer]):
+        writer.write(self.to_string())
+
+    def to_string(self) -> String:
+        return (
+            "MorrowSpan(start="
+            + self.start._isoformat_auto()
+            + ", end="
+            + self.end._isoformat_auto()
+            + ")"
+        )
+
+
+struct MorrowIsoCalendar(Copyable, ImplicitlyCopyable, Movable, Writable):
     var year: Int
     var week: Int
     var weekday: Int
@@ -3933,6 +3948,23 @@ struct MorrowIsoCalendar(Copyable, ImplicitlyCopyable, Movable):
         self.year = year
         self.week = week
         self.weekday = weekday
+
+    def __str__(self) -> String:
+        return self.to_string()
+
+    def write_to(self, mut writer: Some[Writer]):
+        writer.write(self.to_string())
+
+    def to_string(self) -> String:
+        return (
+            "MorrowIsoCalendar(year="
+            + String(self.year)
+            + ", week="
+            + String(self.week)
+            + ", weekday="
+            + String(self.weekday)
+            + ")"
+        )
 
 
 struct MorrowDate(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -4003,7 +4035,7 @@ struct MorrowTime(Copyable, ImplicitlyCopyable, Movable, Writable):
         return result
 
 
-struct MorrowTimeTuple(Copyable, ImplicitlyCopyable, Movable):
+struct MorrowTimeTuple(Copyable, ImplicitlyCopyable, Movable, Writable):
     var year: Int
     var mon: Int
     var mday: Int
@@ -4035,6 +4067,35 @@ struct MorrowTimeTuple(Copyable, ImplicitlyCopyable, Movable):
         self.wday = wday
         self.yday = yday
         self.isdst = isdst
+
+    def __str__(self) -> String:
+        return self.to_string()
+
+    def write_to(self, mut writer: Some[Writer]):
+        writer.write(self.to_string())
+
+    def to_string(self) -> String:
+        return (
+            "MorrowTimeTuple(year="
+            + String(self.year)
+            + ", mon="
+            + String(self.mon)
+            + ", mday="
+            + String(self.mday)
+            + ", hour="
+            + String(self.hour)
+            + ", min="
+            + String(self.min)
+            + ", sec="
+            + String(self.sec)
+            + ", wday="
+            + String(self.wday)
+            + ", yday="
+            + String(self.yday)
+            + ", isdst="
+            + String(self.isdst)
+            + ")"
+        )
 
 
 struct MorrowParseInt(Copyable, ImplicitlyCopyable, Movable):
