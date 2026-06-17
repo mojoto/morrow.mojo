@@ -1,0 +1,10 @@
+{
+  "sidebar.docsSidebar.category.Core Guides": {
+    "message": "核心指南",
+    "description": "The label for category 'Core Guides' in sidebar 'docsSidebar'"
+  },
+  "version.label": {
+    "message": "当前版本",
+    "description": "The label for version current"
+  }
+}
