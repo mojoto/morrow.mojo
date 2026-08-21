@@ -1,0 +1,45 @@
+context:
+  version: "0.7.0"
+
+package:
+  name: morrow
+  version: ${{ version }}
+
+source:
+  - git: https://github.com/mojoto/morrow.mojo.git
+    rev: d059b644490f407132263d981797e29531cb2304
+
+build:
+  number: 0
+  script:
+    - mkdir -p ${PREFIX}/lib/mojo
+    - mojo precompile morrow -o ${PREFIX}/lib/mojo/morrow.mojoc
+
+requirements:
+  build:
+    - mojo-compiler =1.0.0
+  host:
+    - mojo-compiler =1.0.0
+  run:
+    - mojo-compiler >=1.0.0,<1.1.0
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - mojo run test.mojo
+    files:
+      recipe:
+        - test.mojo
+
+about:
+  homepage: https://github.com/mojoto/morrow.mojo
+  repository: https://github.com/mojoto/morrow.mojo
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Human-friendly date and time utilities for Mojo.
+
+extra:
+  project_name: Morrow
+  maintainers:
+    - Prodesire

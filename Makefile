@@ -1,11 +1,13 @@
 MOJO ?= uv run mojo
 MOJO_TEST_FLAGS ?= -I .
 MOJO_PYTHON ?= 3.14
+MOJO_VERSION ?= 1.0.0
+RATTLER_BUILD ?= rattler-build
 PACKAGE := morrow.mojoc
 TEST_FILES := $(sort $(wildcard tests/test_*.mojo))
 DOCS_DIR := website
 
-.PHONY: help install test format build clean doc-install doc-serve doc-build doc-clean
+.PHONY: help install test format build package clean doc-install doc-serve doc-build doc-clean
 
 help:
 	@printf "Targets:\n"
@@ -13,6 +15,7 @@ help:
 	@printf "  test     Run all Mojo unit tests\n"
 	@printf "  format   Format Mojo sources and tests\n"
 	@printf "  build    Build $(PACKAGE)\n"
+	@printf "  package  Build the distributable Conda package\n"
 	@printf "  clean    Remove generated build artifacts\n"
 	@printf "  doc-install  Install Docusaurus dependencies\n"
 	@printf "  doc-serve    Serve the built Docusaurus site\n"
@@ -25,7 +28,7 @@ install:
 		exit 1; \
 	fi
 	uv venv --python $(MOJO_PYTHON) --allow-existing
-	uv pip install --prerelease allow mojo
+	uv pip install "mojo==$(MOJO_VERSION)"
 	$(MOJO) --version
 
 test:
@@ -41,6 +44,12 @@ format:
 
 build:
 	$(MOJO) precompile morrow -o $(PACKAGE)
+
+package:
+	$(RATTLER_BUILD) build \
+		--recipe conda.recipe/recipe.yaml \
+		-c conda-forge \
+		-c https://repo.prefix.dev/max
 
 clean:
 	rm -f $(PACKAGE)

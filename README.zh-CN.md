@@ -20,13 +20,23 @@
 
 ## 安装
 
-先安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，再初始化项目本地的 Mojo 环境：
+先把 Modular 和 Modular Community channel 添加到 Pixi 工作区，再安装 Morrow：
+
+```bash
+pixi workspace channel add --prepend https://repo.prefix.dev/modular-community
+pixi workspace channel add --prepend https://repo.prefix.dev/max
+pixi add morrow
+```
+
+该包会把与编译器版本兼容的 `morrow.mojoc` 安装到当前 Pixi 环境，无需复制源码即可导入。
+
+如需基于源码开发，请安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，然后运行：
 
 ```bash
 make install
 ```
 
-`make install` 会使用 Python 3.14 创建或复用 `.venv`，安装 Mojo（允许预发布版本），并输出已安装的版本。Makefile 中所有 Mojo 目标都通过 `uv run mojo` 执行。
+`make install` 会使用 Python 3.14 创建或复用 `.venv`，安装锁定版本的 Mojo，并输出版本信息。Makefile 中所有 Mojo 目标都通过 `uv run mojo` 执行。
 
 在项目根目录启动 Mojo REPL，即可直接使用源码包：
 
@@ -87,6 +97,7 @@ make build
 | `make test` | 运行所有 `tests/test_*.mojo` 文件 |
 | `make format` | 格式化 `morrow` 和 `tests` 目录 |
 | `make build` | 将 `morrow` 预编译为 `morrow.mojoc` |
+| `make package` | 使用 `rattler-build` 构建可分发的 Conda 包 |
 | `make clean` | 删除 `morrow.mojoc` |
 | `make doc-install` | 安装 Docusaurus 依赖 |
 | `make doc-build` | 构建 Docusaurus 静态站点 |

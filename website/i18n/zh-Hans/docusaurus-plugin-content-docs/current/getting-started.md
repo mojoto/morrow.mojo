@@ -4,6 +4,18 @@ sidebar_position: 2
 
 # 快速开始
 
+## 使用 Pixi 安装
+
+先把 Modular 和 Modular Community channel 添加到 Pixi 工作区，再安装 Morrow：
+
+```bash
+pixi workspace channel add --prepend https://repo.prefix.dev/modular-community
+pixi workspace channel add --prepend https://repo.prefix.dev/max
+pixi add morrow
+```
+
+该包会把与编译器版本兼容的 `morrow.mojoc` 安装到当前环境，其他 Mojo 包可以直接导入。
+
 ## 初始化本地环境
 
 先安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，再在仓库根目录运行：
@@ -13,7 +25,7 @@ make install
 uv run mojo repl
 ```
 
-`make install` 会使用 Python 3.14 创建或复用 `.venv`，并安装 Mojo（允许预发布版本）。从仓库根目录启动 REPL 后，可以直接导入 `morrow` 源码包。
+`make install` 会使用 Python 3.14 创建或复用 `.venv`，并安装锁定版本的 Mojo。从仓库根目录启动 REPL 后，可以直接导入 `morrow` 源码包。
 
 ## 在其他项目中使用 Morrow
 

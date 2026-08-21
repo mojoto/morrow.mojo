@@ -5,6 +5,7 @@
 .venv
 *.mojopkg
 *.mojoc
+/output/
 website/.docusaurus
 website/build
 website/node_modules
