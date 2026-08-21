@@ -4,26 +4,41 @@ sidebar_position: 2
 
 # Getting Started
 
-## Install
+## Set up the local environment
 
-Download `morrow.mojoc` from the GitHub releases page, or build it from this repository:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run
+the following commands from the repository root:
 
 ```bash
 make install
+uv run mojo repl
+```
+
+`make install` creates or reuses `.venv` with Python 3.14 and installs Mojo with
+prerelease versions allowed. Starting the REPL from the repository root makes
+the `morrow` source package directly importable.
+
+## Use Morrow in another project
+
+Copy the `morrow` directory into your project, or build a precompiled package:
+
+```bash
 make build
 ```
 
-You can also copy the `morrow` directory into a Mojo project when you want to vendor the source directly.
+This creates `morrow.mojoc`. A precompiled Mojo package must be imported with
+the same Mojo compiler version that created it. Matching artifacts may also be
+available from the [GitHub releases page](https://github.com/mojoto/morrow.mojo/releases).
 
 ## Import
 
-```text
+```mojo
 from morrow import Morrow, TimeDelta, TimeZone
 ```
 
 ## Create values
 
-```text
+```mojo
 var now = Morrow.now()
 var utc_now = Morrow.utcnow()
 var from_timestamp = Morrow.utcfromtimestamp("1767225600.5")
@@ -33,7 +48,7 @@ var fixed = Morrow.get(1767225600.5, "+05:30")
 
 ## Format output
 
-```text
+```mojo
 var value = Morrow(2026, 1, 1, 3, 4, 5, 123456, TimeZone.from_utc("UTC"))
 
 print(value)
