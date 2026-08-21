@@ -1,7 +1,7 @@
-MOJO ?= $(if $(wildcard .venv/bin/mojo),.venv/bin/mojo,mojo)
+MOJO ?= uv run mojo
 MOJO_TEST_FLAGS ?= -I .
 MOJO_PYTHON ?= 3.14
-PACKAGE := morrow.mojopkg
+PACKAGE := morrow.mojoc
 TEST_FILES := $(sort $(wildcard tests/test_*.mojo))
 DOCS_DIR := website
 
@@ -26,7 +26,7 @@ install:
 	fi
 	uv venv --python $(MOJO_PYTHON) --allow-existing
 	uv pip install --prerelease allow mojo
-	.venv/bin/mojo --version
+	$(MOJO) --version
 
 test:
 	@test -n "$(TEST_FILES)" || { printf "No test files found.\n"; exit 1; }
@@ -40,7 +40,7 @@ format:
 	$(MOJO) format morrow tests
 
 build:
-	$(MOJO) package morrow -o $(PACKAGE)
+	$(MOJO) precompile morrow -o $(PACKAGE)
 
 clean:
 	rm -f $(PACKAGE)

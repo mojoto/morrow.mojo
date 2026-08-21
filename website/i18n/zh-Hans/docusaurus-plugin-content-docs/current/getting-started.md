@@ -6,7 +6,7 @@ sidebar_position: 2
 
 ## 安装
 
-从 GitHub releases 页面下载 `morrow.mojopkg`，或者从本仓库构建：
+从 GitHub releases 页面下载 `morrow.mojoc`，或者从本仓库构建：
 
 ```bash
 make install

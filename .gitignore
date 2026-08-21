@@ -1,8 +1,10 @@
 .vscode
 .idea
 .magic
+.serena
 .venv
 *.mojopkg
+*.mojoc
 website/.docusaurus
 website/build
 website/node_modules

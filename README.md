@@ -22,67 +22,87 @@ Language: English | [中文](README.zh-CN.md)
 
 ## Installation
 
-Download `morrow.mojopkg` from
-[releases](https://github.com/mojoto/morrow.mojo/releases), build it from this
-repository, or vendor the `morrow` directory in your Mojo project.
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then set up
+the project-local Mojo environment:
 
 ```bash
 make install
-make build
 ```
 
-When using the source directory directly, add the project root to Mojo's import
-path:
+`make install` creates or reuses `.venv` with Python 3.14, installs Mojo with
+prerelease versions allowed, and prints the installed version. All Mojo targets
+in the Makefile run through `uv run mojo`.
+
+Start the Mojo REPL from the project root to use the source package directly:
 
 ```bash
-uv run mojo run -I . main.mojo
+uv run mojo repl
 ```
 
 ## Usage
 
+Paste the following example into the REPL:
+
 ```mojo
 from morrow import FORMAT_RSS, Morrow, TimeZone
 
+var now = Morrow.now()
+print(now)
 
-def main() raises:
-    var now = Morrow.now()
-    print(now)
+var utc = Morrow.utcnow()
+print(utc)
 
-    var utc = Morrow.utcnow()
-    print(utc)
+var parsed = Morrow.get("2026-01-01 03:04:05Z")
+print(parsed)
+print(parsed.format("YYYY-MM-DD HH:mm:ss ZZ"))
 
-    var parsed = Morrow.get("2026-01-01 03:04:05Z")
-    print(parsed)
-    print(parsed.format("YYYY-MM-DD HH:mm:ss ZZ"))
+var beijing = parsed.to("+08:00")
+print(beijing)
 
-    var beijing = parsed.to("+08:00")
-    print(beijing)
+var hour = beijing.span("hour")
+print(hour)
 
-    var hour = beijing.span("hour")
-    print(hour)
+print(beijing.isocalendar())
+print(beijing.timetuple())
 
-    print(beijing.isocalendar())
-    print(beijing.timetuple())
-
-    var rss = Morrow(2026, 1, 1, 10, 30, 35, 0, TimeZone(0, "UTC"))
-    print(rss.format(FORMAT_RSS))
+var rss = Morrow(2026, 1, 1, 10, 30, 35, 0, TimeZone(0, "UTC"))
+print(rss.format(FORMAT_RSS))
 ```
 
 Morrow is UTC by default, supports fixed-offset time zones, parses ISO 8601
 strings and POSIX timestamps, and formats values with Arrow-style tokens or
 Python-style `strftime`.
 
-## Contributing
+## Using Morrow in another project
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
+Copy the `morrow` source directory into your project, or build a precompiled
+package:
 
 ```bash
-make install      # Install Mojo into .venv
-make test         # Run tests
-make format       # Format sources and tests
-make build        # Build morrow.mojopkg
-make doc-install  # Install documentation dependencies
-make doc-serve    # Serve the built documentation site
+make build
 ```
 
-Local docs are served under `/morrow.mojo/`; Chinese docs are at `http://localhost:3000/morrow.mojo/zh-Hans/`.
+This creates `morrow.mojoc`. Precompiled Mojo packages are tied to the compiler
+version that created them, so use the same Mojo version when importing one.
+Matching artifacts may also be available from
+[releases](https://github.com/mojoto/morrow.mojo/releases).
+
+## Development
+
+Run `make help` to list the available targets.
+
+| Target | Description |
+| --- | --- |
+| `make install` | Create or reuse `.venv` and install Mojo with uv (prereleases allowed) |
+| `make test` | Run every `tests/test_*.mojo` file |
+| `make format` | Format the `morrow` and `tests` directories |
+| `make build` | Precompile `morrow` as `morrow.mojoc` |
+| `make clean` | Remove `morrow.mojoc` |
+| `make doc-install` | Install Docusaurus dependencies |
+| `make doc-build` | Build the Docusaurus static site |
+| `make doc-serve` | Serve the built Docusaurus site |
+| `make doc-clean` | Remove generated Docusaurus files |
+
+The documentation targets require Node.js and npm. Run `make doc-install` before
+building the documentation, then use `make doc-build` followed by
+`make doc-serve` to preview the built site.

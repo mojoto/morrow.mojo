@@ -1,7 +1,7 @@
 name: Build and Release
 
 env:
-  PACKAGE_NAME: morrow.mojopkg
+  PACKAGE_NAME: morrow.mojoc
 
 on: workflow_dispatch
 
