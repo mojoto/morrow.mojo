@@ -1,5 +1,6 @@
 from std.ffi import external_call
-from std.memory import UnsafePointer, alloc
+from std.memory import Pointer
+from std.memory.alloc import unsafe_alloc
 
 # C type aliases
 comptime c_void = UInt8
@@ -40,9 +41,7 @@ struct CTm(Movable):
     var tm_yday: c_int  # Day of the year
     var tm_isdst: c_int  # Daylight savings flag
     var tm_gmtoff: c_long  # localtime zone offset seconds
-    var tm_zone: Optional[
-        UnsafePointer[c_char, MutExternalOrigin]
-    ]  # timezone name
+    var tm_zone: Optional[Pointer[c_char, MutUntrackedOrigin]]  # timezone name
 
     def __init__(out self):
         self.tm_sec = 0
@@ -62,7 +61,7 @@ struct CTm(Movable):
 def c_gettimeofday() -> CTimeval:
     """Wrapper for the C function gettimeofday."""
     var tv = CTimeval()
-    external_call["gettimeofday", NoneType](UnsafePointer(to=tv), 0)
+    external_call["gettimeofday", NoneType](Pointer(to=tv), 0)
     return tv
 
 
@@ -71,8 +70,8 @@ def c_localtime(tv_sec: Int) -> CTm:
     """Wrapper for the C function localtime."""
     var tv_sec_ = tv_sec
     var tm = CTm()
-    _ = external_call["localtime_r", UnsafePointer[CTm, MutExternalOrigin]](
-        UnsafePointer(to=tv_sec_), UnsafePointer(to=tm)
+    _ = external_call["localtime_r", Pointer[CTm, MutUntrackedOrigin]](
+        Pointer(to=tv_sec_), Pointer(to=tm)
     )
     return tm^
 
@@ -86,15 +85,13 @@ def c_strptime(time_str: String, time_format: String) raises -> CTm:
     var end_addr = external_call["strptime", Int](
         time_str_.as_c_string_slice().unsafe_ptr(),
         time_format_.as_c_string_slice().unsafe_ptr(),
-        UnsafePointer(to=tm),
+        Pointer(to=tm),
     )
     if end_addr == 0:
         raise Error("time data does not match format")
 
-    var end = UnsafePointer[Int8, MutExternalOrigin](
-        unsafe_from_address=end_addr
-    )
-    if end.load() != 0:
+    var end = Pointer[Int8, MutUntrackedOrigin](unsafe_from_address=end_addr)
+    if end.unsafe_load() != 0:
         raise Error("unconverted data remains")
     return tm^
 
@@ -108,7 +105,7 @@ def c_strptime_consumed(time_str: String, time_format: String) raises -> Int:
     var start_addr = external_call["strptime", Int](
         time_str_.as_c_string_slice().unsafe_ptr(),
         empty_format.as_c_string_slice().unsafe_ptr(),
-        UnsafePointer(to=start_tm),
+        Pointer(to=start_tm),
     )
     if start_addr == 0:
         raise Error("time data does not match format")
@@ -118,7 +115,7 @@ def c_strptime_consumed(time_str: String, time_format: String) raises -> Int:
     var end_addr = external_call["strptime", Int](
         time_str_.as_c_string_slice().unsafe_ptr(),
         time_format_.as_c_string_slice().unsafe_ptr(),
-        UnsafePointer(to=tm),
+        Pointer(to=tm),
     )
     if end_addr == 0:
         raise Error("time data does not match format")
@@ -130,15 +127,15 @@ def c_gmtime(tv_sec: Int) -> CTm:
     """Wrapper for the C function gmtime."""
     var tv_sec_ = tv_sec
     var tm = CTm()
-    _ = external_call["gmtime_r", UnsafePointer[CTm, MutExternalOrigin]](
-        UnsafePointer(to=tv_sec_), UnsafePointer(to=tm)
+    _ = external_call["gmtime_r", Pointer[CTm, MutUntrackedOrigin]](
+        Pointer(to=tv_sec_), Pointer(to=tm)
     )
     return tm^
 
 
-def to_char_ptr(s: String) -> UnsafePointer[c_char, MutExternalOrigin]:
+def to_char_ptr(s: String) -> Pointer[c_char, MutUntrackedOrigin]:
     """Only ASCII-based strings."""
-    var ptr = alloc[c_char](s.byte_length())
+    var ptr = unsafe_alloc[c_char](s.byte_length())
     for i in range(s.byte_length()):
-        ptr.store(i, UInt8(ord(s[byte=i])))
+        ptr.unsafe_store(i, UInt8(ord(s[byte=i])))
     return ptr

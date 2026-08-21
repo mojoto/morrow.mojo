@@ -15,9 +15,9 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.offset = copy.offset
         self.name = copy.name
 
-    def __init__(out self, *, deinit take: Self):
-        self.offset = take.offset
-        self.name = take.name^
+    def __init__(out self, *, deinit move: Self):
+        self.offset = move.offset
+        self.name = move.name^
 
     def __str__(self) -> String:
         return self.to_string()

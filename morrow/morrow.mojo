@@ -83,15 +83,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.microsecond = copy.microsecond
         self.tz = copy.tz
 
-    def __init__(out self, *, deinit take: Self):
-        self.year = take.year
-        self.month = take.month
-        self.day = take.day
-        self.hour = take.hour
-        self.minute = take.minute
-        self.second = take.second
-        self.microsecond = take.microsecond
-        self.tz = take.tz^
+    def __init__(out self, *, deinit move: Self):
+        self.year = move.year
+        self.month = move.month
+        self.day = move.day
+        self.hour = move.hour
+        self.minute = move.minute
+        self.second = move.second
+        self.microsecond = move.microsecond
+        self.tz = move.tz^
 
     @staticmethod
     def now() -> Self:
@@ -3377,7 +3377,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) raises -> String:
         var unit = raw_unit
         if unit.byte_length() > 0 and unit[byte=unit.byte_length() - 1] == ",":
-            unit = String(unit[byte = 0 : unit.byte_length() - 1])
+            var unit_without_comma = String(
+                unit[byte = 0 : unit.byte_length() - 1]
+            )
+            unit = unit_without_comma^
 
         if count_word == "a" or count_word == "an":
             if not Self._is_singular_humanize_unit(
@@ -3919,9 +3922,9 @@ struct MorrowSpan(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.start = copy.start
         self.end = copy.end
 
-    def __init__(out self, *, deinit take: Self):
-        self.start = take.start^
-        self.end = take.end^
+    def __init__(out self, *, deinit move: Self):
+        self.start = move.start^
+        self.end = move.end^
 
     def __str__(self) -> String:
         return self.to_string()
@@ -4132,6 +4135,6 @@ struct MorrowParseTimeZone(Copyable, ImplicitlyCopyable, Movable):
         self.tz = copy.tz
         self.pos = copy.pos
 
-    def __init__(out self, *, deinit take: Self):
-        self.tz = take.tz^
-        self.pos = take.pos
+    def __init__(out self, *, deinit move: Self):
+        self.tz = move.tz^
+        self.pos = move.pos
