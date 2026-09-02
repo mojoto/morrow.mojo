@@ -22,34 +22,19 @@ Language: English | [中文](README.zh-CN.md)
 
 ## Installation
 
-Add the Modular and Modular Community channels to your Pixi workspace, then
-install Morrow:
+Morrow is available from the
+[official Modular Community channel](https://prefix.dev/channels/modular-community/packages/morrow).
+From a Pixi workspace
+[already configured for Mojo](https://docs.modular.com/mojo/manual/install/),
+add the Modular Community channel and install Morrow:
 
 ```bash
 pixi workspace channel add --prepend https://repo.prefix.dev/modular-community
-pixi workspace channel add --prepend https://repo.prefix.dev/max
 pixi add morrow
 ```
 
 The package installs a compiler-compatible `morrow.mojoc` into the active Pixi
 environment, so it can be imported without copying source files.
-
-To work from a source checkout, install
-[uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
-
-```bash
-make install
-```
-
-`make install` creates or reuses `.venv` with Python 3.14, installs the pinned
-Mojo version, and prints it. All Mojo targets in the Makefile run through
-`uv run mojo`.
-
-Start the Mojo REPL from the project root to use the source package directly:
-
-```bash
-uv run mojo repl
-```
 
 ## Usage
 
@@ -85,27 +70,13 @@ Morrow is UTC by default, supports fixed-offset time zones, parses ISO 8601
 strings and POSIX timestamps, and formats values with Arrow-style tokens or
 Python-style `strftime`.
 
-## Using Morrow in another project
-
-Copy the `morrow` source directory into your project, or build a precompiled
-package:
-
-```bash
-make build
-```
-
-This creates `morrow.mojoc`. Precompiled Mojo packages are tied to the compiler
-version that created them, so use the same Mojo version when importing one.
-Matching artifacts may also be available from
-[releases](https://github.com/mojoto/morrow.mojo/releases).
-
 ## Development
 
 Run `make help` to list the available targets.
 
 | Target | Description |
 | --- | --- |
-| `make install` | Create or reuse `.venv` and install Mojo with uv (prereleases allowed) |
+| `make install` | Create or reuse `.venv` and install the pinned Mojo version with uv |
 | `make test` | Run every `tests/test_*.mojo` file |
 | `make format` | Format the `morrow` and `tests` directories |
 | `make build` | Precompile `morrow` as `morrow.mojoc` |

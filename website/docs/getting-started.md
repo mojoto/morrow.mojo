@@ -6,19 +6,21 @@ sidebar_position: 2
 
 ## Install with Pixi
 
-Add the Modular and Modular Community channels to your Pixi workspace, then
-install Morrow:
+Morrow is available from the
+[official Modular Community channel](https://prefix.dev/channels/modular-community/packages/morrow).
+From a Pixi workspace
+[already configured for Mojo](https://docs.modular.com/mojo/manual/install/),
+add the Modular Community channel and install Morrow:
 
 ```bash
 pixi workspace channel add --prepend https://repo.prefix.dev/modular-community
-pixi workspace channel add --prepend https://repo.prefix.dev/max
 pixi add morrow
 ```
 
 The package installs a compiler-compatible `morrow.mojoc` into the active
 environment, so it is available to import from other Mojo packages.
 
-## Set up the local environment
+## Develop from source
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run
 the following commands from the repository root:
@@ -32,17 +34,18 @@ uv run mojo repl
 pinned Mojo version. Starting the REPL from the repository root makes the
 `morrow` source package directly importable.
 
-## Use Morrow in another project
+## Build a local package
 
-Copy the `morrow` directory into your project, or build a precompiled package:
+For local testing or distribution without Pixi, build a precompiled package:
 
 ```bash
 make build
 ```
 
 This creates `morrow.mojoc`. A precompiled Mojo package must be imported with
-the same Mojo compiler version that created it. Matching artifacts may also be
-available from the [GitHub releases page](https://github.com/mojoto/morrow.mojo/releases).
+the same Mojo compiler version that created it. For normal projects, prefer the
+Modular Community package above so Pixi can resolve the declared Mojo
+compatibility.
 
 ## Import
 
