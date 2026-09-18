@@ -1,7 +1,7 @@
 MOJO ?= uv run mojo
 MOJO_TEST_FLAGS ?= -I .
 MOJO_PYTHON ?= 3.14
-MOJO_VERSION ?= 1.0.0
+MOJO_VERSION ?= 1.1.0
 RATTLER_BUILD ?= rattler-build
 PACKAGE := morrow.mojoc
 TEST_FILES := $(sort $(wildcard tests/test_*.mojo))
