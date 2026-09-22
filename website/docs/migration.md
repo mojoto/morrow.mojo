@@ -4,6 +4,10 @@ sidebar_position: 9
 
 # Migration Guide
 
+## Upgrading to 1.0
+
+Version 1.0 retains the documented 0.9 API and behavior. Release archives now pass an isolated consumer test. See the [stability contract](./stability.md) for supported compilers, binary compatibility, and distribution checks.
+
 ## Upgrading to 0.9
 
 Named and local timezones now use ICU. Install the ICU runtime on Linux. Hours and smaller shifts, and TimeDelta arithmetic, use elapsed time; calendar-day shifts preserve wall time. Existing fixed-offset results remain unchanged. UTF-8 literals are now supported throughout token parsing and formatting.

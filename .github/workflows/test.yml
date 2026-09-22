@@ -33,5 +33,6 @@ jobs:
             TZ=America/New_York uv run mojo run -I . tests/test_iterators.mojo
             uv run --with arrow==1.4.0 python tools/check_arrow.py
             make build
+            python tools/check_package.py morrow.mojoc
             echo "::endgroup::"
           done

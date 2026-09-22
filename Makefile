@@ -1,4 +1,5 @@
 MOJO ?= uv run mojo
+MOJO_BIN ?= $(CURDIR)/.venv/bin/mojo
 MOJO_TEST_FLAGS ?= -I .
 MOJO_PYTHON ?= 3.14
 MOJO_VERSION ?= 1.1.0
@@ -7,12 +8,14 @@ PACKAGE := morrow.mojoc
 TEST_FILES := $(sort $(wildcard tests/test_*.mojo))
 DOCS_DIR := website
 
-.PHONY: help install test format build package clean doc-install doc-serve doc-build doc-clean
+.PHONY: help install test test-package benchmark format build package clean doc-install doc-serve doc-build doc-clean
 
 help:
 	@printf "Targets:\n"
 	@printf "  install  Install Mojo into .venv with uv\n"
 	@printf "  test     Run all Mojo unit tests\n"
+	@printf "  test-package  Build and test the precompiled package in isolation\n"
+	@printf "  benchmark  Run repeatable performance samples\n"
 	@printf "  format   Format Mojo sources and tests\n"
 	@printf "  build    Build $(PACKAGE)\n"
 	@printf "  package  Build the distributable Conda package\n"
@@ -38,6 +41,12 @@ test:
 		printf "\n==> %s\n" "$$test_file"; \
 		$(MOJO) run $(MOJO_TEST_FLAGS) "$$test_file"; \
 	done
+
+test-package: build
+	python3 tools/check_package.py $(PACKAGE) --mojo "$(MOJO_BIN)"
+
+benchmark:
+	$(MOJO) run -I . tools/benchmark.mojo
 
 format:
 	$(MOJO) format morrow tests

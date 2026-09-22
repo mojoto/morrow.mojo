@@ -81,6 +81,8 @@ Release 按编译器版本分别构建，请选择匹配的归档。
 | --- | --- |
 | `make install` | 使用 uv 创建或复用 `.venv` 并安装锁定版本的 Mojo |
 | `make test` | 运行所有 `tests/test_*.mojo` 文件 |
+| `make test-package` | 构建预编译包并在源码目录之外验证 |
+| `make benchmark` | 每项性能基准运行五组样本 |
 | `make format` | 格式化 `morrow` 和 `tests` 目录 |
 | `make build` | 将 `morrow` 预编译为 `morrow.mojoc` |
 | `make package` | 使用 `rattler-build` 构建可分发的 Conda 包 |
@@ -93,3 +95,5 @@ Release 按编译器版本分别构建，请选择匹配的归档。
 文档相关目标需要 Node.js 和 npm。先运行 `make doc-install` 安装依赖，再依次运行 `make doc-build` 和 `make doc-serve` 预览构建结果。
 
 格式化、解析和相对时间支持英文、简体中文及繁体中文。命名时区和本地时区需要 ICU（macOS 自带，Debian/Ubuntu 可安装 `libicu-dev`）。
+
+验证命令、编译器兼容性和分发约定见[测试指南](https://mojoto.github.io/morrow.mojo/docs/testing)及 [1.x 稳定性约定](https://mojoto.github.io/morrow.mojo/docs/stability)。

@@ -91,6 +91,8 @@ Run `make help` to list the available targets.
 | --- | --- |
 | `make install` | Create or reuse `.venv` and install the pinned Mojo version with uv |
 | `make test` | Run every `tests/test_*.mojo` file |
+| `make test-package` | Build and test the precompiled package outside the source checkout |
+| `make benchmark` | Run five samples of each performance benchmark |
 | `make format` | Format the `morrow` and `tests` directories |
 | `make build` | Precompile `morrow` as `morrow.mojoc` |
 | `make package` | Build the distributable Conda package with `rattler-build` |
@@ -103,3 +105,7 @@ Run `make help` to list the available targets.
 The documentation targets require Node.js and npm. Run `make doc-install` before
 building the documentation, then use `make doc-build` followed by
 `make doc-serve` to preview the built site.
+
+See the [testing guide](https://mojoto.github.io/morrow.mojo/docs/testing) and
+[1.x stability contract](https://mojoto.github.io/morrow.mojo/docs/stability) for
+validation commands, compiler compatibility, and distribution guarantees.

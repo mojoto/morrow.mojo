@@ -64,6 +64,7 @@ jobs:
             mkdir -p "dist/${archive}"
             cp morrow.mojoc LICENSE README.md "dist/${archive}/"
             tar -czf "dist/${archive}.tar.gz" -C dist "${archive}"
+            python tools/check_package.py "dist/${archive}.tar.gz"
             echo "::endgroup::"
           done
 
