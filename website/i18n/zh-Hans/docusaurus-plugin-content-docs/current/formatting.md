@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # 格式化
 
-Morrow 支持 Arrow 风格 `format`、Python 风格 `strftime`，以及 ISO 输出辅助方法。
+Morrow 支持 基于 token 的 `format`、Python 风格 `strftime`，以及 ISO 输出辅助方法。
 
 ## ISO 输出
 
@@ -15,7 +15,7 @@ print(value.isoformat())
 print(value.isoformat(timespec="milliseconds"))
 ```
 
-## Arrow 风格 token
+## 日期时间 token
 
 ```text
 from morrow import FORMAT_RSS, Morrow, TimeZone

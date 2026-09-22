@@ -1,7 +1,7 @@
 # Morrow.mojo
 
 Human-friendly date and time utilities for Mojo. Morrow provides an
-Arrow-inspired API for creating, parsing, formatting, shifting, comparing, and
+date-time API for creating, parsing, formatting, shifting, comparing, and
 humanizing date-time values.
 
 <p align="center">

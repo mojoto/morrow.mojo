@@ -145,6 +145,9 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
             return TimeZone(0, "utc")
         if _equals_ascii_case_insensitive(utc_str, "GMT"):
             return TimeZone(0, "GMT")
+        for byte in utc_str.as_bytes():
+            if byte > 127:
+                raise Error("utc_str must contain ASCII offset text")
         var p = (
             3 if utc_str.byte_length() > 3 and utc_str[byte=0:3] == "UTC" else 0
         )

@@ -1,4 +1,4 @@
-from std.testing import assert_equal, assert_true, TestSuite
+from std.testing import assert_equal, assert_true, assert_raises, TestSuite
 from morrow import Morrow, TimeZone, TimeDelta
 
 
@@ -122,6 +122,112 @@ def test_aware_calendar_limits() raises:
     assert_equal(local.minute, 59)
     assert_equal(local.microsecond, 999999)
     assert_true(local.to("UTC") == before)
+
+
+def test_gap_fold_offsets_and_dst() raises:
+    var tz = TimeZone.from_name("America/New_York")
+    var before = Morrow(2024, 3, 10, 2, 30, tz=tz, fold=0)
+    var after = before.replace(fold=1)
+    assert_true(before.imaginary() and after.imaginary())
+    assert_equal(before.tz.offset, -18000)
+    assert_equal(after.tz.offset, -14400)
+    assert_equal(before.dst().total_seconds(), 0.0)
+    assert_equal(after.dst().total_seconds(), 3600.0)
+    assert_equal(before.to(tz).hour, 3)
+    assert_equal(after.to(tz).hour, 1)
+
+
+def test_southern_hemisphere_seasons() raises:
+    var jan = Morrow(2024, 1, 15).to("Australia/Sydney")
+    var jul = Morrow(2024, 7, 15).to("Australia/Sydney")
+    assert_equal(jan.tz.offset, 39600)
+    assert_equal(jul.tz.offset, 36000)
+    assert_equal(jan.dst().total_seconds(), 3600.0)
+    assert_equal(jul.dst().total_seconds(), 0.0)
+
+
+def test_quarter_hour_named_offset() raises:
+    var dt = Morrow(2024, 1, 1).to("Asia/Kathmandu")
+    assert_equal(dt.hour, 5)
+    assert_equal(dt.minute, 45)
+    assert_equal(dt.tz.offset, 20700)
+    assert_equal(dt.dst().total_seconds(), 0.0)
+
+
+def test_timezone_label_does_not_attach_rules() raises:
+    var fixed = Morrow(2024, 7, 1, tz=TimeZone(-18000, "America/New_York"))
+    var named = Morrow(2024, 7, 1, tz=TimeZone.from_name("America/New_York"))
+    assert_equal(fixed.tz.offset, -18000)
+    assert_equal(named.tz.offset, -14400)
+    assert_equal((fixed - named).total_seconds(), 3600.0)
+
+
+def test_named_timezone_replace_recalculates_offset() raises:
+    var summer = Morrow(
+        2024, 7, 1, 12, tz=TimeZone.from_name("America/New_York")
+    )
+    var winter = summer.replace(month=1)
+    assert_equal(winter.hour, 12)
+    assert_equal(winter.tz.offset, -18000)
+    assert_equal(summer.tz.offset, -14400)
+    assert_true(not winter.ambiguous() and not winter.imaginary())
+
+
+def test_mixed_calendar_and_elapsed_shift_order() raises:
+    var start = Morrow(
+        2024, 3, 9, 12, tz=TimeZone.from_name("America/New_York")
+    )
+    var mixed = start.shift(days=1, hours=2)
+    assert_equal(mixed.hour, 14)
+    assert_equal((mixed - start).total_seconds(), 25 * 3600.0)
+    assert_true(start.shift(months=1).shift(months=-1) == start)
+
+
+def test_spring_hour_range_skips_missing_hour() raises:
+    var tz = TimeZone.from_name("America/New_York")
+    var points = Morrow.range(
+        "hour", Morrow(2024, 3, 10, tz=tz), Morrow(2024, 3, 10, 4, tz=tz)
+    )
+    var hours: List[Int] = [0, 1, 3, 4]
+    assert_equal(len(points), len(hours))
+    for i in range(len(points)):
+        assert_equal(points[i].hour, hours[i])
+        assert_true(not points[i].imaginary())
+        if i > 0:
+            assert_equal((points[i] - points[i - 1]).total_seconds(), 3600.0)
+
+
+def test_fall_hour_range_preserves_both_folds() raises:
+    var tz = TimeZone.from_name("America/New_York")
+    var points = Morrow.range(
+        "hour", Morrow(2024, 11, 3, tz=tz), Morrow(2024, 11, 3, 3, tz=tz)
+    )
+    var hours: List[Int] = [0, 1, 1, 2, 3]
+    assert_equal(len(points), len(hours))
+    for i in range(len(points)):
+        assert_equal(points[i].hour, hours[i])
+        if i > 0:
+            assert_equal((points[i] - points[i - 1]).total_seconds(), 3600.0)
+    assert_equal(points[1].fold(), 0)
+    assert_equal(points[2].fold(), 1)
+
+
+def test_local_timestamp_preserves_fold_instant() raises:
+    for timestamp in [1730611800, 1730615400, -1]:
+        var dt = Morrow.fromtimestamp(timestamp)
+        assert_equal(dt.int_timestamp(), timestamp)
+        assert_true(dt.to("UTC") == Morrow.utcfromtimestamp(timestamp))
+
+
+def test_named_timezone_validation_errors() raises:
+    with assert_raises(contains="unknown IANA timezone"):
+        _ = TimeZone.from_name("Unknown/Nowhere")
+    with assert_raises(contains="ASCII"):
+        _ = TimeZone.from_name("Asia/上海")
+    with assert_raises(contains="fold"):
+        _ = Morrow(2024, 1, 1, fold=-2)
+    with assert_raises(contains="fold"):
+        _ = Morrow(2024, 1, 1, fold=2)
 
 
 def main() raises:

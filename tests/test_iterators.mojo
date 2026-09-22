@@ -1,4 +1,4 @@
-from std.testing import assert_equal, assert_true, TestSuite
+from std.testing import assert_equal, assert_true, assert_raises, TestSuite
 from std.iter import StopIteration
 from morrow import Morrow, TimeZone
 from morrow._libc import c_localtime
@@ -144,6 +144,102 @@ def test_local_target_date() raises:
 
 def assert_date(left: Morrow, right: Morrow) raises:
     assert_equal(String(left), String(right))
+
+
+def test_iterator_copy_preserves_independent_progress() raises:
+    var start = Morrow(2024, 1, 1)
+    var iterator = Morrow.iter_range("day", start, limit=3)
+    assert_date(iterator.__next__(), start)
+    var copied = iterator
+    assert_date(iterator.__next__(), start.shift(days=1))
+    assert_date(copied.__next__(), start.shift(days=1))
+    assert_date(copied.__next__(), start.shift(days=2))
+    assert_date(iterator.__next__(), start.shift(days=2))
+
+
+def test_iterator_repeated_exhaustion() raises:
+    var dt = Morrow(2024, 1, 1)
+    var iterator = Morrow.iter_range("day", dt, dt)
+    _ = iterator.__next__()
+    for _ in range(3):
+        var stopped = False
+        try:
+            _ = iterator.__next__()
+        except StopIteration:
+            stopped = True
+        assert_true(stopped)
+
+
+def test_reversed_ranges_inside_same_frame_are_empty() raises:
+    var start = Morrow(2024, 1, 1, 12)
+    var end = Morrow(2024, 1, 1, 10)
+    assert_equal(len(Morrow.range("day", start, end)), 0)
+    assert_equal(len(Morrow.span_range("day", start, end)), 0)
+    assert_equal(len(Morrow.interval("day", start, end)), 0)
+
+
+def test_zero_limits_for_all_range_types() raises:
+    var start = Morrow(2024, 1, 1)
+    var end = start.shift(days=5)
+    assert_equal(len(Morrow.range("day", start, end, limit=0)), 0)
+    assert_equal(len(Morrow.span_range("day", start, end, limit=0)), 0)
+    assert_equal(len(Morrow.interval("day", start, end, limit=0)), 0)
+
+
+def test_invalid_iterator_configuration() raises:
+    var dt = Morrow(2024, 1, 1)
+    with assert_raises():
+        _ = Morrow.iter_range("invalid", dt, limit=1)
+    with assert_raises():
+        _ = Morrow.iter_span_range("day", dt, dt, bounds="🌙")
+    with assert_raises():
+        _ = Morrow.iter_interval("day", dt, dt, interval=0)
+    with assert_raises():
+        _ = Morrow.iter_interval("day", dt, dt, interval=-1)
+    with assert_raises():
+        _ = Morrow.iter_span_range("week", dt, dt, week_start=0)
+
+
+def test_lazy_and_eager_points_agree_across_frames() raises:
+    var start = Morrow(2024, 1, 31, 12)
+    var end = Morrow(2025, 5, 1)
+    var frames: List[String] = [
+        "year",
+        "quarter",
+        "month",
+        "week",
+        "day",
+        "hour",
+        "minute",
+        "second",
+        "microsecond",
+    ]
+    for frame in frames:
+        var points = Morrow.range(frame, start, end, limit=4)
+        var i = 0
+        for point in Morrow.iter_range(frame, start, end, limit=4):
+            assert_date(point, points[i])
+            i += 1
+        assert_equal(i, len(points))
+
+
+def test_exact_spans_clip_final_end() raises:
+    var start = Morrow(2024, 1, 1, 12)
+    var end = Morrow(2024, 1, 3, 6)
+    var spans = Morrow.span_range("day", start, end, exact=True)
+    assert_equal(len(spans), 2)
+    assert_date(spans[0].start, start)
+    assert_date(spans[1].end, end.shift(microseconds=-1))
+    assert_date(spans[0].end.shift(microseconds=1), spans[1].start)
+
+
+def test_interval_retains_final_partial_group() raises:
+    var start = Morrow(2024, 1, 1)
+    var end = Morrow(2024, 1, 6)
+    var spans = Morrow.interval("day", start, end, interval=2, exact=True)
+    assert_equal(len(spans), 3)
+    assert_date(spans[2].start, Morrow(2024, 1, 5))
+    assert_date(spans[2].end, end.shift(microseconds=-1))
 
 
 def main() raises:

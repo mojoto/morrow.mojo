@@ -1,6 +1,6 @@
 # Morrow.mojo
 
-面向 Mojo 的友好日期时间工具库。Morrow 提供受 Arrow 启发的 API，用于创建、解析、格式化、偏移、比较和人性化展示日期时间值。
+面向 Mojo 的友好日期时间工具库。Morrow 提供日期时间 API，用于创建、解析、格式化、偏移、比较和人性化展示日期时间值。
 
 <p align="center">
   <a href="https://github.com/mojoto/morrow.mojo/actions/workflows/test.yml">

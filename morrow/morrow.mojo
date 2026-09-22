@@ -180,6 +180,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _fromtimestamp_checked(t: CTimeval, utc: Bool) raises -> Self:
+        if t.tv_sec < -62135596800 or t.tv_sec > 253402300799:
+            raise Error("timestamp exceeds supported years 1..9999")
         var result = Self._fromtimestamp(t, utc)
         Self._validate_fields(
             result.year,
@@ -266,6 +268,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _timeval_from_timestamp(timestamp: Float64) raises -> CTimeval:
         var timestamp_ = normalize_timestamp(timestamp)
+        if not (timestamp_ >= -62135596800.0 and timestamp_ < 253402300800.0):
+            raise Error("timestamp must be finite and within years 1..9999")
         var seconds = Int(timestamp_)
         if Float64(seconds) > timestamp_:
             seconds -= 1
@@ -701,6 +705,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Create a Morrow from an ISO 8601 string.
         """
+        for byte in date_str.as_bytes():
+            if byte > 127:
+                raise Error("ISO date text must contain ASCII characters")
         var length = date_str.byte_length()
         if length < 4:
             raise Error("isoformat string is too short")
@@ -1423,7 +1430,6 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         date_str: String,
         fmt: String,
         tzinfo: TimeZone = TimeZone.none(),
-        locale: String = "en",
     ) raises -> Self:
         """
         Create a Morrow instance from a date string and format,
@@ -4470,7 +4476,7 @@ struct MorrowSpanIterator(Copyable, ImplicitlyCopyable, Movable):
         self.current = start if exact else floor
         self.end = end
         self.step = step
-        self.remaining = limit
+        self.remaining = 0 if start > end else limit
         self.bounds = bounds
         self.exact = exact
         self.week_start = week_start

@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # Formatting
 
-Morrow supports Arrow-style `format`, Python-style `strftime`, and ISO output helpers.
+Morrow supports token-based `format`, Python-style `strftime`, and ISO output helpers.
 
 ## ISO output
 
@@ -15,7 +15,7 @@ print(value.isoformat())
 print(value.isoformat(timespec="milliseconds"))
 ```
 
-## Arrow-style tokens
+## token-based tokens
 
 ```text
 from morrow import FORMAT_RSS, Morrow, TimeZone
