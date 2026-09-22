@@ -140,3 +140,8 @@ def to_char_ptr(s: String) -> Pointer[c_char, MutUntrackedOrigin]:
     for i in range(s.byte_length()):
         ptr.unsafe_store(i, UInt8(ord(s[byte=i])))
     return ptr
+
+
+def c_mktime(mut tm: CTm) -> Int:
+    """Resolve local wall fields using the host timezone rules."""
+    return external_call["mktime", Int](Pointer(to=tm))

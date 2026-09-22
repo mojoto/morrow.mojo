@@ -26,6 +26,7 @@ from .constants import (
     month_abbreviation,
     month_name,
 )
+from std.iter import StopIteration
 from std.collections import List
 from std.format import Writable, Writer
 
@@ -62,8 +63,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         minute: Int = 0,
         second: Int = 0,
         microsecond: Int = 0,
-        tz: TimeZone = TimeZone.none(),
-    ):
+        tz: TimeZone = TimeZone(0, "UTC"),
+    ) raises:
+        Self._validate_fields(
+            year, month, day, hour, minute, second, microsecond
+        )
+        if tz.offset <= -86400 or tz.offset >= 86400:
+            raise Error("UTC offset must be within 24 hours")
         self.year = year
         self.month = month
         self.day = day
@@ -72,6 +78,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.second = second
         self.microsecond = microsecond
         self.tz = tz
+        if tz.name == "local":
+            self.tz = TimeZone.local_at(year, month, day, hour, minute, second)
 
     def __init__(out self, *, copy: Self):
         self.year = copy.year
@@ -94,7 +102,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.tz = move.tz^
 
     @staticmethod
-    def now() -> Self:
+    def now() raises -> Self:
         """
         Return a Morrow object representing the current local date and time.
         """
@@ -118,7 +126,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.utcnow().to(tz_str)
 
     @staticmethod
-    def utcnow() -> Self:
+    def utcnow() raises -> Self:
         """
         Return a Morrow object representing the current UTC date and time.
         """
@@ -126,14 +134,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self._fromtimestamp(t, True)
 
     @staticmethod
-    def min() -> Self:
+    def min() raises -> Self:
         """
         Return the minimum supported UTC Morrow value.
         """
         return Self(1, 1, 1, 0, 0, 0, 0, Self._utc_timezone())
 
     @staticmethod
-    def max() -> Self:
+    def max() raises -> Self:
         """
         Return the maximum supported UTC Morrow value.
         """
@@ -147,7 +155,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return TimeDelta(microseconds=1)
 
     @staticmethod
-    def _fromtimestamp(t: CTimeval, utc: Bool) -> Self:
+    def _fromtimestamp(t: CTimeval, utc: Bool) raises -> Self:
         var tm: CTm
         var tz: TimeZone
         if utc:
@@ -265,7 +273,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return CTimeval(seconds, microseconds)
 
     @staticmethod
-    def get() -> Self:
+    def get() raises -> Self:
         """
         Create a UTC Morrow for the current time.
         """
@@ -635,14 +643,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     @staticmethod
-    def get(date: MorrowDate) -> Self:
+    def get(date: MorrowDate) raises -> Self:
         """
         Create a UTC Morrow from a date view.
         """
         return Self.fromdate(date)
 
     @staticmethod
-    def get(date: MorrowDate, tz: TimeZone) -> Self:
+    def get(date: MorrowDate, tz: TimeZone) raises -> Self:
         """
         Create a Morrow from a date view and replacement timezone.
         """
@@ -656,14 +664,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.fromdate(date, tz_str)
 
     @staticmethod
-    def get(dt: Self) -> Self:
+    def get(dt: Self) raises -> Self:
         """
         Create a Morrow from another Morrow object.
         """
         return Self.fromdatetime(dt)
 
     @staticmethod
-    def get(dt: Self, tz: TimeZone) -> Self:
+    def get(dt: Self, tz: TimeZone) raises -> Self:
         """
         Create a Morrow from another Morrow object and replacement timezone.
         """
@@ -1283,14 +1291,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         raise Error("date string does not match any format")
 
     @staticmethod
-    def fromdate(date: MorrowDate) -> Self:
+    def fromdate(date: MorrowDate) raises -> Self:
         """
         Construct a Morrow from a date view. Time fields are set to zero.
         """
         return Self.fromdate(date, Self._utc_timezone())
 
     @staticmethod
-    def fromdate(date: MorrowDate, tz: TimeZone) -> Self:
+    def fromdate(date: MorrowDate, tz: TimeZone) raises -> Self:
         """
         Construct a Morrow from a date view and replacement timezone.
         """
@@ -1304,7 +1312,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.fromdate(date, Self._parse_timezone_argument(tz_str))
 
     @staticmethod
-    def fromdatetime(dt: Self) -> Self:
+    def fromdatetime(dt: Self) raises -> Self:
         """
         Construct a Morrow from another Morrow object.
         """
@@ -1313,7 +1321,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return dt.clone()
 
     @staticmethod
-    def fromdatetime(dt: Self, tz: TimeZone) -> Self:
+    def fromdatetime(dt: Self, tz: TimeZone) raises -> Self:
         """
         Construct a Morrow from another Morrow object and replacement timezone.
         """
@@ -1554,7 +1562,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var tzinfo = Self._parse_timezone_argument(tz_str)
         return Self.strptime(date_str, fmt, tzinfo)
 
-    def clone(self) -> Self:
+    def clone(self) raises -> Self:
         """
         Return a copy of this Morrow.
         """
@@ -1569,13 +1577,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.tz,
         )
 
-    def datetime(self) -> Self:
+    def datetime(self) raises -> Self:
         """
         Return a datetime representation of this Morrow.
         """
         return self.clone()
 
-    def naive(self) -> Self:
+    def naive(self) raises -> Self:
         """
         Return a copy without timezone information.
         """
@@ -1765,6 +1773,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return an English human-readable relative difference.
         """
+        self._check_awareness(other)
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
         var unit = granularity
         if unit != "auto":
@@ -1811,6 +1820,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var ordered_granularity = Self._normalize_humanize_granularity_list(
             granularity
         )
+        self._check_awareness(other)
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
         var rounded_delta_seconds = Self._rounded_seconds(delta_us)
         var remaining = abs(rounded_delta_seconds)
@@ -1923,7 +1933,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return this instant converted to a fixed-offset timezone.
         """
-        var shifted = self.shift(seconds=tz.offset - self.tz.offset)
+        var target = tz
+        if tz.name == "local":
+            target = TimeZone.local(self.int_timestamp())
+        var shifted = self.shift(seconds=target.offset - self.tz.offset)
         return Self(
             shifted.year,
             shifted.month,
@@ -1932,7 +1945,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             shifted.minute,
             shifted.second,
             shifted.microsecond,
-            tz,
+            target,
         )
 
     def to(self, tz_str: String) raises -> Self:
@@ -2025,6 +2038,17 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return a new Morrow shifted by relative date and time offsets.
         """
+        if (
+            years < -9999
+            or years > 9999
+            or months < -119988
+            or months > 119988
+            or quarters < -39996
+            or quarters > 39996
+            or weeks < -521723
+            or weeks > 521723
+        ):
+            raise Error("calendar shift exceeds supported years 1..9999")
         if weekday != -9999 and (weekday < -7 or weekday > 6):
             raise Error("weekday must be in -7..6")
         var total_months = (
@@ -2074,6 +2098,26 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             day_offset, hours, minutes, seconds, microseconds
         )
 
+    def shift_weekday(self, weekday: Int, nth: Int = 1) raises -> Self:
+        """Move to the nth weekday on/after (positive) or on/before (negative) self.
+
+        Monday is 0. nth=1 or -1 includes today when it matches.
+        """
+        if (
+            weekday < 0
+            or weekday > 6
+            or nth == 0
+            or nth < -520000
+            or nth > 520000
+        ):
+            raise Error(
+                "weekday must be 0..6 and nth must be nonzero within +/-520000"
+            )
+        var delta = weekday - self.weekday()
+        if nth > 0:
+            return self.shift(days=(delta + 7) % 7 + 7 * (nth - 1))
+        return self.shift(days=-((7 - delta) % 7) + 7 * (nth + 1))
+
     def span(
         self,
         frame: String,
@@ -2114,17 +2158,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Return points in time between start and end, stepping by frame.
         """
         var items = List[Self]()
-        var current = start
-        var original_day = start.day
-        var emitted = 0
-        while current._utc_microseconds() <= end._utc_microseconds():
-            if limit != _UNBOUNDED_LIMIT and emitted >= limit:
-                break
-            items.append(current)
-            current = current._shift_frame_preserving_day(
-                frame, 1, original_day
-            )
-            emitted += 1
+        for item in Self.iter_range(frame, start, end, limit):
+            items.append(item)
         return items^
 
     @staticmethod
@@ -2132,19 +2167,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return a limited number of points starting at start.
         """
-        var items = List[Self]()
-        if limit <= 0:
-            return items^
-        var current = start
-        var original_day = start.day
-        var emitted = 0
-        while emitted < limit:
-            items.append(current)
-            current = current._shift_frame_preserving_day(
-                frame, 1, original_day
-            )
-            emitted += 1
-        return items^
+        return Self.range(
+            frame,
+            start,
+            Self.max()
+            .replace(tzinfo=start.tz) if not start.tz.is_none() else Self.max()
+            .naive(),
+            limit,
+        )
 
     @staticmethod
     def range(
@@ -2350,52 +2380,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         exact: Bool,
         week_start: Int,
     ) raises -> List[MorrowSpan]:
-        if interval < 1:
-            raise Error("interval must be greater than 0")
-        Self._validate_bounds(bounds)
-
-        var spans = List[MorrowSpan]()
-        var emitted = 0
-        var end_key = end._utc_microseconds()
-        var current = start if exact else start._floor_frame(frame, week_start)
-        var original_day = start.day
-
-        while current._utc_microseconds() <= end_key:
-            if exact and current._utc_microseconds() >= end_key:
-                break
-            if limit != _UNBOUNDED_LIMIT and emitted >= limit:
-                break
-
-            if exact:
-                var raw_span_end = current._shift_frame(frame, interval)
-                var next = current._shift_frame_preserving_day(
-                    frame, interval, original_day
-                )
-                var span = Self._span_from_bounds(current, raw_span_end, bounds)
-                var span_start_key = span.start._utc_microseconds()
-                if span_start_key == end_key or span_start_key - 1 == end_key:
-                    break
-                if span.end._utc_microseconds() > end_key:
-                    var span_end = end
-                    if ord(bounds[byte=1]) == ord(")"):
-                        span_end = end.shift(microseconds=-1)
-                    spans.append(MorrowSpan(span.start, span_end))
-                else:
-                    spans.append(span)
-                current = next
-            else:
-                spans.append(
-                    current.span(
-                        frame,
-                        count=interval,
-                        bounds=bounds,
-                        week_start=week_start,
-                    )
-                )
-                current = current._shift_frame(frame, interval)
-            emitted += 1
-
-        return spans^
+        var result = List[MorrowSpan]()
+        for span in MorrowSpanIterator(
+            frame, start, end, interval, limit, bounds, exact, week_start
+        ):
+            result.append(span)
+        return result^
 
     @staticmethod
     def _interval_range(
@@ -2408,33 +2398,60 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         exact: Bool,
         week_start: Int,
     ) raises -> List[MorrowSpan]:
-        if interval < 1:
-            raise Error("interval must be greater than 0")
-        if not exact or interval == 1:
-            return Self._span_range(
-                frame, start, end, interval, limit, bounds, exact, week_start
-            )
+        var result = List[MorrowSpan]()
+        for span in Self.iter_interval(
+            frame, start, end, interval, limit, bounds, exact, week_start
+        ):
+            result.append(span)
+        return result^
 
-        var base_spans = Self._span_range(
-            frame, start, end, 1, _UNBOUNDED_LIMIT, bounds, True, week_start
+    @staticmethod
+    def iter_range(
+        frame: String, start: Self, end: Self, limit: Int = _UNBOUNDED_LIMIT
+    ) raises -> MorrowIterator:
+        return MorrowIterator(frame, start, end, limit)
+
+    @staticmethod
+    def iter_range(
+        frame: String, start: Self, limit: Int
+    ) raises -> MorrowIterator:
+        return MorrowIterator(
+            frame,
+            start,
+            Self.max()
+            .replace(tzinfo=start.tz) if not start.tz.is_none() else Self.max()
+            .naive(),
+            limit,
         )
-        var grouped = List[MorrowSpan]()
-        var emitted = 0
-        var index = 0
-        while index < len(base_spans):
-            if limit != _UNBOUNDED_LIMIT and emitted >= limit:
-                break
 
-            var end_index = index + interval - 1
-            if end_index >= len(base_spans):
-                end_index = len(base_spans) - 1
-            grouped.append(
-                MorrowSpan(base_spans[index].start, base_spans[end_index].end)
-            )
-            index += interval
-            emitted += 1
+    @staticmethod
+    def iter_span_range(
+        frame: String,
+        start: Self,
+        end: Self,
+        limit: Int = _UNBOUNDED_LIMIT,
+        bounds: String = "[)",
+        exact: Bool = False,
+        week_start: Int = 1,
+    ) raises -> MorrowSpanIterator:
+        return MorrowSpanIterator(
+            frame, start, end, 1, limit, bounds, exact, week_start
+        )
 
-        return grouped^
+    @staticmethod
+    def iter_interval(
+        frame: String,
+        start: Self,
+        end: Self,
+        interval: Int = 1,
+        limit: Int = _UNBOUNDED_LIMIT,
+        bounds: String = "[)",
+        exact: Bool = False,
+        week_start: Int = 1,
+    ) raises -> MorrowIntervalIterator:
+        return MorrowIntervalIterator(
+            frame, start, end, interval, limit, bounds, exact, week_start
+        )
 
     @staticmethod
     def _span_from_bounds(
@@ -2455,6 +2472,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         Return True when this Morrow is between start and end.
         """
         Self._validate_bounds(bounds)
+        self._check_awareness(start)
+        self._check_awareness(end)
         var value = self._utc_microseconds()
         var low = start._utc_microseconds()
         var high = end._utc_microseconds()
@@ -3174,6 +3193,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         seconds: Int,
         microseconds: Int,
     ) raises -> Self:
+        if (
+            days < -3652059
+            or days > 3652059
+            or hours < -87649416
+            or hours > 87649416
+            or minutes < -5258964960
+            or minutes > 5258964960
+            or seconds < -315537897600
+            or seconds > 315537897600
+            or microseconds < -315537897600000000
+            or microseconds > 315537897600000000
+        ):
+            raise Error("time shift exceeds supported years 1..9999")
         var total_us = (
             (self.hour * 3600 + self.minute * 60 + self.second) * _US_PER_SECOND
             + self.microsecond
@@ -3556,6 +3588,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         else:
             raise Error("unsupported granularity")
 
+    def _check_awareness(self, other: Self) raises:
+        if self.tz.is_none() != other.tz.is_none():
+            raise Error("cannot mix naive and timezone-aware dates")
+
     def _utc_microseconds(self) raises -> Int:
         var seconds = (
             (self.toordinal() - _UNIX_EPOCH_ORDINAL) * 86400
@@ -3877,18 +3913,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return self.isoformat()
 
     def __eq__(self, other: Self) raises -> Bool:
+        if self.tz.is_none() != other.tz.is_none():
+            return False
         return self._utc_microseconds() == other._utc_microseconds()
 
     def __le__(self, other: Self) raises -> Bool:
+        self._check_awareness(other)
         return self._utc_microseconds() <= other._utc_microseconds()
 
     def __lt__(self, other: Self) raises -> Bool:
+        self._check_awareness(other)
         return self._utc_microseconds() < other._utc_microseconds()
 
     def __ge__(self, other: Self) raises -> Bool:
+        self._check_awareness(other)
         return self._utc_microseconds() >= other._utc_microseconds()
 
     def __gt__(self, other: Self) raises -> Bool:
+        self._check_awareness(other)
         return self._utc_microseconds() > other._utc_microseconds()
 
     def __add__(self, delta: TimeDelta) raises -> Self:
@@ -3905,6 +3947,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     def __sub__(self, other: Self) raises -> TimeDelta:
+        self._check_awareness(other)
         return TimeDelta(
             microseconds=self._utc_microseconds() - other._utc_microseconds()
         )
@@ -4138,3 +4181,174 @@ struct MorrowParseTimeZone(Copyable, ImplicitlyCopyable, Movable):
     def __init__(out self, *, deinit move: Self):
         self.tz = move.tz^
         self.pos = move.pos
+
+
+struct MorrowIterator(Copyable, ImplicitlyCopyable, Movable):
+    """A constant-memory iterator over calendar points."""
+
+    var frame: String
+    var current: Morrow
+    var end: Morrow
+    var remaining: Int
+    var original_day: Int
+    var started: Bool
+
+    def __init__(
+        out self, frame: String, start: Morrow, end: Morrow, limit: Int
+    ) raises:
+        start._check_awareness(end)
+        _ = start._floor_frame(frame)
+        self.frame = frame
+        self.current = start
+        self.end = end
+        self.remaining = limit
+        self.original_day = start.day
+        self.started = False
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(mut self) raises -> Morrow:
+        if self.remaining != _UNBOUNDED_LIMIT and self.remaining <= 0:
+            raise StopIteration()
+        if self.started:
+            if self.current >= self.end:
+                raise StopIteration()
+            self.current = self.current._shift_frame_preserving_day(
+                self.frame, 1, self.original_day
+            )
+        if self.current > self.end:
+            raise StopIteration()
+        self.started = True
+        if self.remaining != _UNBOUNDED_LIMIT:
+            self.remaining -= 1
+        return self.current
+
+
+struct MorrowSpanIterator(Copyable, ImplicitlyCopyable, Movable):
+    """A constant-memory iterator over bounded calendar spans."""
+
+    var frame: String
+    var current: Morrow
+    var end: Morrow
+    var step: Int
+    var remaining: Int
+    var bounds: String
+    var exact: Bool
+    var week_start: Int
+    var original_day: Int
+    var started: Bool
+
+    def __init__(
+        out self,
+        frame: String,
+        start: Morrow,
+        end: Morrow,
+        step: Int,
+        limit: Int,
+        bounds: String,
+        exact: Bool,
+        week_start: Int,
+    ) raises:
+        if step < 1:
+            raise Error("interval must be greater than 0")
+        Morrow._validate_bounds(bounds)
+        start._check_awareness(end)
+        var floor = start._floor_frame(frame, week_start)
+        self.frame = frame
+        self.current = start if exact else floor
+        self.end = end
+        self.step = step
+        self.remaining = limit
+        self.bounds = bounds
+        self.exact = exact
+        self.week_start = week_start
+        self.original_day = start.day
+        self.started = False
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(mut self) raises -> MorrowSpan:
+        if self.remaining != _UNBOUNDED_LIMIT and self.remaining <= 0:
+            raise StopIteration()
+        if self.started:
+            if self.exact:
+                self.current = self.current._shift_frame_preserving_day(
+                    self.frame, self.step, self.original_day
+                )
+            else:
+                self.current = self.current._shift_frame(self.frame, self.step)
+        var end_key = self.end._utc_microseconds()
+        var key = self.current._utc_microseconds()
+        if key > end_key or (self.exact and key == end_key):
+            raise StopIteration()
+        var span = self.current.span(
+            self.frame,
+            count=self.step,
+            bounds=self.bounds,
+            exact=self.exact,
+            week_start=self.week_start,
+        )
+        if self.exact:
+            var start_key = span.start._utc_microseconds()
+            if start_key == end_key or start_key - 1 == end_key:
+                raise StopIteration()
+            if span.end._utc_microseconds() > end_key:
+                span.end = self.end
+                if self.bounds[byte=1] == ")":
+                    span.end = span.end.shift(microseconds=-1)
+        self.started = True
+        if self.remaining != _UNBOUNDED_LIMIT:
+            self.remaining -= 1
+        return span
+
+
+struct MorrowIntervalIterator(Copyable, ImplicitlyCopyable, Movable):
+    """Group spans without materializing the underlying range."""
+
+    var spans: MorrowSpanIterator
+    var group: Int
+    var remaining: Int
+
+    def __init__(
+        out self,
+        frame: String,
+        start: Morrow,
+        end: Morrow,
+        interval: Int,
+        limit: Int,
+        bounds: String,
+        exact: Bool,
+        week_start: Int,
+    ) raises:
+        if interval < 1:
+            raise Error("interval must be greater than 0")
+        self.spans = MorrowSpanIterator(
+            frame,
+            start,
+            end,
+            1 if exact else interval,
+            _UNBOUNDED_LIMIT,
+            bounds,
+            exact,
+            week_start,
+        )
+        self.group = interval if exact else 1
+        self.remaining = limit
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(mut self) raises -> MorrowSpan:
+        if self.remaining != _UNBOUNDED_LIMIT and self.remaining <= 0:
+            raise StopIteration()
+        var span = self.spans.__next__()
+        for _ in range(1, self.group):
+            try:
+                span.end = self.spans.__next__().end
+            except StopIteration:
+                break
+        if self.remaining != _UNBOUNDED_LIMIT:
+            self.remaining -= 1
+        return span

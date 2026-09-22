@@ -306,7 +306,7 @@ def test_utcfromtimestamp() raises:
 
 
 def test_iso_format() raises:
-    var d0 = Morrow(2023, 10, 1, 0, 0, 0, 1234)
+    var d0 = Morrow(2023, 10, 1, 0, 0, 0, 1234).naive()
     assert_equal(d0.isoformat(), "2023-10-01T00:00:00.001234")
     assert_equal(d0.isoformat(timespec="seconds"), "2023-10-01T00:00:00")
     assert_equal(
@@ -318,7 +318,7 @@ def test_iso_format() raises:
     var offset_seconds = Morrow(2024, 2, 29, 3, 4, 5, tz=TimeZone(19815))
     assert_equal(offset_seconds.isoformat(), "2024-02-29T03:04:05+05:30:15")
 
-    var whole_second = Morrow(2024, 2, 29, 3, 4, 5)
+    var whole_second = Morrow(2024, 2, 29, 3, 4, 5).naive()
     assert_equal(whole_second.isoformat(), "2024-02-29T03:04:05")
     assert_equal(
         whole_second.isoformat(timespec="microseconds"),
@@ -418,13 +418,13 @@ def test_ordinal() raises:
     assert_equal(m.day, 1)
 
     var leap_day = Morrow.fromordinal(Morrow(2024, 2, 29).toordinal())
-    assert_equal(String(leap_day), "2024-02-29T00:00:00.000000")
+    assert_equal(String(leap_day), "2024-02-29T00:00:00.000000+00:00")
 
     var min_ordinal = Morrow.fromordinal(1)
-    assert_equal(String(min_ordinal), "0001-01-01T00:00:00.000000")
+    assert_equal(String(min_ordinal), "0001-01-01T00:00:00.000000+00:00")
 
     var max_ordinal = Morrow.fromordinal(3652059)
-    assert_equal(String(max_ordinal), "9999-12-31T00:00:00.000000")
+    assert_equal(String(max_ordinal), "9999-12-31T00:00:00.000000+00:00")
 
     assert_fromordinal_raises(0)
     assert_fromordinal_raises(3652060)
@@ -560,7 +560,7 @@ def test_replace() raises:
 
 
 def test_shift_months_clamps_to_last_day() raises:
-    var jan31 = Morrow(2024, 1, 31, 3, 4, 5, 123456)
+    var jan31 = Morrow(2024, 1, 31, 3, 4, 5, 123456).naive()
     var feb = jan31.shift(months=1)
     assert_equal(String(feb), "2024-02-29T03:04:05.123456")
 
@@ -575,7 +575,7 @@ def test_shift_months_clamps_to_last_day() raises:
 
 
 def test_shift_time_units() raises:
-    var m = Morrow(2024, 2, 28, 23, 59, 59, 999999)
+    var m = Morrow(2024, 2, 28, 23, 59, 59, 999999).naive()
     var shifted = m.shift(microseconds=1)
     assert_equal(String(shifted), "2024-02-29T00:00:00.000000")
 
@@ -648,7 +648,7 @@ def test_floor_ceil_and_span() raises:
 
 
 def test_week_and_quarter_spans() raises:
-    var m = Morrow(2024, 2, 29, 13)
+    var m = Morrow(2024, 2, 29, 13).naive()
 
     var iso_week = m.span("week")
     assert_equal(String(iso_week.start), "2024-02-26T00:00:00.000000")
@@ -658,11 +658,11 @@ def test_week_and_quarter_spans() raises:
     assert_equal(String(sunday_week.start), "2024-02-25T00:00:00.000000")
     assert_equal(String(sunday_week.end), "2024-03-02T23:59:59.999999")
 
-    var quarter = Morrow(2024, 5, 17, 8).span("quarter")
+    var quarter = Morrow(2024, 5, 17, 8).naive().span("quarter")
     assert_equal(String(quarter.start), "2024-04-01T00:00:00.000000")
     assert_equal(String(quarter.end), "2024-06-30T23:59:59.999999")
 
-    var month = Morrow(2024, 2, 17, 8).span("month")
+    var month = Morrow(2024, 2, 17, 8).naive().span("month")
     assert_equal(String(month.start), "2024-02-01T00:00:00.000000")
     assert_equal(String(month.end), "2024-02-29T23:59:59.999999")
 
@@ -1130,7 +1130,7 @@ def test_timezone_status_flags() raises:
 
 
 def test_span_string_representation() raises:
-    var span = Morrow(2024, 2, 29, 3, 4, 5).span("hour")
+    var span = Morrow(2024, 2, 29, 3, 4, 5).naive().span("hour")
     assert_equal(
         String(span),
         (

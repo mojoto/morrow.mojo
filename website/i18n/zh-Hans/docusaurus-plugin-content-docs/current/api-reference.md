@@ -31,7 +31,7 @@ sidebar_position: 8
 日期时间操作：
 
 - `replace(...)`
-- `shift(...)`
+- `shift(...)`, `shift_weekday(weekday, nth=1)`
 - `floor(frame)`、`ceil(frame)`、`span(frame)`
 - `range(...)`、`span_range(...)`、`interval(...)`
 - `is_between(start, end, bounds="()")`

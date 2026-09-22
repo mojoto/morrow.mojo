@@ -1,6 +1,6 @@
 from std.format import Writable, Writer
 
-from ._libc import c_localtime
+from ._libc import c_localtime, c_gettimeofday, c_mktime, CTm
 
 
 struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -48,8 +48,30 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Get the local TimeZone.
         """
-        var local_t = c_localtime(0)
+        return TimeZone.local(c_gettimeofday().tv_sec)
+
+    @staticmethod
+    def local(timestamp: Int) -> TimeZone:
+        """Get the local fixed offset at a particular Unix timestamp."""
+        var local_t = c_localtime(timestamp)
         return TimeZone(Int(local_t.tm_gmtoff), "local")
+
+    @staticmethod
+    def local_at(
+        year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int
+    ) -> TimeZone:
+        """Resolve the host offset for local wall fields (DST policy is platform-defined).
+        """
+        var tm = CTm()
+        tm.tm_year = Int32(year - 1900)
+        tm.tm_mon = Int32(month - 1)
+        tm.tm_mday = Int32(day)
+        tm.tm_hour = Int32(hour)
+        tm.tm_min = Int32(minute)
+        tm.tm_sec = Int32(second)
+        tm.tm_isdst = -1
+        _ = c_mktime(tm)
+        return TimeZone(Int(tm.tm_gmtoff), "local")
 
     @staticmethod
     def from_utc(utc_str: String) raises -> TimeZone:
