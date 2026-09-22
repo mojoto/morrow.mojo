@@ -58,6 +58,12 @@
   margin-bottom: 1rem;
 }
 
+.morrow-hero__logo {
+  display: block;
+  object-fit: contain;
+  margin-bottom: 1.25rem;
+}
+
 .morrow-hero p {
   color: var(--morrow-muted);
   font-size: 1.15rem;

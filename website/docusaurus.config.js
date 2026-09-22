@@ -6,7 +6,7 @@ const {themes} = require('prism-react-renderer');
 const config = {
   title: 'Morrow.mojo',
   tagline: 'Human-friendly date and time utilities for Mojo',
-  favicon: 'img/morrow-logo.svg',
+  favicon: 'img/morrow-logo.png',
 
   url: 'https://mojoto.github.io',
   baseUrl: '/morrow.mojo/',
@@ -54,12 +54,12 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      image: 'img/morrow-social-card.svg',
+      image: 'img/morrow-social-card.png',
       navbar: {
         title: 'Morrow.mojo',
         logo: {
-          alt: 'Morrow.mojo logo',
-          src: 'img/morrow-logo.svg',
+          alt: 'Morrow flame and clock logo',
+          src: 'img/morrow-logo.png',
         },
         items: [
           {

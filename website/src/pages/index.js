@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 
 const copy = {
@@ -62,6 +63,7 @@ export default function Home() {
         <section className="morrow-hero">
           <div className="container morrow-hero__inner">
             <div>
+              <img className="morrow-hero__logo" src={useBaseUrl('/img/morrow-logo.png')} alt="" width="112" height="112" />
               <h1>{siteConfig.title}</h1>
               <p>{localeCopy.description}</p>
               <div className="morrow-actions">
