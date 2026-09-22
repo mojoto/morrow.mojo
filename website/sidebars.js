@@ -12,6 +12,7 @@ const sidebars = {
     'api-reference',
     'migration',
     'testing',
+    'stability',
   ],
 };
 
