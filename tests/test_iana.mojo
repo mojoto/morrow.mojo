@@ -90,6 +90,7 @@ def test_unusual_transitions_and_invalid_names() raises:
     var skipped = Morrow(2011, 12, 30, 12, tz=apia)
     assert_true(skipped.imaginary())
     assert_equal(skipped.to(apia).day, 31)
+    assert_equal(skipped.dst().total_seconds(), 3600.0)
     var invalid_names: List[String] = ["", "未知/地区", "Invalid/Zone"]
     for name in invalid_names:
         var rejected = False

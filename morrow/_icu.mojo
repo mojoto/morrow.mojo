@@ -191,9 +191,12 @@ struct Calendar(Movable):
         var actual = self.at(timestamps[fold])
         var imaginary = actual.timestamp + actual.offset != wall_seconds
         var offset = wall_seconds - actual.timestamp
+        var dst = actual.dst
+        if imaginary:
+            dst = self.at(timestamps[1 - fold]).dst
         return ZoneResult(
             offset,
-            actual.dst + offset - actual.offset,
+            dst,
             actual.timestamp,
             timestamps[0] != timestamps[1] and not imaginary,
             imaginary,
