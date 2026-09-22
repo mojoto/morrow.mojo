@@ -1,3 +1,4 @@
+from .util import utf8_width
 from .constants import (
     month_name,
     month_abbreviation,
@@ -36,7 +37,7 @@ def format_morrow(
     var in_bracket = False
     var start_idx = 0
     for i in range(fmt.byte_length()):
-        if fmt[byte=i] == "[":
+        if fmt.as_bytes()[i] == 91:
             if in_bracket:
                 ret += "["
             else:
@@ -56,7 +57,7 @@ def format_morrow(
                 String(fmt[byte=start_idx:i]),
             )
             start_idx = i + 1
-        elif fmt[byte=i] == "]":
+        elif fmt.as_bytes()[i] == 93:
             if in_bracket:
                 ret += fmt[byte=start_idx:i]
                 in_bracket = False
@@ -117,18 +118,18 @@ def format_strftime(
     var ret = ""
     var i = 0
     while i < fmt.byte_length():
-        if fmt[byte=i] == "%":
+        if fmt.as_bytes()[i] == 37:
             i += 1
             if i >= fmt.byte_length():
                 ret += "%"
             elif (
-                fmt[byte=i] == "-"
-                or fmt[byte=i] == "_"
-                or fmt[byte=i] == "0"
-                or fmt[byte=i] == "E"
-                or fmt[byte=i] == "O"
+                fmt.as_bytes()[i] == 45
+                or fmt.as_bytes()[i] == 95
+                or fmt.as_bytes()[i] == 48
+                or fmt.as_bytes()[i] == 69
+                or fmt.as_bytes()[i] == 79
             ) and i + 1 < fmt.byte_length():
-                var modifier = ord(fmt[byte=i])
+                var modifier = Int(fmt.as_bytes()[i])
                 i += 1
                 ret += _replace_strftime_modified_directive(
                     year,
@@ -143,7 +144,7 @@ def format_strftime(
                     tz_is_none,
                     weekday,
                     modifier,
-                    ord(fmt[byte=i]),
+                    Int(fmt.as_bytes()[i]),
                     String(fmt[byte=i]),
                 )
             else:
@@ -159,11 +160,14 @@ def format_strftime(
                     tz_name,
                     tz_is_none,
                     weekday,
-                    ord(fmt[byte=i]),
+                    Int(fmt.as_bytes()[i]),
                     String(fmt[byte=i]),
                 )
         else:
-            ret += fmt[byte=i]
+            var width = utf8_width(fmt, i)
+            ret += fmt[byte = i : i + width]
+            i += width
+            continue
         i += 1
     return ret
 
@@ -192,12 +196,12 @@ def _replace(
     var match_count = 0
     var i = 0
     while i < s.byte_length():
-        var c = ord(s[byte=i])
+        var c = Int(s.as_bytes()[i])
         if (
             c == _D
             and match_chr_ord != _D
             and i + 1 < s.byte_length()
-            and s[byte=i + 1] == "o"
+            and s.as_bytes()[i + 1] == 111
         ):
             if match_chr_ord > 0:
                 ret += _replace_token(
@@ -276,7 +280,10 @@ def _replace(
                     match_count,
                 )
                 match_chr_ord = 0
-            ret += s[byte=i]
+            var width = utf8_width(s, i)
+            ret += s[byte = i : i + width]
+            i += width
+            continue
         i += 1
     if match_chr_ord > 0:
         ret += _replace_token(
@@ -789,7 +796,7 @@ def _format_timestamp_seconds(seconds: Int, microsecond: Int) -> String:
 
     var fraction = String(microsecond).ascii_rjust(6, "0")
     var end = fraction.byte_length()
-    while end > 1 and fraction[byte=end - 1] == "0":
+    while end > 1 and fraction.as_bytes()[end - 1] == 48:
         end -= 1
     return String(seconds) + "." + String(fraction[byte=0:end])
 

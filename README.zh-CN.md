@@ -1,6 +1,6 @@
 # Morrow.mojo
 
-面向 Mojo 的友好日期时间工具库。Morrow 提供受 Arrow 启发的 API，用于创建、解析、格式化、偏移、比较和人性化展示日期时间值。
+面向 Mojo 的友好日期时间工具库。Morrow 提供日期时间 API，用于创建、解析、格式化、偏移、比较和人性化展示日期时间值。
 
 <p align="center">
   <a href="https://github.com/mojoto/morrow.mojo/actions/workflows/test.yml">
@@ -61,7 +61,7 @@ var rss = Morrow(2026, 1, 1, 10, 30, 35, 0, TimeZone(0, "UTC"))
 print(rss.format(FORMAT_RSS))
 ```
 
-Morrow 默认使用 UTC，支持固定偏移时区，可以解析 ISO 8601 字符串和 POSIX 时间戳，并支持 Arrow 风格 token 与 Python 风格 `strftime` 格式化。
+Morrow 默认使用 UTC，支持 IANA 和固定偏移时区，可以解析 ISO 8601 字符串和 POSIX 时间戳，并支持 日期时间 token 与 Python 风格 `strftime` 格式化。
 
 ## 开发
 
@@ -91,3 +91,5 @@ Release 按编译器版本分别构建，请选择匹配的归档。
 | `make doc-clean` | 删除 Docusaurus 生成文件 |
 
 文档相关目标需要 Node.js 和 npm。先运行 `make doc-install` 安装依赖，再依次运行 `make doc-build` 和 `make doc-serve` 预览构建结果。
+
+格式化、解析和相对时间支持英文、简体中文及繁体中文。命名时区和本地时区需要 ICU（macOS 自带，Debian/Ubuntu 可安装 `libicu-dev`）。

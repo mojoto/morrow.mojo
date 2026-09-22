@@ -1,3 +1,12 @@
+from .util import utf8_width
+from .locale import (
+    locale_id,
+    localized_format,
+    humanized_text,
+    english_relative,
+    localized_month,
+    localized_weekday,
+)
 from .util import (
     normalize_timestamp,
     _ymd2ord,
@@ -64,6 +73,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         second: Int = 0,
         microsecond: Int = 0,
         tz: TimeZone = TimeZone(0, "UTC"),
+        fold: Int = -1,
     ) raises:
         Self._validate_fields(
             year, month, day, hour, minute, second, microsecond
@@ -77,9 +87,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         self.minute = minute
         self.second = second
         self.microsecond = microsecond
-        self.tz = tz
-        if tz.name == "local":
-            self.tz = TimeZone.local_at(year, month, day, hour, minute, second)
+        self.tz = tz.resolve(year, month, day, hour, minute, second, fold)
 
     def __init__(out self, *, copy: Self):
         self.year = copy.year
@@ -112,7 +120,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def now(tz: TimeZone) raises -> Self:
         """
-        Return the current time converted to a fixed-offset timezone.
+        Return the current time converted to the target timezone.
         """
         return Self.utcnow().to(tz)
 
@@ -156,25 +164,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _fromtimestamp(t: CTimeval, utc: Bool) raises -> Self:
-        var tm: CTm
-        var tz: TimeZone
+        var tm = c_gmtime(t.tv_sec)
+        var result = Self(
+            Int(tm.tm_year) + 1900,
+            Int(tm.tm_mon) + 1,
+            Int(tm.tm_mday),
+            Int(tm.tm_hour),
+            Int(tm.tm_min),
+            Int(tm.tm_sec),
+            t.tv_usec,
+        )
         if utc:
-            tm = c_gmtime(t.tv_sec)
-            tz = TimeZone(0, "UTC")
-        else:
-            tm = c_localtime(t.tv_sec)
-            tz = TimeZone(Int(tm.tm_gmtoff), "local")
-
-        var year = Int(tm.tm_year) + 1900
-        var month = Int(tm.tm_mon) + 1
-        var day = Int(tm.tm_mday)
-        var hour = Int(tm.tm_hour)
-        var minute = Int(tm.tm_min)
-        var second = Int(tm.tm_sec)
-        return Self(year, month, day, hour, minute, second, t.tv_usec, tz)
+            return result
+        return result.to("local")
 
     @staticmethod
     def _fromtimestamp_checked(t: CTimeval, utc: Bool) raises -> Self:
+        if t.tv_sec < -62135596800 or t.tv_sec > 253402300799:
+            raise Error("timestamp exceeds supported years 1..9999")
         var result = Self._fromtimestamp(t, utc)
         Self._validate_fields(
             result.year,
@@ -261,6 +268,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _timeval_from_timestamp(timestamp: Float64) raises -> CTimeval:
         var timestamp_ = normalize_timestamp(timestamp)
+        if not (timestamp_ >= -62135596800.0 and timestamp_ < 253402300800.0):
+            raise Error("timestamp must be finite and within years 1..9999")
         var seconds = Int(timestamp_)
         if Float64(seconds) > timestamp_:
             seconds -= 1
@@ -282,7 +291,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def get(tz: TimeZone) raises -> Self:
         """
-        Create a Morrow for the current time converted to a fixed-offset timezone.
+        Create a Morrow for the current time converted to the target timezone.
         """
         return Self.now(tz)
 
@@ -338,7 +347,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def get(year: Int, month: Int, day: Int, tz: TimeZone) raises -> Self:
         """
-        Create a Morrow from date components and a fixed-offset timezone.
+        Create a Morrow from date components and a timezone.
         """
         return Self._from_components(year, month, day, 0, 0, 0, 0, tz)
 
@@ -361,7 +370,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         tz: TimeZone,
     ) raises -> Self:
         """
-        Create a Morrow from date and time components with a fixed-offset timezone.
+        Create a Morrow from date and time components with a timezone.
         """
         return Self._from_components(
             year, month, day, hour, minute, second, microsecond, tz
@@ -409,14 +418,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def get(timestamp: Int, tz: TimeZone) raises -> Self:
         """
-        Create a Morrow from a POSIX timestamp converted to a fixed-offset timezone.
+        Create a Morrow from a POSIX timestamp converted to the target timezone.
         """
         return Self.utcfromtimestamp(timestamp).to(tz)
 
     @staticmethod
     def get(timestamp: Float64, tz: TimeZone) raises -> Self:
         """
-        Create a Morrow from a POSIX timestamp converted to a fixed-offset timezone.
+        Create a Morrow from a POSIX timestamp converted to the target timezone.
         """
         return Self.utcfromtimestamp(timestamp).to(tz)
 
@@ -461,13 +470,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if length == 0:
             raise Error("isoformat string is too short")
 
-        if Self._is_parse_punctuation(ord(date_str[byte=0])):
+        if Self._is_parse_punctuation(Int(date_str.as_bytes()[0])):
             try:
                 return Self.fromisoformat(String(date_str[byte=1:]))
             except e:
                 pass
 
-        if Self._is_parse_punctuation(ord(date_str[byte=length - 1])):
+        if Self._is_parse_punctuation(Int(date_str.as_bytes()[length - 1])):
             try:
                 return Self.fromisoformat(
                     String(date_str[byte = 0 : length - 1])
@@ -477,8 +486,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         if (
             length > 1
-            and Self._is_parse_punctuation(ord(date_str[byte=0]))
-            and Self._is_parse_punctuation(ord(date_str[byte=length - 1]))
+            and Self._is_parse_punctuation(Int(date_str.as_bytes()[0]))
+            and Self._is_parse_punctuation(Int(date_str.as_bytes()[length - 1]))
         ):
             try:
                 return Self.fromisoformat(
@@ -696,6 +705,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Create a Morrow from an ISO 8601 string.
         """
+        for byte in date_str.as_bytes():
+            if byte > 127:
+                raise Error("ISO date text must contain ASCII characters")
         var length = date_str.byte_length()
         if length < 4:
             raise Error("isoformat string is too short")
@@ -711,14 +723,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             pos = 4
         elif (
             length >= 7
-            and date_str[byte=4] == "-"
-            and Self._is_ascii_digit(ord(date_str[byte=5]))
-            and Self._is_ascii_digit(ord(date_str[byte=6]))
+            and date_str.as_bytes()[4] == 45
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[5]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[6]))
             and (
                 length == 7
-                or date_str[byte=7] == "T"
-                or date_str[byte=7] == "t"
-                or date_str[byte=7] == " "
+                or date_str.as_bytes()[7] == 84
+                or date_str.as_bytes()[7] == 116
+                or date_str.as_bytes()[7] == 32
             )
         ):
             year = Int(date_str[byte=0:4])
@@ -726,8 +738,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             day = 1
             pos = 7
         elif length >= 7 and (
-            (date_str[byte=4] == "-" and date_str[byte=5] == "W")
-            or date_str[byte=4] == "W"
+            (date_str.as_bytes()[4] == 45 and date_str.as_bytes()[5] == 87)
+            or date_str.as_bytes()[4] == 87
         ):
             var iso_week = Self._parse_iso_week_date(date_str, 0)
             var date = Self.fromisocalendar(
@@ -739,10 +751,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             pos = iso_week.pos
         elif (
             length >= 8
-            and date_str[byte=4] == "-"
-            and Self._is_ascii_digit(ord(date_str[byte=5]))
-            and Self._is_ascii_digit(ord(date_str[byte=6]))
-            and Self._is_ascii_digit(ord(date_str[byte=7]))
+            and date_str.as_bytes()[4] == 45
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[5]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[6]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[7]))
         ):
             year = Int(date_str[byte=0:4])
             var day_of_year = Int(date_str[byte=5:8])
@@ -755,18 +767,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             pos = 8
         elif (
             length >= 7
-            and Self._is_ascii_digit(ord(date_str[byte=0]))
-            and Self._is_ascii_digit(ord(date_str[byte=1]))
-            and Self._is_ascii_digit(ord(date_str[byte=2]))
-            and Self._is_ascii_digit(ord(date_str[byte=3]))
-            and Self._is_ascii_digit(ord(date_str[byte=4]))
-            and Self._is_ascii_digit(ord(date_str[byte=5]))
-            and Self._is_ascii_digit(ord(date_str[byte=6]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[0]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[1]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[2]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[3]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[4]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[5]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[6]))
             and (
                 length == 7
-                or date_str[byte=7] == "T"
-                or date_str[byte=7] == "t"
-                or date_str[byte=7] == " "
+                or date_str.as_bytes()[7] == 84
+                or date_str.as_bytes()[7] == 116
+                or date_str.as_bytes()[7] == 32
             )
         ):
             year = Int(date_str[byte=0:4])
@@ -780,32 +792,32 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             pos = 7
         elif (
             length >= 6
-            and Self._is_ascii_digit(ord(date_str[byte=0]))
-            and Self._is_ascii_digit(ord(date_str[byte=1]))
-            and Self._is_ascii_digit(ord(date_str[byte=2]))
-            and Self._is_ascii_digit(ord(date_str[byte=3]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[0]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[1]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[2]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[3]))
             and (
-                date_str[byte=4] == "-"
-                or date_str[byte=4] == "/"
-                or date_str[byte=4] == "."
+                date_str.as_bytes()[4] == 45
+                or date_str.as_bytes()[4] == 47
+                or date_str.as_bytes()[4] == 46
             )
-            and Self._is_ascii_digit(ord(date_str[byte=5]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[5]))
         ):
             year = Int(date_str[byte=0:4])
-            var date_separator = ord(date_str[byte=4])
+            var date_separator = Int(date_str.as_bytes()[4])
             var month_parsed = Self._parse_variable_int(date_str, 5, 2)
             month = month_parsed.value
             pos = month_parsed.pos
             if (
                 pos == length
-                or date_str[byte=pos] == "T"
-                or date_str[byte=pos] == "t"
-                or date_str[byte=pos] == " "
+                or date_str.as_bytes()[pos] == 84
+                or date_str.as_bytes()[pos] == 116
+                or date_str.as_bytes()[pos] == 32
             ):
                 if pos != 7:
                     raise Error("isoformat month is invalid")
                 day = 1
-            elif ord(date_str[byte=pos]) == date_separator:
+            elif Int(date_str.as_bytes()[pos]) == date_separator:
                 pos += 1
                 var day_parsed = Self._parse_variable_int(date_str, pos, 2)
                 day = day_parsed.value
@@ -813,7 +825,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             else:
                 raise Error("isoformat date separator is invalid")
         elif (
-            length >= 10 and date_str[byte=4] == "-" and date_str[byte=7] == "-"
+            length >= 10
+            and date_str.as_bytes()[4] == 45
+            and date_str.as_bytes()[7] == 45
         ):
             year = Int(date_str[byte=0:4])
             month = Int(date_str[byte=5:7])
@@ -833,7 +847,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var tz = TimeZone.from_utc("UTC")
 
         if pos < length:
-            var separator = ord(date_str[byte=pos])
+            var separator = Int(date_str.as_bytes()[pos])
             if separator != ord("T") and separator != ord(" "):
                 raise Error("isoformat date/time separator is invalid")
             pos += 1
@@ -843,13 +857,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             hour = Int(date_str[byte = pos : pos + 2])
             pos += 2
 
-            if pos < length and date_str[byte=pos] == ":":
+            if pos < length and date_str.as_bytes()[pos] == 58:
                 pos += 1
                 if length < pos + 2:
                     raise Error("isoformat minute is invalid")
                 minute = Int(date_str[byte = pos : pos + 2])
                 pos += 2
-                if pos < length and date_str[byte=pos] == ":":
+                if pos < length and date_str.as_bytes()[pos] == 58:
                     pos += 1
                     if length < pos + 2:
                         raise Error("isoformat second is invalid")
@@ -858,14 +872,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                     has_second = True
             else:
                 if pos < length and Self._is_ascii_digit(
-                    ord(date_str[byte=pos])
+                    Int(date_str.as_bytes()[pos])
                 ):
                     if length < pos + 2:
                         raise Error("isoformat minute is invalid")
                     minute = Int(date_str[byte = pos : pos + 2])
                     pos += 2
                     if pos < length and Self._is_ascii_digit(
-                        ord(date_str[byte=pos])
+                        Int(date_str.as_bytes()[pos])
                     ):
                         if length < pos + 2:
                             raise Error("isoformat second is invalid")
@@ -874,7 +888,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                         has_second = True
 
             if pos < length and (
-                date_str[byte=pos] == "." or date_str[byte=pos] == ","
+                date_str.as_bytes()[pos] == 46 or date_str.as_bytes()[pos] == 44
             ):
                 if not has_second:
                     raise Error("isoformat subsecond requires seconds")
@@ -884,10 +898,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 pos = parsed.pos
 
             if pos < length:
-                if date_str[byte=pos] == "Z":
+                if date_str.as_bytes()[pos] == 90:
                     tz = TimeZone.from_utc("UTC")
                     pos += 1
-                elif date_str[byte=pos] == "+" or date_str[byte=pos] == "-":
+                elif (
+                    date_str.as_bytes()[pos] == 43
+                    or date_str.as_bytes()[pos] == 45
+                ):
                     var parsed = Self._parse_iso_timezone_offset(date_str, pos)
                     tz = parsed.tz
                     pos = parsed.pos
@@ -919,11 +936,55 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self(year, month, day, hour, minute, second, microsecond, tz)
 
     @staticmethod
+    def get(
+        date_str: String,
+        fmt: String,
+        *,
+        locale: String,
+        tz: TimeZone = TimeZone.none(),
+        normalize_whitespace: Bool = False,
+    ) raises -> Self:
+        _ = locale_id(locale)
+        var value = Self._normalize_whitespace(
+            date_str
+        ) if normalize_whitespace else date_str
+        var pattern = Self._normalize_whitespace(
+            fmt
+        ) if normalize_whitespace else fmt
+        return Self._parse_arrow(value, pattern, tz, locale)
+
+    @staticmethod
+    def get(
+        date_str: String,
+        formats: List[String],
+        *,
+        locale: String,
+        tz: TimeZone = TimeZone.none(),
+        normalize_whitespace: Bool = False,
+    ) raises -> Self:
+        _ = locale_id(locale)
+        for fmt in formats:
+            try:
+                return Self.get(
+                    date_str,
+                    fmt,
+                    locale=locale,
+                    tz=tz,
+                    normalize_whitespace=normalize_whitespace,
+                )
+            except e:
+                pass
+        raise Error("date string does not match any format")
+
+    @staticmethod
     def _parse_arrow(
-        date_str: String, fmt: String, tzinfo: TimeZone = TimeZone.none()
+        date_str: String,
+        fmt: String,
+        tzinfo: TimeZone = TimeZone.none(),
+        locale: String = "en",
     ) raises -> Self:
         try:
-            return Self._parse_arrow_at(date_str, fmt, tzinfo, 0, False)
+            return Self._parse_arrow_at(date_str, fmt, tzinfo, 0, False, locale)
         except e:
             pass
 
@@ -932,7 +993,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 continue
             try:
                 return Self._parse_arrow_at(
-                    date_str, fmt, tzinfo, date_start, True
+                    date_str, fmt, tzinfo, date_start, True, locale
                 )
             except e:
                 pass
@@ -945,6 +1006,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         tzinfo: TimeZone,
         date_start: Int,
         allow_trailing_text: Bool,
+        locale: String = "en",
     ) raises -> Self:
         var year = 1
         var has_year = False
@@ -964,11 +1026,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var date_pos = date_start
         var fmt_pos = 0
         while fmt_pos < fmt.byte_length():
-            if fmt[byte=fmt_pos] == "[":
+            if fmt.as_bytes()[fmt_pos] >= 128:
+                var width = utf8_width(fmt, fmt_pos)
+                for j in range(width):
+                    Self._parse_literal_char(
+                        date_str, date_pos + j, fmt, fmt_pos + j
+                    )
+                date_pos += width
+                fmt_pos += width
+                continue
+            if fmt.as_bytes()[fmt_pos] == 91:
                 var literal_start = fmt_pos + 1
                 var literal_end = literal_start
-                while literal_end < fmt.byte_length() and ord(
-                    fmt[byte=literal_end]
+                while literal_end < fmt.byte_length() and Int(
+                    fmt.as_bytes()[literal_end]
                 ) != ord("]"):
                     literal_end += 1
                 if literal_end >= fmt.byte_length():
@@ -1015,13 +1086,17 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 date_pos = parsed.pos
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "MMMM"):
-                var parsed = Self._parse_month_name(date_str, date_pos, False)
+                var parsed = Self._parse_month_name(
+                    date_str, date_pos, False, locale
+                )
                 month = parsed.value
                 has_month = True
                 date_pos = parsed.pos
                 fmt_pos += 4
             elif Self._starts_with(fmt, fmt_pos, "MMM"):
-                var parsed = Self._parse_month_name(date_str, date_pos, True)
+                var parsed = Self._parse_month_name(
+                    date_str, date_pos, True, locale
+                )
                 month = parsed.value
                 has_month = True
                 date_pos = parsed.pos
@@ -1055,13 +1130,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
                 if (
                     parsed.pos - ordinal_start > 1
-                    and date_str[byte=ordinal_start] == "0"
+                    and date_str.as_bytes()[ordinal_start] == 48
                 ):
                     raise Error("ordinal day must not contain a leading zero")
                 day = parsed.value
                 has_day = True
                 date_pos = parsed.pos
-                date_pos = Self._parse_ordinal_suffix(date_str, date_pos, day)
+                date_pos = Self._parse_ordinal_suffix(
+                    date_str, date_pos, day, locale
+                )
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "DD"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
@@ -1089,12 +1166,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "dddd"):
-                var parsed = Self._parse_weekday_name(date_str, date_pos, False)
+                var parsed = Self._parse_weekday_name(
+                    date_str, date_pos, False, locale
+                )
                 parsed_weekday_name = parsed.value
                 date_pos = parsed.pos
                 fmt_pos += 4
             elif Self._starts_with(fmt, fmt_pos, "ddd"):
-                var parsed = Self._parse_weekday_name(date_str, date_pos, True)
+                var parsed = Self._parse_weekday_name(
+                    date_str, date_pos, True, locale
+                )
                 parsed_weekday_name = parsed.value
                 date_pos = parsed.pos
                 fmt_pos += 3
@@ -1144,10 +1225,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 second = parsed.value
                 date_pos = parsed.pos
                 fmt_pos += 1
-            elif fmt[byte=fmt_pos] == "S":
+            elif fmt.as_bytes()[fmt_pos] == 83:
                 var token_end = fmt_pos
                 while (
-                    token_end < fmt.byte_length() and fmt[byte=token_end] == "S"
+                    token_end < fmt.byte_length()
+                    and fmt.as_bytes()[token_end] == 83
                 ):
                     token_end += 1
                 var parsed = Self._parse_subsecond(
@@ -1196,12 +1278,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "A"):
-                date_pos = Self._parse_am_pm(date_str, date_pos, True)
-                am_pm = Self._parsed_am_pm_marker(date_str, date_pos)
+                date_pos = Self._parse_am_pm(date_str, date_pos, True, locale)
+                am_pm = Self._parsed_am_pm_marker(date_str, date_pos, locale)
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "a"):
-                date_pos = Self._parse_am_pm(date_str, date_pos, False)
-                am_pm = Self._parsed_am_pm_marker(date_str, date_pos)
+                date_pos = Self._parse_am_pm(date_str, date_pos, False, locale)
+                am_pm = Self._parsed_am_pm_marker(date_str, date_pos, locale)
                 fmt_pos += 1
             else:
                 Self._parse_literal_char(date_str, date_pos, fmt, fmt_pos)
@@ -1345,7 +1427,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def strptime(
-        date_str: String, fmt: String, tzinfo: TimeZone = TimeZone.none()
+        date_str: String,
+        fmt: String,
+        tzinfo: TimeZone = TimeZone.none(),
     ) raises -> Self:
         """
         Create a Morrow instance from a date string and format,
@@ -1376,7 +1460,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 while (
                     value_end < normalized_date.byte_length()
                     and Self._is_ascii_digit(
-                        ord(normalized_date[byte=value_end])
+                        Int(normalized_date.as_bytes()[value_end])
                     )
                     and value_end - value_start < 6
                 ):
@@ -1386,7 +1470,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 if (
                     value_end < normalized_date.byte_length()
                     and Self._is_ascii_digit(
-                        ord(normalized_date[byte=value_end])
+                        Int(normalized_date.as_bytes()[value_end])
                     )
                 ):
                     raise Error("unconverted data remains")
@@ -1447,16 +1531,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _find_strptime_extension_directive(fmt: String) -> MorrowParseInt:
         var pos = 0
         while pos + 1 < fmt.byte_length():
-            if fmt[byte=pos] == "%":
-                if fmt[byte=pos + 1] == "%":
+            if fmt.as_bytes()[pos] == 37:
+                if fmt.as_bytes()[pos + 1] == 37:
                     pos += 2
                     continue
                 if (
-                    fmt[byte=pos + 1] == "f"
-                    or fmt[byte=pos + 1] == "z"
-                    or fmt[byte=pos + 1] == "Z"
+                    fmt.as_bytes()[pos + 1] == 102
+                    or fmt.as_bytes()[pos + 1] == 122
+                    or fmt.as_bytes()[pos + 1] == 90
                 ):
-                    return MorrowParseInt(ord(fmt[byte=pos + 1]), pos)
+                    return MorrowParseInt(Int(fmt.as_bytes()[pos + 1]), pos)
                 pos += 2
             else:
                 pos += 1
@@ -1466,13 +1550,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _parse_strptime_timezone_name(
         date_str: String, date_pos: Int
     ) raises -> MorrowParseTimeZone:
-        if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "UTC"):
-            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
-        if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "GMT"):
-            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
-        if date_pos >= date_str.byte_length():
-            raise Error("timezone is missing")
-        raise Error("timezone name is invalid")
+        return Self._parse_timezone_name(date_str, date_pos)
 
     @staticmethod
     def _parse_strptime_timezone_offset(
@@ -1480,20 +1558,20 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) raises -> MorrowParseTimeZone:
         if date_pos >= date_str.byte_length():
             raise Error("timezone is missing")
-        if date_str[byte=date_pos] == "Z":
+        if date_str.as_bytes()[date_pos] == 90:
             return MorrowParseTimeZone(TimeZone.from_utc("UTC"), date_pos + 1)
 
         var sign = 1
-        if date_str[byte=date_pos] == "-":
+        if date_str.as_bytes()[date_pos] == 45:
             sign = -1
-        elif not date_str[byte=date_pos] == "+":
+        elif not date_str.as_bytes()[date_pos] == 43:
             raise Error("timezone must be Z or a fixed offset")
 
         var pos = date_pos + 1
         if (
             pos + 2 > date_str.byte_length()
-            or not Self._is_ascii_digit(ord(date_str[byte=pos]))
-            or not Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+            or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
+            or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
         ):
             raise Error("timezone hour is invalid")
         var hours = Int(date_str[byte = pos : pos + 2])
@@ -1501,22 +1579,24 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         var minutes: Int
         var seconds = 0
-        if pos < date_str.byte_length() and date_str[byte=pos] == ":":
+        if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 58:
             pos += 1
             if (
                 pos + 2 > date_str.byte_length()
-                or not Self._is_ascii_digit(ord(date_str[byte=pos]))
-                or not Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+                or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
+                or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
             ):
                 raise Error("timezone minute is invalid")
             minutes = Int(date_str[byte = pos : pos + 2])
             pos += 2
-            if pos < date_str.byte_length() and date_str[byte=pos] == ":":
+            if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 58:
                 pos += 1
                 if (
                     pos + 2 > date_str.byte_length()
-                    or not Self._is_ascii_digit(ord(date_str[byte=pos]))
-                    or not Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+                    or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
+                    or not Self._is_ascii_digit(
+                        Int(date_str.as_bytes()[pos + 1])
+                    )
                 ):
                     raise Error("timezone second is invalid")
                 seconds = Int(date_str[byte = pos : pos + 2])
@@ -1524,16 +1604,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         else:
             if (
                 pos + 2 > date_str.byte_length()
-                or not Self._is_ascii_digit(ord(date_str[byte=pos]))
-                or not Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+                or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
+                or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
             ):
                 raise Error("timezone minute is invalid")
             minutes = Int(date_str[byte = pos : pos + 2])
             pos += 2
             if (
                 pos + 2 <= date_str.byte_length()
-                and Self._is_ascii_digit(ord(date_str[byte=pos]))
-                and Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+                and Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
+                and Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
             ):
                 seconds = Int(date_str[byte = pos : pos + 2])
                 pos += 2
@@ -1707,7 +1787,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def utcoffset(self) -> TimeDelta:
         """
-        Return this Morrow's fixed UTC offset.
+        Return this Morrow's resolved UTC offset.
         """
         return TimeDelta(seconds=self.tz.offset)
 
@@ -1715,25 +1795,25 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Return daylight-saving offset. Fixed-offset timezones have none.
         """
-        return TimeDelta()
+        return TimeDelta(seconds=self.tz.dst_seconds)
 
     def fold(self) -> Int:
         """
         Return the fold value. Fixed-offset timezones do not repeat wall times.
         """
-        return 0
+        return self.tz.fold_value
 
     def ambiguous(self) -> Bool:
         """
         Return whether this wall time is ambiguous in its timezone.
         """
-        return False
+        return self.tz.is_ambiguous
 
     def imaginary(self) -> Bool:
         """
         Return whether this wall time is nonexistent in its timezone.
         """
-        return False
+        return self.tz.is_imaginary
 
     def timetuple(self) raises -> MorrowTimeTuple:
         """
@@ -1747,24 +1827,61 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return self.to("UTC")._time_tuple()
 
+    def humanize(self, *, locale: String = "en") raises -> String:
+        return humanized_text(self._humanize_en(), locale)
+
     def humanize(
+        self, only_distance: Bool, *, locale: String = "en"
+    ) raises -> String:
+        return humanized_text(self._humanize_en(only_distance), locale)
+
+    def humanize(
+        self,
+        other: Self,
+        only_distance: Bool = False,
+        granularity: String = "auto",
+        *,
+        locale: String = "en",
+    ) raises -> String:
+        return humanized_text(
+            self._humanize_en(other, only_distance, granularity), locale
+        )
+
+    def humanize(
+        self, other: Self, granularity: List[String], *, locale: String = "en"
+    ) raises -> String:
+        return humanized_text(self._humanize_en(other, granularity), locale)
+
+    def humanize(
+        self,
+        other: Self,
+        only_distance: Bool,
+        granularity: List[String],
+        *,
+        locale: String = "en",
+    ) raises -> String:
+        return humanized_text(
+            self._humanize_en(other, only_distance, granularity), locale
+        )
+
+    def _humanize_en(
         self,
     ) raises -> String:
         """
         Return an English human-readable relative difference from now.
         """
-        return self.humanize(Self.utcnow())
+        return self._humanize_en(Self.utcnow())
 
-    def humanize(
+    def _humanize_en(
         self,
         only_distance: Bool,
     ) raises -> String:
         """
         Return an English human-readable relative difference from now.
         """
-        return self.humanize(Self.utcnow(), only_distance)
+        return self._humanize_en(Self.utcnow(), only_distance)
 
-    def humanize(
+    def _humanize_en(
         self,
         other: Self,
         only_distance: Bool = False,
@@ -1797,13 +1914,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             rounded_delta_seconds, count, unit, only_distance
         )
 
-    def humanize(self, other: Self, granularity: List[String]) raises -> String:
+    def _humanize_en(
+        self, other: Self, granularity: List[String]
+    ) raises -> String:
         """
         Return an English human-readable relative difference with multiple granularities.
         """
-        return self.humanize(other, False, granularity)
+        return self._humanize_en(other, False, granularity)
 
-    def humanize(
+    def _humanize_en(
         self,
         other: Self,
         only_distance: Bool,
@@ -1815,7 +1934,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if len(granularity) == 0:
             raise Error("granularity cannot be empty")
         if len(granularity) == 1 and granularity[0] == "auto":
-            return self.humanize(other, only_distance)
+            return self._humanize_en(other, only_distance)
 
         var ordered_granularity = Self._normalize_humanize_granularity_list(
             granularity
@@ -1848,7 +1967,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return "in " + distance
         return distance + " ago"
 
-    def dehumanize(self, input_string: String) raises -> Self:
+    def dehumanize(
+        self, input_string: String, *, locale: String = "en"
+    ) raises -> Self:
+        return self._dehumanize_en(english_relative(input_string, locale))
+
+    def _dehumanize_en(self, input_string: String) raises -> Self:
         """
         Shift this Morrow by an English human-readable relative difference.
         """
@@ -1877,15 +2001,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var parsed = False
         var pos = 0
         while pos < phrase.byte_length():
-            while pos < phrase.byte_length() and phrase[byte=pos] == " ":
+            while pos < phrase.byte_length() and phrase.as_bytes()[pos] == 32:
                 pos += 1
             if pos >= phrase.byte_length():
                 break
 
             var word_start = pos
-            while pos < phrase.byte_length() and ord(phrase[byte=pos]) != ord(
-                " "
-            ):
+            while pos < phrase.byte_length() and Int(
+                phrase.as_bytes()[pos]
+            ) != ord(" "):
                 pos += 1
             var count_word = String(phrase[byte=word_start:pos])
             if count_word == "and":
@@ -1897,15 +2021,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             else:
                 count = Int(count_word)
 
-            while pos < phrase.byte_length() and phrase[byte=pos] == " ":
+            while pos < phrase.byte_length() and phrase.as_bytes()[pos] == 32:
                 pos += 1
             if pos >= phrase.byte_length():
                 raise Error("humanized distance is invalid")
 
             var unit_start = pos
-            while pos < phrase.byte_length() and ord(phrase[byte=pos]) != ord(
-                " "
-            ):
+            while pos < phrase.byte_length() and Int(
+                phrase.as_bytes()[pos]
+            ) != ord(" "):
                 pos += 1
             var raw_unit = String(phrase[byte=unit_start:pos])
             try:
@@ -1930,23 +2054,32 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return result
 
     def to(self, tz: TimeZone) raises -> Self:
-        """
-        Return this instant converted to a fixed-offset timezone.
-        """
-        var target = tz
-        if tz.name == "local":
-            target = TimeZone.local(self.int_timestamp())
-        var shifted = self.shift(seconds=target.offset - self.tz.offset)
-        return Self(
-            shifted.year,
-            shifted.month,
-            shifted.day,
-            shifted.hour,
-            shifted.minute,
-            shifted.second,
-            shifted.microsecond,
-            target,
+        """Convert an instant using the target zone's rules at that instant."""
+        return Self._from_instant_microseconds(self._utc_microseconds(), tz)
+
+    @staticmethod
+    def _from_instant_microseconds(stamp: Int, tz: TimeZone) raises -> Self:
+        var seconds = stamp // _US_PER_SECOND
+        if stamp % _US_PER_SECOND < 0:
+            seconds -= 1
+        var target = tz.at(seconds)
+        var wall = Self._from_utc_microseconds_value(
+            stamp + target.offset * _US_PER_SECOND
         )
+        var candidate = Self(
+            wall.year,
+            wall.month,
+            wall.day,
+            wall.hour,
+            wall.minute,
+            wall.second,
+            wall.microsecond,
+            target,
+            fold=0,
+        )
+        if candidate._utc_microseconds() != stamp and candidate.ambiguous():
+            return candidate.replace(fold=1)
+        return candidate
 
     def to(self, tz_str: String) raises -> Self:
         """
@@ -1956,7 +2089,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def astimezone(self, tz: TimeZone) raises -> Self:
         """
-        Return this instant converted to a fixed-offset timezone.
+        Return this instant converted to the target timezone.
         """
         return self.to(tz)
 
@@ -1976,6 +2109,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         second: Int = -1,
         microsecond: Int = -1,
         tzinfo: TimeZone = TimeZone.none(),
+        fold: Int = -1,
     ) raises -> Self:
         """
         Return a new Morrow with selected fields replaced.
@@ -1994,7 +2128,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             year_, month_, day_, hour_, minute_, second_, microsecond_
         )
         return Self(
-            year_, month_, day_, hour_, minute_, second_, microsecond_, tzinfo_
+            year_,
+            month_,
+            day_,
+            hour_,
+            minute_,
+            second_,
+            microsecond_,
+            tzinfo_,
+            fold,
         )
 
     def replace(
@@ -2007,6 +2149,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         minute: Int = -1,
         second: Int = -1,
         microsecond: Int = -1,
+        fold: Int = -1,
     ) raises -> Self:
         """
         Return a new Morrow with timezone parsed and replaced without conversion.
@@ -2020,6 +2163,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             second,
             microsecond,
             Self._parse_timezone_argument(tzinfo),
+            fold,
         )
 
     def shift(
@@ -2034,6 +2178,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         seconds: Int = 0,
         microseconds: Int = 0,
         weekday: Int = -9999,
+        check_imaginary: Bool = True,
     ) raises -> Self:
         """
         Return a new Morrow shifted by relative date and time offsets.
@@ -2094,9 +2239,21 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             if weekday_offset < 0:
                 weekday_offset += 7
             day_offset += weekday_offset
-        return shifted._shift_day_time(
-            day_offset, hours, minutes, seconds, microseconds
-        )
+        var result = shifted._shift_day_time(day_offset, 0, 0, 0, 0)
+        if result.imaginary() and check_imaginary:
+            result = result.to(result.tz)
+        if hours != 0 or minutes != 0 or seconds != 0 or microseconds != 0:
+            # Validate before TimeDelta multiplies user-supplied values.
+            Self._validate_day_time_args(
+                0, hours, minutes, seconds, microseconds
+            )
+            return result + TimeDelta(
+                hours=hours,
+                minutes=minutes,
+                seconds=seconds,
+                microseconds=microseconds,
+            )
+        return result
 
     def shift_weekday(self, weekday: Int, nth: Int = 1) raises -> Self:
         """Move to the nth weekday on/after (positive) or on/before (negative) self.
@@ -2459,9 +2616,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) raises -> MorrowSpan:
         var start_ = start
         var end_ = end
-        if ord(bounds[byte=0]) == 40:  # (
+        if Int(bounds.as_bytes()[0]) == 40:  # (
             start_ = start_.shift(microseconds=1)
-        if ord(bounds[byte=1]) == 41:  # )
+        if Int(bounds.as_bytes()[1]) == 41:  # )
             end_ = end_.shift(microseconds=-1)
         return MorrowSpan(start_, end_)
 
@@ -2479,13 +2636,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var high = end._utc_microseconds()
 
         var left: Bool
-        if ord(bounds[byte=0]) == 91:  # [
+        if Int(bounds.as_bytes()[0]) == 91:  # [
             left = value >= low
         else:
             left = value > low
 
         var right: Bool
-        if ord(bounds[byte=1]) == 93:  # ]
+        if Int(bounds.as_bytes()[1]) == 93:  # ]
             right = value <= high
         else:
             right = value < high
@@ -2496,8 +2653,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _validate_bounds(bounds: String) raises:
         if bounds.byte_length() != 2:
             raise Error("bounds must be one of [), [], (), (]")
-        var left = ord(bounds[byte=0])
-        var right = ord(bounds[byte=1])
+        var left = Int(bounds.as_bytes()[0])
+        var right = Int(bounds.as_bytes()[1])
         if (left != 91 and left != 40) or (right != 93 and right != 41):
             raise Error("bounds must be one of [), [], (), (]")
 
@@ -2624,13 +2781,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _parse_timezone_argument(tz_str: String) raises -> TimeZone:
         if tz_str == "local":
             return TimeZone.local()
-        return TimeZone.from_utc(tz_str)
+        try:
+            return TimeZone.from_utc(tz_str)
+        except e:
+            return TimeZone.from_name(tz_str)
 
     @staticmethod
     def _parse_iso_timezone_offset(
         date_str: String, date_pos: Int
     ) raises -> MorrowParseTimeZone:
-        var sign = ord(date_str[byte=date_pos])
+        var sign = Int(date_str.as_bytes()[date_pos])
         if sign != ord("+") and sign != ord("-"):
             raise Error("isoformat timezone must be a fixed offset")
 
@@ -2638,7 +2798,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if pos + 2 > date_str.byte_length():
             raise Error("isoformat timezone hour is invalid")
         for i in range(2):
-            if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
+            if not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
                 raise Error("isoformat timezone hour is invalid")
         pos += 2
 
@@ -2647,7 +2807,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 TimeZone.from_utc(String(date_str[byte=date_pos:pos])), pos
             )
 
-        if date_str[byte=pos] == ":":
+        if date_str.as_bytes()[pos] == 58:
             var colon_pos = pos
             pos += 1
             if pos == date_str.byte_length():
@@ -2660,13 +2820,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             if pos + 2 > date_str.byte_length():
                 raise Error("isoformat timezone minute is invalid")
             for i in range(2):
-                if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
+                if not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
                     raise Error("isoformat timezone minute is invalid")
             pos += 2
         elif (
             pos + 2 <= date_str.byte_length()
-            and Self._is_ascii_digit(ord(date_str[byte=pos]))
-            and Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
         ):
             pos += 2
         else:
@@ -2716,7 +2876,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if pos + pattern.byte_length() > s.byte_length():
             return False
         for i in range(pattern.byte_length()):
-            if ord(s[byte=pos + i]) != ord(pattern[byte=i]):
+            if Int(s.as_bytes()[pos + i]) != Int(pattern.as_bytes()[i]):
                 return False
         return True
 
@@ -2727,9 +2887,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if pos + pattern.byte_length() > s.byte_length():
             return False
         for i in range(pattern.byte_length()):
-            if Self._ascii_lower(ord(s[byte=pos + i])) != Self._ascii_lower(
-                ord(pattern[byte=i])
-            ):
+            if Self._ascii_lower(
+                Int(s.as_bytes()[pos + i])
+            ) != Self._ascii_lower(Int(pattern.as_bytes()[i])):
                 return False
         return True
 
@@ -2743,23 +2903,25 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _has_left_parse_boundary(s: String, pos: Int) -> Bool:
         if pos == 0:
             return True
-        var c = ord(s[byte=pos - 1])
+        var c = Int(s.as_bytes()[pos - 1])
         if Self._is_ascii_whitespace(c):
             return True
         if Self._is_parse_punctuation(c):
-            return pos == 1 or Self._is_ascii_whitespace(ord(s[byte=pos - 2]))
+            return pos == 1 or Self._is_ascii_whitespace(
+                Int(s.as_bytes()[pos - 2])
+            )
         return False
 
     @staticmethod
     def _has_right_parse_boundary(s: String, pos: Int) -> Bool:
         if pos == s.byte_length():
             return True
-        var c = ord(s[byte=pos])
+        var c = Int(s.as_bytes()[pos])
         if Self._is_ascii_whitespace(c):
             return True
         if Self._is_parse_punctuation(c):
             return pos + 1 == s.byte_length() or Self._is_ascii_whitespace(
-                ord(s[byte=pos + 1])
+                Int(s.as_bytes()[pos + 1])
             )
         return False
 
@@ -2805,24 +2967,27 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _normalize_whitespace(s: String) -> String:
         var result = ""
         var pending_space = False
-        for i in range(s.byte_length()):
-            if Self._is_ascii_whitespace(ord(s[byte=i])):
+        var i = 0
+        while i < s.byte_length():
+            var width = utf8_width(s, i)
+            if Self._is_ascii_whitespace(Int(s.as_bytes()[i])):
                 if result.byte_length() > 0:
                     pending_space = True
             else:
                 if pending_space:
                     result += " "
                     pending_space = False
-                result += String(s[byte = i : i + 1])
+                result += s[byte = i : i + width]
+            i += width
         return result
 
     @staticmethod
     def _is_whitespace_regex_literal(fmt: String, start: Int, end: Int) -> Bool:
         return (
             end - start == 3
-            and ord(fmt[byte=start]) == 92
-            and ord(fmt[byte=start + 1]) == ord("s")
-            and ord(fmt[byte=start + 2]) == ord("+")
+            and Int(fmt.as_bytes()[start]) == 92
+            and Int(fmt.as_bytes()[start + 1]) == ord("s")
+            and Int(fmt.as_bytes()[start + 2]) == ord("+")
         )
 
     @staticmethod
@@ -2831,9 +2996,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) -> Bool:
         return (
             end - start == 3
-            and ord(fmt[byte=start]) == 92
-            and ord(fmt[byte=start + 1]) == ord("s")
-            and ord(fmt[byte=start + 2]) == ord("*")
+            and Int(fmt.as_bytes()[start]) == 92
+            and Int(fmt.as_bytes()[start + 1]) == ord("s")
+            and Int(fmt.as_bytes()[start + 2]) == ord("*")
         )
 
     @staticmethod
@@ -2842,16 +3007,16 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) -> Bool:
         return (
             end - start == 3
-            and ord(fmt[byte=start]) == 92
-            and ord(fmt[byte=start + 1]) == ord("s")
-            and ord(fmt[byte=start + 2]) == ord("?")
+            and Int(fmt.as_bytes()[start]) == 92
+            and Int(fmt.as_bytes()[start + 1]) == ord("s")
+            and Int(fmt.as_bytes()[start + 2]) == ord("?")
         )
 
     @staticmethod
     def _parse_whitespace_regex(date_str: String, date_pos: Int) raises -> Int:
         var pos = date_pos
         while pos < date_str.byte_length() and Self._is_ascii_whitespace(
-            ord(date_str[byte=pos])
+            Int(date_str.as_bytes()[pos])
         ):
             pos += 1
         if pos == date_pos:
@@ -2864,7 +3029,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) -> Int:
         var pos = date_pos
         while pos < date_str.byte_length() and Self._is_ascii_whitespace(
-            ord(date_str[byte=pos])
+            Int(date_str.as_bytes()[pos])
         ):
             pos += 1
         return pos
@@ -2874,7 +3039,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         date_str: String, date_pos: Int
     ) -> Int:
         if date_pos < date_str.byte_length() and Self._is_ascii_whitespace(
-            ord(date_str[byte=date_pos])
+            Int(date_str.as_bytes()[date_pos])
         ):
             return date_pos + 1
         return date_pos
@@ -2885,7 +3050,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) raises:
         if date_pos >= date_str.byte_length():
             raise Error("date string is shorter than format")
-        if ord(date_str[byte=date_pos]) != ord(fmt[byte=fmt_pos]):
+        if Int(date_str.as_bytes()[date_pos]) != Int(fmt.as_bytes()[fmt_pos]):
             raise Error("date string does not match format literal")
 
     @staticmethod
@@ -2895,7 +3060,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if date_pos + count > date_str.byte_length():
             raise Error("date string is shorter than numeric token")
         for i in range(count):
-            if not Self._is_ascii_digit(ord(date_str[byte=date_pos + i])):
+            if not Self._is_ascii_digit(Int(date_str.as_bytes()[date_pos + i])):
                 raise Error("numeric token contains non-digit data")
         return MorrowParseInt(
             Int(date_str[byte = date_pos : date_pos + count]), date_pos + count
@@ -2909,7 +3074,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var end = date_pos + max_count
         if end > date_str.byte_length():
             end = date_str.byte_length()
-        while pos < end and Self._is_ascii_digit(ord(date_str[byte=pos])):
+        while pos < end and Self._is_ascii_digit(Int(date_str.as_bytes()[pos])):
             pos += 1
         if pos == date_pos:
             raise Error("numeric token is missing")
@@ -2921,7 +3086,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) raises -> MorrowParseInt:
         var pos = date_pos
         while pos < date_str.byte_length() and Self._is_ascii_digit(
-            ord(date_str[byte=pos])
+            Int(date_str.as_bytes()[pos])
         ):
             pos += 1
         if pos == date_pos:
@@ -2940,7 +3105,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if round_digit == 5:
             var has_remaining = False
             for i in range(date_pos + 7, pos):
-                if ord(date_str[byte=i]) != ord("0"):
+                if Int(date_str.as_bytes()[i]) != ord("0"):
                     has_remaining = True
             should_round = has_remaining or value % 2 == 1
         if should_round:
@@ -2953,14 +3118,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if length == 0:
             raise Error("timestamp token is missing")
         var pos = 0
-        if timestamp_str[byte=pos] == "-":
+        if timestamp_str.as_bytes()[pos] == 45:
             pos += 1
             if pos == length:
                 raise Error("timestamp token is missing")
 
         var digit_start = pos
         while pos < length and Self._is_ascii_digit(
-            ord(timestamp_str[byte=pos])
+            Int(timestamp_str.as_bytes()[pos])
         ):
             pos += 1
         var digit_count = pos - digit_start
@@ -2968,12 +3133,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             raise Error("timestamp token must start with digits")
 
         var has_fraction = False
-        if pos < length and timestamp_str[byte=pos] == ".":
+        if pos < length and timestamp_str.as_bytes()[pos] == 46:
             has_fraction = True
             pos += 1
             var fraction_start = pos
             while pos < length and Self._is_ascii_digit(
-                ord(timestamp_str[byte=pos])
+                Int(timestamp_str.as_bytes()[pos])
             ):
                 pos += 1
             if pos == fraction_start:
@@ -2990,12 +3155,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if length == 0:
             raise Error("timestamp token is missing")
         var pos = 0
-        if timestamp_str[byte=pos] == "-":
+        if timestamp_str.as_bytes()[pos] == 45:
             pos += 1
             if pos == length:
                 raise Error("timestamp token is missing")
         while pos < length and Self._is_ascii_digit(
-            ord(timestamp_str[byte=pos])
+            Int(timestamp_str.as_bytes()[pos])
         ):
             pos += 1
         if pos != length:
@@ -3003,8 +3168,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _parse_ordinal_suffix(
-        date_str: String, date_pos: Int, value: Int
+        date_str: String, date_pos: Int, value: Int, locale: String = "en"
     ) raises -> Int:
+        if locale_id(locale) != 0:
+            if Self._starts_with(date_str, date_pos, "日"):
+                return date_pos + 3
+            raise Error("ordinal suffix must be 日")
         if date_pos + 2 > date_str.byte_length():
             raise Error("ordinal suffix is missing")
         var expected = "th"
@@ -3031,12 +3200,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _parse_month_name(
-        date_str: String, date_pos: Int, abbreviated: Bool
+        date_str: String,
+        date_pos: Int,
+        abbreviated: Bool,
+        locale: String = "en",
     ) raises -> MorrowParseInt:
         for value in range(1, 13):
-            var name = month_abbreviation(value) if abbreviated else month_name(
-                value
-            )
+            var name = localized_month(value, abbreviated, locale)
             if Self._starts_with_ascii_case_insensitive(
                 date_str, date_pos, name
             ):
@@ -3045,12 +3215,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _parse_weekday_name(
-        date_str: String, date_pos: Int, abbreviated: Bool
+        date_str: String,
+        date_pos: Int,
+        abbreviated: Bool,
+        locale: String = "en",
     ) raises -> MorrowParseInt:
         for value in range(1, 8):
-            var name = day_abbreviation(value) if abbreviated else day_name(
-                value
-            )
+            var name = localized_weekday(value, abbreviated, locale)
             if Self._starts_with_ascii_case_insensitive(
                 date_str, date_pos, name
             ):
@@ -3063,25 +3234,27 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) raises -> MorrowParseIsoWeek:
         var year_parsed = Self._parse_fixed_int(date_str, date_pos, 4)
         var pos = year_parsed.pos
-        if pos < date_str.byte_length() and date_str[byte=pos] == "-":
+        if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 45:
             pos += 1
-        if pos >= date_str.byte_length() or ord(date_str[byte=pos]) != ord("W"):
+        if pos >= date_str.byte_length() or Int(
+            date_str.as_bytes()[pos]
+        ) != ord("W"):
             raise Error("ISO week date is missing W marker")
         pos += 1
         var week_parsed = Self._parse_fixed_int(date_str, pos, 2)
         pos = week_parsed.pos
 
         var weekday = 1
-        if pos < date_str.byte_length() and date_str[byte=pos] == "-":
+        if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 45:
             if pos + 1 < date_str.byte_length() and Self._is_ascii_digit(
-                ord(date_str[byte=pos + 1])
+                Int(date_str.as_bytes()[pos + 1])
             ):
                 pos += 1
                 var weekday_parsed = Self._parse_fixed_int(date_str, pos, 1)
                 weekday = weekday_parsed.value
                 pos = weekday_parsed.pos
         elif pos < date_str.byte_length() and Self._is_ascii_digit(
-            ord(date_str[byte=pos])
+            Int(date_str.as_bytes()[pos])
         ):
             var weekday_parsed = Self._parse_fixed_int(date_str, pos, 1)
             weekday = weekday_parsed.value
@@ -3095,15 +3268,30 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def _parse_timezone_name(
         date_str: String, date_pos: Int
     ) raises -> MorrowParseTimeZone:
-        if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "UTC"):
-            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 3)
-        if Self._starts_with_ascii_case_insensitive(date_str, date_pos, "GMT"):
-            return MorrowParseTimeZone(TimeZone(0, "GMT"), date_pos + 3)
-        if Self._starts_with(date_str, date_pos, "local"):
-            return MorrowParseTimeZone(TimeZone.local(), date_pos + 5)
         if date_pos >= date_str.byte_length():
             raise Error("timezone is missing")
-        raise Error("timezone name is invalid")
+        var end = date_pos
+        while end < date_str.byte_length():
+            var c = Int(date_str.as_bytes()[end])
+            if not (
+                Self._is_ascii_alphanumeric(c)
+                or c == ord("/")
+                or c == ord("_")
+                or c == ord("-")
+                or c == ord("+")
+            ):
+                break
+            end += 1
+        var name = String(date_str[byte=date_pos:end])
+        if name.byte_length() == 3 and Self._starts_with_ascii_case_insensitive(
+            name, 0, "UTC"
+        ):
+            return MorrowParseTimeZone(Self._utc_timezone(), end)
+        if name.byte_length() == 3 and Self._starts_with_ascii_case_insensitive(
+            name, 0, "GMT"
+        ):
+            return MorrowParseTimeZone(TimeZone(0, "GMT"), end)
+        return MorrowParseTimeZone(TimeZone.from_name(name), end)
 
     @staticmethod
     def _parse_timezone_offset(
@@ -3114,7 +3302,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if date_pos >= date_str.byte_length():
             raise Error("timezone is missing")
 
-        var sign = ord(date_str[byte=date_pos])
+        var sign = Int(date_str.as_bytes()[date_pos])
         if sign != ord("+") and sign != ord("-"):
             raise Error("timezone must be Z or a fixed offset")
 
@@ -3122,11 +3310,11 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if pos + 2 > date_str.byte_length():
             raise Error("timezone hour is invalid")
         for i in range(2):
-            if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
+            if not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
                 raise Error("timezone hour is invalid")
         pos += 2
 
-        if pos < date_str.byte_length() and date_str[byte=pos] == ":":
+        if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 58:
             if not colon:
                 raise Error("timezone offset must not contain a colon")
             var colon_pos = pos
@@ -3139,7 +3327,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                     colon_pos,
                 )
             for i in range(2):
-                if not Self._is_ascii_digit(ord(date_str[byte=pos + i])):
+                if not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
                     return MorrowParseTimeZone(
                         TimeZone.from_utc(
                             String(date_str[byte=date_pos:colon_pos])
@@ -3149,8 +3337,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             pos += 2
         elif (
             pos + 2 <= date_str.byte_length()
-            and Self._is_ascii_digit(ord(date_str[byte=pos]))
-            and Self._is_ascii_digit(ord(date_str[byte=pos + 1]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
+            and Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
         ):
             if colon:
                 raise Error("timezone offset minutes must contain a colon")
@@ -3161,8 +3349,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _parse_am_pm(
-        date_str: String, date_pos: Int, upper: Bool
+        date_str: String, date_pos: Int, upper: Bool, locale: String = "en"
     ) raises -> Int:
+        if locale_id(locale) != 0:
+            if Self._starts_with(date_str, date_pos, "上午") or Self._starts_with(
+                date_str, date_pos, "下午"
+            ):
+                return date_pos + 6
+            raise Error("AM/PM marker must be 上午 or 下午")
         if Self._starts_with_ascii_case_insensitive(
             date_str, date_pos, "AM"
         ) or Self._starts_with_ascii_case_insensitive(date_str, date_pos, "PM"):
@@ -3170,11 +3364,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         raise Error("AM/PM marker is invalid")
 
     @staticmethod
-    def _parsed_am_pm_marker(date_str: String, date_pos: Int) -> Int:
+    def _parsed_am_pm_marker(
+        date_str: String, date_pos: Int, locale: String = "en"
+    ) raises -> Int:
+        if locale_id(locale) != 0:
+            return 1 if date_str[byte = date_pos - 6 : date_pos] == "上午" else 2
         if date_pos < 2:
             return 0
-        var first = ord(date_str[byte=date_pos - 2])
-        var second = ord(date_str[byte=date_pos - 1])
+        var first = Int(date_str.as_bytes()[date_pos - 2])
+        var second = Int(date_str.as_bytes()[date_pos - 1])
         if (first == ord("A") and second == ord("M")) or (
             first == ord("a") and second == ord("m")
         ):
@@ -3185,14 +3383,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return 2
         return 0
 
-    def _shift_day_time(
-        self,
-        days: Int,
-        hours: Int,
-        minutes: Int,
-        seconds: Int,
-        microseconds: Int,
-    ) raises -> Self:
+    @staticmethod
+    def _validate_day_time_args(
+        days: Int, hours: Int, minutes: Int, seconds: Int, microseconds: Int
+    ) raises:
         if (
             days < -3652059
             or days > 3652059
@@ -3206,6 +3400,18 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             or microseconds > 315537897600000000
         ):
             raise Error("time shift exceeds supported years 1..9999")
+
+    def _shift_day_time(
+        self,
+        days: Int,
+        hours: Int,
+        minutes: Int,
+        seconds: Int,
+        microseconds: Int,
+    ) raises -> Self:
+        Self._validate_day_time_args(
+            days, hours, minutes, seconds, microseconds
+        )
         var total_us = (
             (self.hour * 3600 + self.minute * 60 + self.second) * _US_PER_SECOND
             + self.microsecond
@@ -3408,7 +3614,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         count_word: String, count: Int, raw_unit: String
     ) raises -> String:
         var unit = raw_unit
-        if unit.byte_length() > 0 and unit[byte=unit.byte_length() - 1] == ",":
+        if (
+            unit.byte_length() > 0
+            and unit.as_bytes()[unit.byte_length() - 1] == 44
+        ):
             var unit_without_comma = String(
                 unit[byte = 0 : unit.byte_length() - 1]
             )
@@ -3564,7 +3773,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     @staticmethod
     def _find_byte(s: String, c: Int) -> Int:
         for i in range(s.byte_length()):
-            if ord(s[byte=i]) == c:
+            if Int(s.as_bytes()[i]) == c:
                 return i
         return -1
 
@@ -3612,10 +3821,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.second,
             self.weekday(),
             self.toordinal() - _ymd2ord(self.year, 1, 1) + 1,
-            0,
+            1 if self.tz.dst_seconds != 0 else 0,
         )
 
-    def format(self, fmt: String = "YYYY-MM-DD HH:mm:ssZZ") raises -> String:
+    def format(
+        self, fmt: String = "YYYY-MM-DD HH:mm:ssZZ", *, locale: String = "en"
+    ) raises -> String:
         """
         Returns a string representation of the `Morrow`
         formatted according to the provided format string.
@@ -3646,7 +3857,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.tz.name,
             self.tz.is_none(),
             self.isoweekday(),
-            fmt,
+            localized_format(
+                fmt, self.month, self.day, self.isoweekday(), self.hour, locale
+            ),
         )
 
     def strftime(self, fmt: String) raises -> String:
@@ -3934,6 +4147,12 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return self._utc_microseconds() > other._utc_microseconds()
 
     def __add__(self, delta: TimeDelta) raises -> Self:
+        if not self.tz.is_none():
+            if delta.days < -3652059 or delta.days > 3652059:
+                raise Error("duration exceeds supported calendar")
+            return Self._from_instant_microseconds(
+                self._utc_microseconds() + delta._to_microseconds(), self.tz
+            )
         return self._shift_day_time(
             delta.days, 0, 0, delta.seconds, delta.microseconds
         )
@@ -3942,9 +4161,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return self + delta
 
     def __sub__(self, delta: TimeDelta) raises -> Self:
-        return self._shift_day_time(
-            -delta.days, 0, 0, -delta.seconds, -delta.microseconds
-        )
+        return self + (-delta)
 
     def __sub__(self, other: Self) raises -> TimeDelta:
         self._check_awareness(other)
@@ -4259,7 +4476,7 @@ struct MorrowSpanIterator(Copyable, ImplicitlyCopyable, Movable):
         self.current = start if exact else floor
         self.end = end
         self.step = step
-        self.remaining = limit
+        self.remaining = 0 if start > end else limit
         self.bounds = bounds
         self.exact = exact
         self.week_start = week_start
@@ -4296,7 +4513,7 @@ struct MorrowSpanIterator(Copyable, ImplicitlyCopyable, Movable):
                 raise StopIteration()
             if span.end._utc_microseconds() > end_key:
                 span.end = self.end
-                if self.bounds[byte=1] == ")":
+                if self.bounds.as_bytes()[1] == 41:
                     span.end = span.end.shift(microseconds=-1)
         self.started = True
         if self.remaining != _UNBOUNDED_LIMIT:

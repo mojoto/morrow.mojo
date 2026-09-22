@@ -21,7 +21,7 @@ sidebar_position: 8
 
 格式化和转换：
 
-- `format(fmt)`
+- `format(fmt, locale="en")`
 - `strftime(fmt)`
 - `isoformat(sep="T", timespec="auto")`
 - `for_json()`
@@ -46,13 +46,14 @@ sidebar_position: 8
 相对时间：
 
 - `humanize(...)`
-- `dehumanize(input_string)`
+- `dehumanize(input_string, locale="en")`
 
 ## TimeZone
 
 - `TimeZone(offset, name="")`
 - `TimeZone.none()`
-- `TimeZone.local()`
+- `TimeZone.local()`, `TimeZone.local(timestamp)`
+- `TimeZone.from_name(name)`
 - `TimeZone.from_utc(value)`
 - `format(sep=":")`
 - `is_none()`

@@ -1,23 +1,45 @@
 from std.format import Writable, Writer
 
-from ._libc import c_localtime, c_gettimeofday, c_mktime, CTm
+from ._libc import c_gettimeofday
+from ._icu import Calendar
+from .util import _ymd2ord
 
 
 struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
     var offset: Int
     var name: String
+    var zone: String
+    var dst_seconds: Int
+    var fold_value: Int
+    var is_ambiguous: Bool
+    var is_imaginary: Bool
 
     def __init__(out self, offset: Int, name: String = ""):
         self.offset = offset
         self.name = name
+        self.zone = ""
+        self.dst_seconds = 0
+        self.fold_value = 0
+        self.is_ambiguous = False
+        self.is_imaginary = False
 
     def __init__(out self, *, copy: Self):
         self.offset = copy.offset
         self.name = copy.name
+        self.zone = copy.zone
+        self.dst_seconds = copy.dst_seconds
+        self.fold_value = copy.fold_value
+        self.is_ambiguous = copy.is_ambiguous
+        self.is_imaginary = copy.is_imaginary
 
     def __init__(out self, *, deinit move: Self):
         self.offset = move.offset
         self.name = move.name^
+        self.zone = move.zone^
+        self.dst_seconds = move.dst_seconds
+        self.fold_value = move.fold_value
+        self.is_ambiguous = move.is_ambiguous
+        self.is_imaginary = move.is_imaginary
 
     def __str__(self) -> String:
         return self.to_string()
@@ -44,34 +66,73 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         return TimeZone(0, "None")
 
     @staticmethod
-    def local() -> TimeZone:
-        """
-        Get the local TimeZone.
-        """
-        return TimeZone.local(c_gettimeofday().tv_sec)
+    def from_name(name: String) raises -> TimeZone:
+        """Create an IANA timezone using the installed ICU timezone rules."""
+        if name == "":
+            raise Error("timezone name is empty")
+        var result = TimeZone(0, name)
+        result.zone = name
+        return result.at(c_gettimeofday().tv_sec)
 
     @staticmethod
-    def local(timestamp: Int) -> TimeZone:
-        """Get the local fixed offset at a particular Unix timestamp."""
-        var local_t = c_localtime(timestamp)
-        return TimeZone(Int(local_t.tm_gmtoff), "local")
+    def local() raises -> TimeZone:
+        return TimeZone.from_name("local")
+
+    @staticmethod
+    def local(timestamp: Int) raises -> TimeZone:
+        var result = TimeZone(0, "local")
+        result.zone = "local"
+        return result.at(timestamp)
 
     @staticmethod
     def local_at(
         year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int
-    ) -> TimeZone:
-        """Resolve the host offset for local wall fields (DST policy is platform-defined).
-        """
-        var tm = CTm()
-        tm.tm_year = Int32(year - 1900)
-        tm.tm_mon = Int32(month - 1)
-        tm.tm_mday = Int32(day)
-        tm.tm_hour = Int32(hour)
-        tm.tm_min = Int32(minute)
-        tm.tm_sec = Int32(second)
-        tm.tm_isdst = -1
-        _ = c_mktime(tm)
-        return TimeZone(Int(tm.tm_gmtoff), "local")
+    ) raises -> TimeZone:
+        var result = TimeZone(0, "local")
+        result.zone = "local"
+        return result.resolve(year, month, day, hour, minute, second)
+
+    def at(self, timestamp: Int) raises -> TimeZone:
+        if self.zone == "":
+            return self
+        var info = Calendar(self.zone).at(timestamp)
+        var result = self
+        result.offset = info.offset
+        result.dst_seconds = info.dst
+        result.is_imaginary = False
+        return result
+
+    def resolve(
+        self,
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+        second: Int,
+        fold: Int = -1,
+    ) raises -> TimeZone:
+        if fold < -1 or fold > 1:
+            raise Error("fold must be 0 or 1")
+        var result = self
+        if fold != -1:
+            result.fold_value = fold
+        if result.zone == "":
+            return result
+        var wall = (
+            (_ymd2ord(year, month, day) - 719163) * 86400
+            + hour * 3600
+            + minute * 60
+            + second
+        )
+        var info = Calendar(result.zone).wall(
+            year, month, day, hour, minute, second, wall, result.fold_value
+        )
+        result.offset = info.offset
+        result.dst_seconds = info.dst
+        result.is_ambiguous = info.ambiguous
+        result.is_imaginary = info.imaginary
+        return result
 
     @staticmethod
     def from_utc(utc_str: String) raises -> TimeZone:
@@ -84,6 +145,9 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
             return TimeZone(0, "utc")
         if _equals_ascii_case_insensitive(utc_str, "GMT"):
             return TimeZone(0, "GMT")
+        for byte in utc_str.as_bytes():
+            if byte > 127:
+                raise Error("utc_str must contain ASCII offset text")
         var p = (
             3 if utc_str.byte_length() > 3 and utc_str[byte=0:3] == "UTC" else 0
         )
@@ -94,8 +158,8 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         if (
             utc_str.byte_length() < p + 2
-            or not _is_ascii_digit(ord(utc_str[byte=p]))
-            or not _is_ascii_digit(ord(utc_str[byte=p + 1]))
+            or not _is_ascii_digit(Int(utc_str.as_bytes()[p]))
+            or not _is_ascii_digit(Int(utc_str.as_bytes()[p + 1]))
         ):
             raise Error("utc_str format is invalid")
         var hours: Int = Int(utc_str[byte = p : p + 2])
@@ -116,15 +180,15 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
             minutes = Int(utc_str[byte = p + 1 : p + 3])
         elif (
             utc_str.byte_length() == p + 4
-            and _is_ascii_digit(ord(utc_str[byte=p]))
-            and _is_ascii_digit(ord(utc_str[byte=p + 1]))
-            and _is_ascii_digit(ord(utc_str[byte=p + 2]))
-            and _is_ascii_digit(ord(utc_str[byte=p + 3]))
+            and _is_ascii_digit(Int(utc_str.as_bytes()[p]))
+            and _is_ascii_digit(Int(utc_str.as_bytes()[p + 1]))
+            and _is_ascii_digit(Int(utc_str.as_bytes()[p + 2]))
+            and _is_ascii_digit(Int(utc_str.as_bytes()[p + 3]))
         ):
             minutes = Int(utc_str[byte = p : p + 2])
             seconds = Int(utc_str[byte = p + 2 : p + 4])
         elif utc_str.byte_length() == p + 2 and _is_ascii_digit(
-            ord(utc_str[byte=p])
+            Int(utc_str.as_bytes()[p])
         ):
             minutes = Int(utc_str[byte = p : p + 2])
         else:
@@ -170,7 +234,9 @@ def _equals_ascii_case_insensitive(left: String, right: String) -> Bool:
     if left.byte_length() != right.byte_length():
         return False
     for i in range(left.byte_length()):
-        if _ascii_lower(ord(left[byte=i])) != _ascii_lower(ord(right[byte=i])):
+        if _ascii_lower(Int(left.as_bytes()[i])) != _ascii_lower(
+            Int(right.as_bytes()[i])
+        ):
             return False
     return True
 

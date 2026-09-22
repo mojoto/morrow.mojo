@@ -60,3 +60,15 @@ def normalize_timestamp(timestamp: Float64) raises -> Float64:
                 + "is too large."
             )
     return timestamp_
+
+
+def utf8_width(s: String, pos: Int) -> Int:
+    """Byte width of a codepoint at a known UTF-8 boundary."""
+    var first = Int(s.as_bytes()[pos])
+    if first < 128:
+        return 1
+    if first < 224:
+        return 2
+    if first < 240:
+        return 3
+    return 4
