@@ -36,8 +36,6 @@ for span in Morrow.iter_interval("month", start, end, interval=3, exact=True):
 
 `TimeZone.local()` uses today's offset; `TimeZone.local(timestamp)` returns the host offset at a particular instant. Converting to `local` resolves the target instant, and constructing local wall fields resolves that date. The resulting timezone still stores a fixed-offset snapshot. Ambiguous/nonexistent wall-time policy remains host-defined until full named timezone support is introduced.
 
-## Arrow compatibility
+## Current scope
 
-Core parsing, formatting, calendar shifts, boundaries and intervals follow Arrow-style semantics. CI compares 400 deterministic core results against pinned Arrow 1.4.0, in addition to the edge-case tests. This is a bounded compatibility check, not a claim of complete equivalence.
-
-In 0.8, locales remain English-only, IANA names and explicit DST disambiguation are not supported, general regex parsing is not supported, and Python objects/factories are not runtime dependencies. Morrow uses native Mojo structs and methods; its existing range APIs return lists.
+Version 0.8 supports English text and fixed-offset timezones. Named IANA timezones, explicit DST disambiguation, and additional languages are planned for 0.9. General regex parsing and Python object integration are outside the current scope.
