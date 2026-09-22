@@ -2053,7 +2053,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _from_instant_microseconds(stamp: Int, tz: TimeZone) raises -> Self:
-        var target = tz.at(stamp // _US_PER_SECOND)
+        var seconds = stamp // _US_PER_SECOND
+        if stamp % _US_PER_SECOND < 0:
+            seconds -= 1
+        var target = tz.at(seconds)
         var wall = Self._from_utc_microseconds_value(
             stamp + target.offset * _US_PER_SECOND
         )

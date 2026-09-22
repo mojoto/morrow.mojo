@@ -115,6 +115,12 @@ def test_aware_calendar_limits() raises:
     assert_true(latest + TimeDelta() == latest)
     assert_equal(earliest.shift(hours=1).hour, 1)
     assert_equal(latest.shift(hours=-1).hour, 22)
+    var before = Morrow(1969, 10, 26, 6) - TimeDelta(microseconds=1)
+    var local = before.to("America/New_York")
+    assert_equal(local.tz.offset, -14400)
+    assert_equal(local.minute, 59)
+    assert_equal(local.microsecond, 999999)
+    assert_true(local.to("UTC") == before)
 
 
 def main() raises:
