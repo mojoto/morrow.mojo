@@ -72,6 +72,17 @@ Python-style `strftime`.
 
 ## Development
 
+Source builds support Mojo 1.0.0 and 1.1.0. Use `make install MOJO_VERSION=1.0.0`
+to select 1.0 (the default is 1.1.0), then run `make test build`.
+CI tests and precompiles both versions on Linux x86-64, Linux ARM64, and macOS ARM64.
+Release archives are built separately for each compiler version; choose the matching archive.
+Mojo 1.1 emits deprecation warnings for the string API retained for 1.0 compatibility.
+
+`make package` builds two Conda variants of the same Morrow version, each requiring
+its exact Mojo compiler version. Publish both builds to the same channel so Pixi
+can select the build matching the compiler constraint in the consuming project.
+
+
 Run `make help` to list the available targets.
 
 | Target | Description |

@@ -7,11 +7,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        mojo: ["1.0.0", "1.1.0"]
         os:
           - ubuntu-latest
           - ubuntu-24.04-arm
           - macos-26
     runs-on: ${{ matrix.os }}
+    env:
+      MOJO_VERSION: ${{ matrix.mojo }}
 
     steps:
       - name: Check out repository code
@@ -22,3 +25,5 @@ jobs:
           make install
       - name: Test
         run: make test
+      - name: Build
+        run: make build

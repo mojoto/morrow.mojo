@@ -76,6 +76,7 @@ def c_localtime(tv_sec: Int) -> CTm:
     return tm^
 
 
+# Keep the Mojo 1.0 string API until support for that compiler version ends.
 @always_inline
 def c_strptime(time_str: String, time_format: String) raises -> CTm:
     """Wrapper for the C function strptime."""
@@ -83,8 +84,8 @@ def c_strptime(time_str: String, time_format: String) raises -> CTm:
     var time_format_ = time_format
     var tm = CTm()
     var end_addr = external_call["strptime", Int](
-        time_str_.as_c_string_span().ptr(),
-        time_format_.as_c_string_span().ptr(),
+        time_str_.as_c_string_slice().unsafe_ptr(),
+        time_format_.as_c_string_slice().unsafe_ptr(),
         Pointer(to=tm),
     )
     if end_addr == 0:
@@ -103,8 +104,8 @@ def c_strptime_consumed(time_str: String, time_format: String) raises -> Int:
     var empty_format = String("")
     var start_tm = CTm()
     var start_addr = external_call["strptime", Int](
-        time_str_.as_c_string_span().ptr(),
-        empty_format.as_c_string_span().ptr(),
+        time_str_.as_c_string_slice().unsafe_ptr(),
+        empty_format.as_c_string_slice().unsafe_ptr(),
         Pointer(to=start_tm),
     )
     if start_addr == 0:
@@ -113,8 +114,8 @@ def c_strptime_consumed(time_str: String, time_format: String) raises -> Int:
     var time_format_ = time_format
     var tm = CTm()
     var end_addr = external_call["strptime", Int](
-        time_str_.as_c_string_span().ptr(),
-        time_format_.as_c_string_span().ptr(),
+        time_str_.as_c_string_slice().unsafe_ptr(),
+        time_format_.as_c_string_slice().unsafe_ptr(),
         Pointer(to=tm),
     )
     if end_addr == 0:
