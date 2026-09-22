@@ -43,3 +43,11 @@ formats.append("YYYY-MM-DD HH:mm:ss")
 
 print(Morrow.get("2026-01-01 15:49:10", formats))
 ```
+
+## Locale
+
+```text
+var value = Morrow.get("2024 十一月 05 下午 03:00", "YYYY MMMM DD A hh:mm", locale="zh-CN")
+```
+
+月份、星期、日期序数和上午下午标记支持英文、简体中文及繁体中文，字面量支持 UTF-8。解析时通过关键字 `locale` 指定语言，`tz` 接收 TimeZone，可选 `normalize_whitespace` 归一化空白。

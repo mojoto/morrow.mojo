@@ -42,3 +42,11 @@ var ist = Morrow(2026, 1, 1, 3, 4, 5, 123456, TimeZone(19800, "IST"))
 
 print(ist.strftime("%Y-%m-%d %H:%M:%S.%f %z %Z"))
 ```
+
+## Locale
+
+```text
+print(Morrow(2024, 11, 5, 15).format("MMMM Do dddd A hh", locale="zh-CN"))
+```
+
+Month and weekday names, ordinal days, and AM/PM markers support English, Simplified Chinese and Traditional Chinese. UTF-8 literal text is supported. For localized parsing, use the keyword `locale`; `tz` accepts a `TimeZone` and `normalize_whitespace` is optional.

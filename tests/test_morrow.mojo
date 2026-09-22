@@ -398,8 +398,9 @@ def test_strptime() raises:
     assert_strptime_raises(
         "2024-02-29 03:04:05 +05:30:15.5", "%Y-%m-%d %H:%M:%S %z"
     )
-    assert_strptime_raises("2024-02-29 03:04:05 EST", "%Y-%m-%d %H:%M:%S %Z")
-    assert_strptime_raises("2024-02-29 03:04:05 local", "%Y-%m-%d %H:%M:%S %Z")
+    assert_strptime_raises(
+        "2024-02-29 03:04:05 Invalid/Zone", "%Y-%m-%d %H:%M:%S %Z"
+    )
     assert_strptime_raises("2024-02-29 03:04:05 ", "%Y-%m-%d %H:%M:%S %Z")
     assert_strptime_raises("2024-02-29 03:04:05.", "%Y-%m-%d %H:%M:%S.%f")
     assert_strptime_raises(

@@ -42,3 +42,11 @@ var ist = Morrow(2026, 1, 1, 3, 4, 5, 123456, TimeZone(19800, "IST"))
 
 print(ist.strftime("%Y-%m-%d %H:%M:%S.%f %z %Z"))
 ```
+
+## Locale
+
+```text
+print(Morrow(2024, 11, 5, 15).format("MMMM Do dddd A hh", locale="zh-CN"))
+```
+
+月份、星期、日期序数和上午下午标记支持英文、简体中文及繁体中文，字面量支持 UTF-8。解析时通过关键字 `locale` 指定语言，`tz` 接收 TimeZone，可选 `normalize_whitespace` 归一化空白。

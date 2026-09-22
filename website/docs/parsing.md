@@ -43,3 +43,11 @@ formats.append("YYYY-MM-DD HH:mm:ss")
 
 print(Morrow.get("2026-01-01 15:49:10", formats))
 ```
+
+## Locale
+
+```text
+var value = Morrow.get("2024 十一月 05 下午 03:00", "YYYY MMMM DD A hh:mm", locale="zh-CN")
+```
+
+Month and weekday names, ordinal days, and AM/PM markers support English, Simplified Chinese and Traditional Chinese. UTF-8 literal text is supported. For localized parsing, use the keyword `locale`; `tz` accepts a `TimeZone` and `normalize_whitespace` is optional.

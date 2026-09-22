@@ -66,9 +66,11 @@ var rss = Morrow(2026, 1, 1, 10, 30, 35, 0, TimeZone(0, "UTC"))
 print(rss.format(FORMAT_RSS))
 ```
 
-Morrow is UTC by default, supports fixed-offset time zones, parses ISO 8601
-strings and POSIX timestamps, and formats values with Arrow-style tokens or
-Python-style `strftime`.
+Morrow is UTC by default, supports IANA and fixed-offset time zones, parses ISO 8601
+strings and POSIX timestamps, and formats values with date/time tokens or
+Python-style `strftime`. English, Simplified Chinese, and Traditional Chinese
+are supported for formatting, parsing, and relative time. Named and local time
+zones require ICU (provided by macOS; install `libicu-dev` on Debian/Ubuntu).
 
 ## Development
 

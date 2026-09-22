@@ -21,7 +21,7 @@ Construction:
 
 Formatting and conversion:
 
-- `format(fmt)`
+- `format(fmt, locale="en")`
 - `strftime(fmt)`
 - `isoformat(sep="T", timespec="auto")`
 - `for_json()`
@@ -43,17 +43,19 @@ Views and calendar fields:
 - `weekday()`, `isoweekday()`, `isocalendar()`
 - `timetuple()`, `utctimetuple()`
 - `quarter()`, `week()`, `ctime()`
+- `fold()`, `ambiguous()`, `imaginary()`, `dst()`
 
 Relative time:
 
 - `humanize(...)`
-- `dehumanize(input_string)`
+- `dehumanize(input_string, locale="en")`
 
 ## TimeZone
 
 - `TimeZone(offset, name="")`
 - `TimeZone.none()`
-- `TimeZone.local()`
+- `TimeZone.local()`, `TimeZone.local(timestamp)`
+- `TimeZone.from_name(name)`
 - `TimeZone.from_utc(value)`
 - `format(sep=":")`
 - `is_none()`
