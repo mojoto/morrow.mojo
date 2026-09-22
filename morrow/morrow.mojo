@@ -2049,7 +2049,10 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def to(self, tz: TimeZone) raises -> Self:
         """Convert an instant using the target zone's rules at that instant."""
-        var stamp = self._utc_microseconds()
+        return Self._from_instant_microseconds(self._utc_microseconds(), tz)
+
+    @staticmethod
+    def _from_instant_microseconds(stamp: Int, tz: TimeZone) raises -> Self:
         var target = tz.at(stamp // _US_PER_SECOND)
         var wall = Self._from_utc_microseconds_value(
             stamp + target.offset * _US_PER_SECOND
@@ -4138,9 +4141,9 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if not self.tz.is_none():
             if delta.days < -3652059 or delta.days > 3652059:
                 raise Error("duration exceeds supported calendar")
-            return Self._from_utc_microseconds_value(
-                self._utc_microseconds() + delta._to_microseconds()
-            ).to(self.tz)
+            return Self._from_instant_microseconds(
+                self._utc_microseconds() + delta._to_microseconds(), self.tz
+            )
         return self._shift_day_time(
             delta.days, 0, 0, delta.seconds, delta.microseconds
         )

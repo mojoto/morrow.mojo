@@ -106,5 +106,16 @@ def test_unusual_transitions_and_invalid_names() raises:
     assert_true(rejected)
 
 
+def test_aware_calendar_limits() raises:
+    var earliest = Morrow(1, 1, 1, tz=TimeZone.from_utc("+14:00"))
+    var latest = Morrow(
+        9999, 12, 31, 23, 59, 59, 999999, tz=TimeZone.from_utc("-12:00")
+    )
+    assert_true(earliest + TimeDelta() == earliest)
+    assert_true(latest + TimeDelta() == latest)
+    assert_equal(earliest.shift(hours=1).hour, 1)
+    assert_equal(latest.shift(hours=-1).hour, 22)
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()
