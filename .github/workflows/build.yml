@@ -1,8 +1,5 @@
 name: Build and Release
 
-env:
-  MOJO_VERSION: "1.1.0"
-
 on:
   push:
     tags:
@@ -22,6 +19,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        mojo: ["1.0.0", "1.1.0"]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-26]
         include:
           - os: ubuntu-latest
             platform: linux-x86_64
@@ -30,6 +29,8 @@ jobs:
           - os: macos-26
             platform: macos-arm64
     runs-on: ${{ matrix.os }}
+    env:
+      MOJO_VERSION: ${{ matrix.mojo }}
 
     steps:
       - name: Check out repository code
@@ -73,7 +74,7 @@ jobs:
       - name: Upload release archive
         uses: actions/upload-artifact@v7
         with:
-          name: release-${{ matrix.platform }}
+          name: release-${{ matrix.platform }}-mojo-${{ matrix.mojo }}
           path: dist/*.tar.gz
           if-no-files-found: error
 

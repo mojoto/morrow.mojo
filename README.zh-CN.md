@@ -65,6 +65,12 @@ Morrow 默认使用 UTC，支持固定偏移时区，可以解析 ISO 8601 字�
 
 ## 开发
 
+源码支持 Mojo 1.0.0 和 1.1.0。使用 `make install MOJO_VERSION=1.0.0`
+选择 1.0（默认是 1.1.0），然后运行 `make test build`。
+CI 在 Linux x86-64、Linux ARM64 和 macOS ARM64 上测试并预编译两个版本。
+Release 按编译器版本分别构建，请选择匹配的归档。
+为兼容 1.0 保留的字符串 API 会在 Mojo 1.1 下产生弃用警告。
+
 运行 `make help` 可以查看所有可用目标。
 
 | 目标 | 说明 |
