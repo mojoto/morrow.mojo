@@ -17,11 +17,11 @@ build:
 
 requirements:
   build:
-    - mojo-compiler =1.0.0
+    - mojo-compiler =1.1.0
   host:
-    - mojo-compiler =1.0.0
+    - mojo-compiler =1.1.0
   run:
-    - mojo-compiler >=1.0.0,<1.1.0
+    - mojo-compiler >=1.1.0,<1.2.0
 
 tests:
   - script:
