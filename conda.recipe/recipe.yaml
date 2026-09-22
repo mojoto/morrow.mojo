@@ -7,21 +7,21 @@ package:
 
 source:
   - git: https://github.com/mojoto/morrow.mojo.git
-    rev: d059b644490f407132263d981797e29531cb2304
+    rev: 2f20347a5005d9b4bf1af54df455e7071ee3d941
 
 build:
-  number: 0
+  number: 1
   script:
     - mkdir -p ${PREFIX}/lib/mojo
     - mojo precompile morrow -o ${PREFIX}/lib/mojo/morrow.mojoc
 
 requirements:
   build:
-    - mojo-compiler =1.1.0
+    - mojo-compiler ==${{ mojo_version }}
   host:
-    - mojo-compiler =1.1.0
+    - mojo-compiler ==${{ mojo_version }}
   run:
-    - mojo-compiler >=1.1.0,<1.2.0
+    - mojo-compiler ==${{ mojo_version }}
 
 tests:
   - script:
