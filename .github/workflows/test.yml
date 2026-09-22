@@ -25,5 +25,9 @@ jobs:
           make install
       - name: Test
         run: make test
+      - name: Local timezone seasonal regression
+        run: TZ=America/New_York uv run mojo run -I . tests/test_iterators.mojo
+      - name: Arrow behavioral comparison
+        run: uv run --with arrow==1.4.0 python tools/check_arrow.py
       - name: Build
         run: make build

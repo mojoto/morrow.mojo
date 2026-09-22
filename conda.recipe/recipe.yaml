@@ -1,5 +1,5 @@
 context:
-  version: "0.7.0"
+  version: "0.8.0"
 
 package:
   name: morrow
@@ -7,7 +7,7 @@ package:
 
 source:
   - git: https://github.com/mojoto/morrow.mojo.git
-    rev: 2f20347a5005d9b4bf1af54df455e7071ee3d941
+    rev: v0.8.0
 
 build:
   number: 1

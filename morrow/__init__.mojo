@@ -1,5 +1,8 @@
 from .morrow import (
     Morrow,
+    MorrowIterator,
+    MorrowSpanIterator,
+    MorrowIntervalIterator,
     MorrowDate,
     MorrowIsoCalendar,
     MorrowSpan,
@@ -9,7 +12,7 @@ from .morrow import (
 from .timezone import TimeZone
 from .timedelta import TimeDelta
 
-comptime __version__ = "0.7.0"
+comptime __version__ = "0.8.0"
 
 comptime FORMAT_ATOM = "YYYY-MM-DD HH:mm:ssZZ"
 comptime FORMAT_COOKIE = "dddd, DD-MMM-YYYY HH:mm:ss ZZZ"

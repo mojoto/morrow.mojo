@@ -31,9 +31,10 @@ Formatting and conversion:
 Date-time operations:
 
 - `replace(...)`
-- `shift(...)`
+- `shift(...)`, `shift_weekday(weekday, nth=1)`
 - `floor(frame)`, `ceil(frame)`, `span(frame)`
 - `range(...)`, `span_range(...)`, `interval(...)`
+- `iter_range(...)`, `iter_span_range(...)`, `iter_interval(...)`
 - `is_between(start, end, bounds="()")`
 
 Views and calendar fields:

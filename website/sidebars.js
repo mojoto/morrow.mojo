@@ -10,6 +10,7 @@ const sidebars = {
       items: ['parsing', 'formatting', 'timezones', 'ranges', 'humanize'],
     },
     'api-reference',
+    'migration',
   ],
 };
 
