@@ -1,4 +1,6 @@
 from std.testing import assert_equal, assert_true, assert_raises, TestSuite
+from std.collections import Dict, Set
+
 from morrow import Morrow, TimeZone, TimeDelta
 
 
@@ -196,6 +198,35 @@ def test_invalid_offset_text() raises:
     for text in invalid:
         with assert_raises():
             _ = TimeZone.from_utc(text)
+
+
+def test_hashing_and_inequality() raises:
+    var ny = TimeZone.from_name("America/New_York")
+    var utc = Morrow(2024, 7, 1, 16)
+    var local = Morrow(2024, 7, 1, 12, tz=ny)
+    assert_true(utc == local)
+    assert_equal(hash(utc), hash(local))
+    assert_true(utc != utc.shift(microseconds=1))
+    assert_true(utc != utc.naive())
+    assert_true(hash(utc) != hash(utc.naive()))
+    var seen = Dict[Morrow, String]()
+    seen[utc] = "launch"
+    assert_equal(seen[local], "launch")
+    var days = Set[Morrow]()
+    for i in range(3):
+        days.add(Morrow(2024, 1, 1).shift(days=i % 2))
+    assert_equal(len(days), 2)
+    var durations = Set[TimeDelta]()
+    durations.add(TimeDelta(hours=24))
+    durations.add(TimeDelta(days=1))
+    assert_equal(len(durations), 1)
+
+
+def test_time_tuple_input() raises:
+    var value = Morrow(2024, 2, 29, 13, 14, 15, tz=TimeZone(3600, "CET"))
+    var from_utc = Morrow.get(value.utctimetuple())
+    assert_equal(String(from_utc), "2024-02-29T12:14:15.000000+00:00")
+    assert_true(from_utc == value.replace(microsecond=0))
 
 
 def main() raises:

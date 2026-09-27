@@ -119,13 +119,29 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
             result.fold_value = fold
         if result.zone == "":
             return result
+        return result._resolve_with(
+            Calendar(result.zone), year, month, day, hour, minute, second
+        )
+
+    def _resolve_with(
+        self,
+        calendar: Calendar,
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+        second: Int,
+    ) raises -> TimeZone:
+        """Resolve wall fields with an already open calendar for this zone."""
+        var result = self
         var wall = (
             (_ymd2ord(year, month, day) - 719163) * 86400
             + hour * 3600
             + minute * 60
             + second
         )
-        var info = Calendar(result.zone).wall(
+        var info = calendar.wall(
             year, month, day, hour, minute, second, wall, result.fold_value
         )
         result.offset = info.offset

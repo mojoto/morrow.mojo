@@ -1,9 +1,18 @@
 from std.format import Writable, Writer
+from std.hashlib import Hasher
 
 comptime SECONDS_OF_DAY = 24 * 3600
 
 
-struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
+struct TimeDelta(
+    Comparable,
+    Copyable,
+    Equatable,
+    Hashable,
+    ImplicitlyCopyable,
+    Movable,
+    Writable,
+):
     """
     Represents a duration of time.
     """
@@ -189,6 +198,88 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.days * SECONDS_OF_DAY + self.seconds
         ) * 1000000 + self.microseconds
 
+    def __mul__(self, other: Float64) -> Self:
+        """
+        Multiply by a float, rounding to the nearest microsecond (ties to even).
+        """
+        return Self(
+            0, 0, _round_half_even(Float64(self._to_microseconds()) * other)
+        )
+
+    def __rmul__(self, other: Float64) -> Self:
+        return self.__mul__(other)
+
+    def __truediv__(self, other: Self) raises -> Float64:
+        """
+        Return the ratio of two durations.
+        """
+        var divisor = other._to_microseconds()
+        if divisor == 0:
+            raise Error("division by zero duration")
+        return Float64(self._to_microseconds()) / Float64(divisor)
+
+    def __truediv__(self, other: Int) raises -> Self:
+        """
+        Divide by an integer, rounding to the nearest microsecond (ties to even).
+        """
+        if other == 0:
+            raise Error("division by zero")
+        var numerator = self._to_microseconds()
+        var denominator = other
+        if denominator < 0:
+            numerator = -numerator
+            denominator = -denominator
+        var quotient = numerator // denominator
+        var remainder = numerator - quotient * denominator
+        if remainder * 2 > denominator or (
+            remainder * 2 == denominator and quotient % 2 != 0
+        ):
+            quotient += 1
+        return Self(0, 0, quotient)
+
+    def __truediv__(self, other: Float64) raises -> Self:
+        """
+        Divide by a float, rounding to the nearest microsecond (ties to even).
+        """
+        if other == 0:
+            raise Error("division by zero")
+        return Self(
+            0, 0, _round_half_even(Float64(self._to_microseconds()) / other)
+        )
+
+    def __floordiv__(self, other: Self) raises -> Int:
+        """
+        Return how many whole `other` durations fit, rounding toward negative infinity.
+        """
+        var divisor = other._to_microseconds()
+        if divisor == 0:
+            raise Error("division by zero duration")
+        return self._to_microseconds() // divisor
+
+    def __floordiv__(self, other: Int) raises -> Self:
+        """
+        Divide by an integer, rounding toward negative infinity.
+        """
+        if other == 0:
+            raise Error("division by zero")
+        return Self(0, 0, self._to_microseconds() // other)
+
+    def divmod(self, other: Self) raises -> Tuple[Int, Self]:
+        """
+        Return floor quotient and remainder, as Python's divmod.
+        """
+        var divisor = other._to_microseconds()
+        if divisor == 0:
+            raise Error("division by zero duration")
+        var value = self._to_microseconds()
+        return (value // divisor, Self(0, 0, value % divisor))
+
+    def __hash__[H: Hasher](self, mut hasher: H):
+        self._to_microseconds().__hash__(hasher)
+
+    def __ne__(self, other: Self) -> Bool:
+        return not self == other
+
     def __mod__(self, other: Self) -> Self:
         """
         Calculate the remainder of dividing this TimeDelta by another.
@@ -257,6 +348,16 @@ struct TimeDelta(Copyable, ImplicitlyCopyable, Movable, Writable):
         Check if the TimeDelta is non-zero.
         """
         return self.days != 0 or self.seconds != 0 or self.microseconds != 0
+
+
+def _round_half_even(value: Float64) -> Int:
+    var floor = Int(value)
+    if Float64(floor) > value:
+        floor -= 1
+    var fraction = value - Float64(floor)
+    if fraction > 0.5 or (fraction == 0.5 and floor % 2 != 0):
+        return floor + 1
+    return floor
 
 
 comptime Min = TimeDelta(-99999999)

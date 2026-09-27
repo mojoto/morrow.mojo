@@ -50,6 +50,6 @@ print(Morrow.get("2026-01-01 15:49:10", formats))
 var value = Morrow.get("2024 十一月 05 下午 03:00", "YYYY MMMM DD A hh:mm", locale="zh-CN")
 ```
 
-Month and weekday names, ordinal days, and AM/PM markers support English, Simplified Chinese and Traditional Chinese. UTF-8 literal text is supported. For localized parsing, use the keyword `locale`; `tz` accepts a `TimeZone` and `normalize_whitespace` is optional.
+Month and weekday names, ordinal days, and AM/PM markers are matched in the locale, ignoring case. `locale` takes any of the 81 [built-in locales](./locales.md) or a `Locale` value; `tz` accepts a `TimeZone` and `normalize_whitespace` is optional. UTF-8 literal text is supported.
 
 Positive numeric timestamps above 32,503,737,600 are interpreted as milliseconds or microseconds by magnitude. Negative timestamps are seconds. For dates beyond this seconds cutoff, use calendar components or ISO text to avoid unit ambiguity. Non-finite and out-of-calendar timestamps raise.

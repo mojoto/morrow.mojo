@@ -23,6 +23,7 @@ uv run mojo run -I . tests/test_iana.mojo --skip-all
 | Parsing and formatting | ISO and token formats, fallback lists, extraction boundaries, Unicode literals, invalid inputs, timestamp unit normalization |
 | Timezones | Historical offsets, DST folds/gaps, southern hemisphere seasons, half-hour transitions, skipped days, negative fractional instants |
 | Locale | All months and weekdays, AM/PM boundaries, aliases, unsupported languages, Chinese relative units and malformed input |
+| Built-in locales | Arrow 1.4.0 text for format, parse and humanize in every locale, dehumanize round trips for every unit, custom locales, Buddhist-era years |
 | Iterators | Laziness, independent copies, exhaustion, zero limits, reversed ranges, clipping, partial groups, DST hour sequences |
 | Properties | Ordinal, timestamp, duration, fixed-offset, localized date, and IANA conversion invariants |
 

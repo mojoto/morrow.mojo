@@ -50,6 +50,6 @@ print(Morrow.get("2026-01-01 15:49:10", formats))
 var value = Morrow.get("2024 十一月 05 下午 03:00", "YYYY MMMM DD A hh:mm", locale="zh-CN")
 ```
 
-月份、星期、日期序数和上午下午标记支持英文、简体中文及繁体中文，字面量支持 UTF-8。解析时通过关键字 `locale` 指定语言，`tz` 接收 TimeZone，可选 `normalize_whitespace` 归一化空白。
+月份、星期、日期序数和上午下午标记按语言匹配，不区分大小写。`locale` 可以是 81 种[内置语言](./locales.md)之一，也可以是 `Locale` 值；`tz` 接收 `TimeZone`，可选 `normalize_whitespace` 归一化空白。字面量支持 UTF-8。
 
 正数时间戳大于 32,503,737,600 时按数量级解释为毫秒或微秒；负数按秒处理。超过这一秒数阈值的日期请用日期组件或 ISO 文本创建，避免单位歧义。非有限数和超出日历范围的时间戳会报错。

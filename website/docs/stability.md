@@ -10,7 +10,7 @@ The APIs listed in the [API reference](./api-reference.md), their documented def
 
 Dates use the proleptic Gregorian calendar, years 1–9999, and microsecond resolution. UTC is the default; naive values are explicit. Invalid calendar fields and unsupported timezone/locale inputs raise errors. Leap seconds are not represented. See [timezones](./timezones.md) for repeated/missing local time and elapsed versus calendar arithmetic, and [parsing](./parsing.md) for timestamp unit rules.
 
-Locale support covers English, Simplified Chinese and Traditional Chinese. General natural-language parsing, arbitrary regular expressions, and Windows distributions are outside the supported surface.
+Locale support covers the 81 [built-in locales](./locales.md) and custom `Locale` values; their text is data, and fixes to translations can change output in minor releases. General natural-language parsing, arbitrary regular expressions, and Windows distributions are outside the supported surface.
 
 Timezone rules belong to the installed ICU data. A rule update can change a historical or future offset without a Morrow API change. Use the same ICU data version when identical rules across machines are required.
 

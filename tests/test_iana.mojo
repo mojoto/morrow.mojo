@@ -230,5 +230,33 @@ def test_named_timezone_validation_errors() raises:
         _ = Morrow(2024, 1, 1, fold=2)
 
 
+def test_timezone_abbreviations() raises:
+    var winter = Morrow(2024, 1, 15)
+    var summer = Morrow(2024, 7, 1)
+    assert_equal(winter.to("America/New_York").tz_abbreviation(), "EST")
+    assert_equal(summer.to("America/New_York").tz_abbreviation(), "EDT")
+    assert_equal(summer.to("Europe/London").tz_abbreviation(), "BST")
+    assert_equal(winter.to("Asia/Shanghai").tz_abbreviation(), "CST")
+    assert_equal(winter.to("Asia/Singapore").tz_abbreviation(), "+08")
+    assert_equal(winter.to("Australia/Sydney").tz_abbreviation(), "AEDT")
+    # History comes from the zone table and the future from its POSIX rule.
+    assert_equal(
+        Morrow(1900, 1, 1).to("America/New_York").tz_abbreviation(), "EST"
+    )
+    assert_equal(
+        Morrow(1943, 7, 1).to("America/New_York").tz_abbreviation(), "EWT"
+    )
+    assert_equal(
+        Morrow(2060, 7, 1).to("America/New_York").tz_abbreviation(), "EDT"
+    )
+    assert_equal(
+        Morrow(2024, 1, 1, tz=TimeZone(19800, "IST")).tz_abbreviation(), "IST"
+    )
+    assert_equal(winter.tz_abbreviation(), "UTC")
+    assert_equal(winter.naive().tz_abbreviation(), "")
+    # tzname() keeps returning the region identifier.
+    assert_equal(summer.to("America/New_York").tzname(), "America/New_York")
+
+
 def main() raises:
     TestSuite.discover_tests[__functions_in_module()]().run()

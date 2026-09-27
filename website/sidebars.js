@@ -7,7 +7,7 @@ const sidebars = {
       type: 'category',
       label: 'Core Guides',
       collapsed: false,
-      items: ['parsing', 'formatting', 'timezones', 'ranges', 'humanize'],
+      items: ['parsing', 'formatting', 'timezones', 'ranges', 'humanize', 'locales'],
     },
     'api-reference',
     'migration',

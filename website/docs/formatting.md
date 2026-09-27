@@ -49,4 +49,4 @@ print(ist.strftime("%Y-%m-%d %H:%M:%S.%f %z %Z"))
 print(Morrow(2024, 11, 5, 15).format("MMMM Do dddd A hh", locale="zh-CN"))
 ```
 
-Month and weekday names, ordinal days, and AM/PM markers support English, Simplified Chinese and Traditional Chinese. UTF-8 literal text is supported. For localized parsing, use the keyword `locale`; `tz` accepts a `TimeZone` and `normalize_whitespace` is optional.
+Month and weekday names, ordinal days, and AM/PM markers follow the locale; Thai and Lao also write Buddhist-era years. `locale` takes any of the 81 [built-in locales](./locales.md) or a `Locale` value. UTF-8 literal text is supported.
