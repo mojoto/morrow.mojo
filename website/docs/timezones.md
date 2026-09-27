@@ -30,7 +30,7 @@ print(Morrow(2024, 7, 1).to("America/New_York").tz_abbreviation())   # EDT
 print(Morrow(2024, 1, 15).to("Asia/Shanghai").tz_abbreviation())     # CST
 ```
 
-`tz_abbreviation()` reads the abbreviation from the system tzdata (`TZDIR`, then `/usr/share/zoneinfo`), matching Python's zoneinfo and Arrow's `ZZZ`. Zones without a letter abbreviation use tzdata's numeric form, such as `+08` for Asia/Singapore. If the zone file is unavailable it falls back to the numeric form. Fixed offsets return `tzname()`, and naive values return an empty string. `tzname()` and the `ZZZ` token keep returning the region identifier.
+`tz_abbreviation()` reads the abbreviation from the system tzdata, matching Python's zoneinfo and Arrow's `ZZZ`. Zones without a letter abbreviation use tzdata's numeric form, such as `+08` for Asia/Singapore. If the zone file is unavailable it falls back to the numeric form. Fixed offsets return `tzname()`, and naive values return an empty string. `tzname()` and the `ZZZ` token keep returning the region identifier.
 
 ## Repeated and missing times
 
@@ -60,8 +60,10 @@ Years, quarters, months, weeks, days and weekdays use calendar arithmetic. Hours
 
 ## Runtime and timezone data
 
-Named and local timezones use ICU's calendar and timezone data through native FFI; Python is not required. macOS provides ICU. Linux requires the ICU runtime (on Debian/Ubuntu, `sudo apt-get install libicu-dev` installs the library and linker name). The Conda recipe declares ICU as a runtime dependency. An active Conda environment's ICU library is preferred, followed by the system library. UTC and fixed-offset calculations do not load ICU.
+Named and local timezones read the system tzdata in pure Mojo; Python is not required. Zone files are searched in `TZDIR`, the active Conda environment's `share/zoneinfo`, then `/usr/share/zoneinfo`; the local zone comes from `TZ` or `/etc/localtime`. Each zone file is parsed once per process and shared by every `TimeZone` with that name, so a conversion costs well under a microsecond whether you pass a `TimeZone` or a region name.
 
-Timezone rule updates come from updating the selected ICU package or the operating system. Different ICU data versions may reflect different government rule updates. If the library or timezone is unavailable, operations raise an error rather than falling back to UTC.
+When no zone file exists, Morrow falls back to ICU through native FFI. macOS provides ICU; on Debian/Ubuntu, `sudo apt-get install libicu-dev` installs the library and linker name, and the Conda recipe declares it as a runtime dependency. UTC and fixed-offset calculations use neither.
 
-`now()` and `fromtimestamp()` use the host local timezone; set `TZ` before process startup when an explicit local zone is needed. Changing process timezone settings after ICU initialization is not supported. For independent zones in one process, use explicit region names.
+Timezone rule updates come from updating the operating system's tzdata (or the ICU package for the fallback). Different data versions may reflect different government rule updates. If a timezone is unavailable in both sources, operations raise an error rather than falling back to UTC. tzdata records total offsets, not how they split into standard time and DST, so `dst()` infers the split; in a few historical periods where both changed together it can differ from ICU.
+
+`now()` and `fromtimestamp()` use the host local timezone; set `TZ` before process startup when an explicit local zone is needed. Changing process timezone settings after the first named-zone lookup is not supported. For independent zones in one process, use explicit region names.

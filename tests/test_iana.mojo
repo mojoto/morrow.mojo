@@ -1,4 +1,6 @@
 from std.testing import assert_equal, assert_true, assert_raises, TestSuite
+from std.testing.prop import Rng
+
 from morrow import Morrow, TimeZone, TimeDelta
 
 
@@ -256,6 +258,90 @@ def test_timezone_abbreviations() raises:
     assert_equal(winter.naive().tz_abbreviation(), "")
     # tzname() keeps returning the region identifier.
     assert_equal(summer.to("America/New_York").tzname(), "America/New_York")
+
+
+def _icu_zone(name: String) -> TimeZone:
+    """The same zone forced onto the ICU fallback."""
+    var zone = TimeZone(0, name)
+    zone.zone = name
+    return zone^
+
+
+def test_tzdata_matches_icu() raises:
+    var zones: List[String] = [
+        "America/New_York",
+        "America/Los_Angeles",
+        "America/Sao_Paulo",
+        "America/St_Johns",
+        "America/Argentina/Salta",
+        "Europe/London",
+        "Europe/Dublin",
+        "Europe/Berlin",
+        "Europe/Moscow",
+        "Europe/Istanbul",
+        "Africa/Casablanca",
+        "Africa/Cairo",
+        "Asia/Shanghai",
+        "Asia/Kolkata",
+        "Asia/Kathmandu",
+        "Asia/Tehran",
+        "Asia/Jerusalem",
+        "Asia/Tokyo",
+        "Australia/Sydney",
+        "Australia/Lord_Howe",
+        "Pacific/Auckland",
+        "Pacific/Chatham",
+        "Pacific/Apia",
+        "Pacific/Kiritimati",
+        "Antarctica/Troll",
+        "America/Godthab",
+        "Asia/Singapore",
+        "UTC",
+    ]
+    var rng = Rng(seed=20260927)
+    for name in zones:
+        var fast = TimeZone.from_name(name)
+        assert_true(Bool(fast._data), name)
+        var slow = _icu_zone(name)
+        for _ in range(200):
+            var stamp = rng.rand_int(min=-2208988800, max=4102444800)
+            var a = fast.at(stamp)
+            var b = slow.at(stamp)
+            assert_equal(a.offset, b.offset, name)
+            var local = Morrow.utcfromtimestamp(stamp + b.offset)
+            for fold in [0, 1]:
+                var x = fast.resolve(
+                    local.year,
+                    local.month,
+                    local.day,
+                    local.hour,
+                    local.minute,
+                    local.second,
+                    fold,
+                )
+                var y = slow.resolve(
+                    local.year,
+                    local.month,
+                    local.day,
+                    local.hour,
+                    local.minute,
+                    local.second,
+                    fold,
+                )
+                assert_equal(x.offset, y.offset, name)
+                assert_equal(x.is_ambiguous, y.is_ambiguous, name)
+                assert_equal(x.is_imaginary, y.is_imaginary, name)
+
+
+def test_named_zones_are_shared() raises:
+    var first = TimeZone.from_name("Europe/Paris")
+    var second = TimeZone.from_name("Europe/Paris")
+    assert_true(
+        first._data.value().unsafe_ptr() == second._data.value().unsafe_ptr()
+    )
+    # Names absent from tzdata still reach ICU and its validation.
+    with assert_raises(contains="unknown IANA timezone"):
+        _ = TimeZone.from_name("Invalid/Zone")
 
 
 def main() raises:

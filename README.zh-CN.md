@@ -94,6 +94,6 @@ Release 按编译器版本分别构建，请选择匹配的归档。
 
 文档相关目标需要 Node.js 和 npm。先运行 `make doc-install` 安装依赖，再依次运行 `make doc-build` 和 `make doc-serve` 预览构建结果。
 
-格式化、解析和相对时间支持 81 种语言，也可以用 `Locale` 自定义语言。命名时区和本地时区需要 ICU（macOS 自带，Debian/Ubuntu 可安装 `libicu-dev`）。
+格式化、解析和相对时间支持 81 种语言，也可以用 `Locale` 自定义语言。命名时区和本地时区读取系统 tzdata，缺少时区文件时回退到 ICU（macOS 自带，Debian/Ubuntu 可安装 `libicu-dev`）。
 
 验证命令、编译器兼容性和分发约定见[测试指南](https://mojoto.github.io/morrow.mojo/docs/testing)及 [1.x 稳定性约定](https://mojoto.github.io/morrow.mojo/docs/stability)。

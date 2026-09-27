@@ -30,7 +30,7 @@ print(Morrow(2024, 7, 1).to("America/New_York").tz_abbreviation())   # EDT
 print(Morrow(2024, 1, 15).to("Asia/Shanghai").tz_abbreviation())     # CST
 ```
 
-`tz_abbreviation()` 从系统 tzdata 读取缩写（先查 `TZDIR`，再查 `/usr/share/zoneinfo`），与 Python zoneinfo 及 Arrow 的 `ZZZ` 一致。没有字母缩写的时区使用 tzdata 的数字形式，例如 Asia/Singapore 为 `+08`。找不到时区文件时退回数字形式。固定偏移返回 `tzname()`，无时区值返回空字符串。`tzname()` 和 `ZZZ` token 仍返回地区标识。
+`tz_abbreviation()` 从系统 tzdata 读取缩写，与 Python zoneinfo 及 Arrow 的 `ZZZ` 一致。没有字母缩写的时区使用 tzdata 的数字形式，例如 Asia/Singapore 为 `+08`。找不到时区文件时退回数字形式。固定偏移返回 `tzname()`，无时区值返回空字符串。`tzname()` 和 `ZZZ` token 仍返回地区标识。
 
 ## 重复和不存在的时间
 
@@ -60,8 +60,10 @@ print(before + TimeDelta(days=1)) # 同样为实际 24 小时
 
 ## 运行依赖与时区数据
 
-地区时区和本地时区通过原生 FFI 使用 ICU，无需 Python。macOS 自带 ICU；Linux 需要安装 ICU 运行库，例如 Debian/Ubuntu 可运行 `sudo apt-get install libicu-dev`。Conda 配方已声明 ICU 运行依赖。优先加载当前 Conda 环境的 ICU，其次使用系统库；UTC 和固定偏移计算不加载 ICU。
+地区时区和本地时区用纯 Mojo 读取系统 tzdata，无需 Python。时区文件依次在 `TZDIR`、当前 Conda 环境的 `share/zoneinfo`、`/usr/share/zoneinfo` 中查找；本地时区取自 `TZ` 或 `/etc/localtime`。每个时区文件在进程内只解析一次，并由同名的所有 `TimeZone` 共享，因此无论传入 `TimeZone` 还是地区名称，一次转换都远低于 1 微秒。
 
-时区规则通过更新所选 ICU 包或操作系统更新。不同数据版本可能包含不同的政府规则变更。缺少库或地区名称无效时会报错，不会静默退回 UTC。
+找不到时区文件时，Morrow 通过原生 FFI 回退到 ICU。macOS 自带 ICU；Debian/Ubuntu 可运行 `sudo apt-get install libicu-dev`，Conda 配方已声明其运行依赖。UTC 和固定偏移计算两者都不使用。
 
-`now()` 和 `fromtimestamp()` 使用宿主本地时区。需要指定本地时区时，在启动进程前设置 `TZ`；不支持 ICU 初始化后修改进程时区。同一进程需要多个独立时区时，使用明确的地区名称。
+时区规则通过更新操作系统的 tzdata（回退时为 ICU 包）更新。不同数据版本可能包含不同的政府规则变更。两个来源都没有该时区时会报错，不会静默退回 UTC。tzdata 只记录总偏移，不记录标准时间与夏令时的拆分，因此 `dst()` 需要推断；在少数标准时间与夏令时同时变化的历史时期，结果可能与 ICU 不同。
+
+`now()` 和 `fromtimestamp()` 使用宿主本地时区。需要指定本地时区时，在启动进程前设置 `TZ`；首次查找地区时区后不支持再修改进程时区。同一进程需要多个独立时区时，使用明确的地区名称。

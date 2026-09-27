@@ -12,7 +12,7 @@ Dates use the proleptic Gregorian calendar, years 1–9999, and microsecond reso
 
 Locale support covers the 81 [built-in locales](./locales.md) and custom `Locale` values; their text is data, and fixes to translations can change output in minor releases. General natural-language parsing, arbitrary regular expressions, and Windows distributions are outside the supported surface.
 
-Timezone rules belong to the installed ICU data. A rule update can change a historical or future offset without a Morrow API change. Use the same ICU data version when identical rules across machines are required.
+Timezone rules belong to the installed tzdata, or to ICU for zones without a zone file. A rule update can change a historical or future offset without a Morrow API change. Use the same tzdata version when identical rules across machines are required.
 
 ## Compiler and platform support
 
@@ -24,7 +24,7 @@ Timezone rules belong to the installed ICU data. A rule update can change a hist
 
 Precompiled `.mojoc` files are tied to the compiler and target platform. Source compatibility does not imply binary compatibility between Mojo versions. Select the release archive matching both; a new compiler version is supported after validation and publication of matching artifacts.
 
-Named and local timezones require ICU. macOS provides it; on Debian/Ubuntu install `libicu-dev`. Conda declares ICU as a runtime dependency. UTC and fixed-offset operations do not require ICU.
+Named and local timezones read the system tzdata (macOS and most Linux systems include it; on Debian/Ubuntu it is the `tzdata` package) and fall back to ICU when a zone file is missing. Install `libicu-dev` on Debian/Ubuntu for that fallback; Conda declares ICU as a runtime dependency. UTC and fixed-offset operations need neither.
 
 ## Release verification
 

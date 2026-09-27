@@ -14,7 +14,7 @@ sidebar_position: 9
 - 新增 `tz_abbreviation()`，返回 `EDT` 等 tzdata 缩写。`tzname()` 和 `ZZZ` 仍返回地区标识。
 - `TimeDelta` 新增 `/`、`//`、`divmod()`、浮点缩放和哈希。
 - `Morrow.get` 接受 `MorrowTimeTuple`。
-- 转换到地区时区时复用同一个 ICU 日历，IANA 基准耗时下降约 40%。
+- 地区时区和本地时区改为用纯 Mojo 读取系统 tzdata，只有缺少时区文件时才回退到 ICU。每个时区在进程内只解析一次，IANA 基准从每次 23 微秒降到 0.3 微秒，传入地区名称时同样如此。`dst()` 由 tzdata 推断，在少数历史时期可能与 ICU 不同；偏移不变。
 
 ## 升级到 1.0
 
