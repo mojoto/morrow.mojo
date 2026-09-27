@@ -4,7 +4,7 @@ sidebar_position: 7
 
 # 人性化时间
 
-Morrow 可以用英文、简体中文或繁体中文描述日期时间距离，也可以把这些距离反向应用到基准值上。
+Morrow 可以用 81 种语言描述日期时间距离，也可以把这些距离反向应用到基准值上。
 
 ## Humanize
 
@@ -41,6 +41,8 @@ print(present.dehumanize("in a minute and 6 seconds"))
 print(present.shift(hours=-2).humanize(present, locale="zh-CN"))
 print(present.shift(hours=2).humanize(present, locale="zh-TW"))
 print(present.dehumanize("1小时6分钟后", locale="zh-CN"))
+print(present.shift(days=-3).humanize(present, locale="es"))  # hace 3 días
+print(present.dehumanize("hace 3 días", locale="es"))
 ```
 
-支持 `en`、`zh-CN` / `zh-Hans`、`zh-TW` / `zh-Hant`。未知语言报错。中文输入使用数字和明确单位，以“前”或“后/後”结尾；不解析任意自然语言。多粒度输出和 `only_distance` 同样支持语言选择。
+`locale` 可以是 81 种[内置语言](./locales.md)之一，也可以是 `Locale` 值；未知名称报错。`dehumanize` 可以读取同一语言下 `humanize` 生成的文本（包括多粒度输出），但不解析任意自然语言。中文输入使用数字和明确单位，以“前”或“后/後”结尾。多粒度输出和 `only_distance` 同样支持语言选择。

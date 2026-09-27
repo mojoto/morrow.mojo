@@ -11,8 +11,9 @@ from .morrow import (
 )
 from .timezone import TimeZone
 from .timedelta import TimeDelta
+from .locale import Locale, TimeFrame
 
-comptime __version__ = "1.0.0"
+comptime __version__ = "1.1.0"
 
 comptime FORMAT_ATOM = "YYYY-MM-DD HH:mm:ssZZ"
 comptime FORMAT_COOKIE = "dddd, DD-MMM-YYYY HH:mm:ss ZZZ"

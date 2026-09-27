@@ -49,4 +49,4 @@ print(ist.strftime("%Y-%m-%d %H:%M:%S.%f %z %Z"))
 print(Morrow(2024, 11, 5, 15).format("MMMM Do dddd A hh", locale="zh-CN"))
 ```
 
-月份、星期、日期序数和上午下午标记支持英文、简体中文及繁体中文，字面量支持 UTF-8。解析时通过关键字 `locale` 指定语言，`tz` 接收 TimeZone，可选 `normalize_whitespace` 归一化空白。
+月份、星期、日期序数和上午下午标记随语言变化，泰语和老挝语还会输出佛历年份。`locale` 可以是 81 种[内置语言](./locales.md)之一，也可以是 `Locale` 值。字面量支持 UTF-8。

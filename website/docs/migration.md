@@ -4,6 +4,18 @@ sidebar_position: 9
 
 # Migration Guide
 
+## Upgrading to 1.1
+
+Version 1.1 is additive; documented 1.0 behavior is unchanged, including English and Chinese output.
+
+- 78 new built-in locales match Arrow 1.4.0; see [Locales](./locales.md). Locale names now ignore case and accept `_` or `-`, so names such as `EN` or `zh_TW` that raised in 1.0 are accepted.
+- Every `locale` argument also accepts a `Locale` value. Load one once in loops, or edit its fields to define a custom locale.
+- `Morrow` is `Hashable` and `Equatable`, so it works as a `Dict` key and in a `Set`. `==`, `!=` and `toordinal()` no longer raise; existing `try` blocks still compile.
+- `tz_abbreviation()` returns tzdata abbreviations such as `EDT`. `tzname()` and `ZZZ` still return the region identifier.
+- `TimeDelta` adds `/`, `//`, `divmod()`, float scaling and hashing.
+- `Morrow.get` accepts a `MorrowTimeTuple`.
+- Converting to a named zone reuses one ICU calendar, which takes about 40% less time in the IANA benchmark.
+
 ## Upgrading to 1.0
 
 Version 1.0 retains the documented 0.9 API and behavior. Release archives now pass an isolated consumer test. See the [stability contract](./stability.md) for supported compilers, binary compatibility, and distribution checks.

@@ -22,6 +22,16 @@ var local = Morrow(2024, 7, 1, 12, tz=ny)
 
 `to(...)` preserves the instant. `replace(tzinfo=...)` preserves the wall-clock fields and interprets them in the new timezone. Named-zone offsets are resolved for each date, including historical rules. `get(text, format)` and `strptime(text, format)` accept region names through `ZZZ` and `%Z` respectively.
 
+## Abbreviations
+
+```text
+print(Morrow(2024, 1, 15).to("America/New_York").tz_abbreviation())  # EST
+print(Morrow(2024, 7, 1).to("America/New_York").tz_abbreviation())   # EDT
+print(Morrow(2024, 1, 15).to("Asia/Shanghai").tz_abbreviation())     # CST
+```
+
+`tz_abbreviation()` reads the abbreviation from the system tzdata (`TZDIR`, then `/usr/share/zoneinfo`), matching Python's zoneinfo and Arrow's `ZZZ`. Zones without a letter abbreviation use tzdata's numeric form, such as `+08` for Asia/Singapore. If the zone file is unavailable it falls back to the numeric form. Fixed offsets return `tzname()`, and naive values return an empty string. `tzname()` and the `ZZZ` token keep returning the region identifier.
+
 ## Repeated and missing times
 
 ```text

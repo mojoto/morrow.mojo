@@ -1,5 +1,7 @@
 from std.testing import assert_equal, assert_true, assert_raises
-from morrow import Morrow, TimeZone, TimeDelta, FORMAT_RFC3339_STRICT
+from std.collections import Set
+
+from morrow import Locale, Morrow, TimeZone, TimeDelta, FORMAT_RFC3339_STRICT
 
 
 def main() raises:
@@ -30,3 +32,14 @@ def main() raises:
     assert_equal(count, 3)
     with assert_raises():
         _ = Morrow(2023, 2, 29)
+    assert_equal(len(Locale.available()), 81)
+    var french = Locale("fr")
+    assert_equal(value.format("dddd Do MMMM", locale=french), "jeudi 1er janvier")
+    var russian = value.shift(hours=-5).humanize(value, locale="ru")
+    assert_true(value.dehumanize(russian, locale="ru") == value.shift(hours=-5))
+    assert_equal(Morrow(2024, 7, 1).to(ny).tz_abbreviation(), "EDT")
+    var seen = Set[Morrow]()
+    seen.add(value)
+    seen.add(value.to(ny))
+    assert_equal(len(seen), 1)
+    assert_equal(TimeDelta(days=1) // TimeDelta(hours=5), 4)

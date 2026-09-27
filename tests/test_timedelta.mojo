@@ -1,4 +1,4 @@
-from std.testing import assert_equal, assert_true, TestSuite
+from std.testing import assert_equal, assert_raises, assert_true, TestSuite
 
 from morrow import TimeDelta
 from morrow.timedelta import Max, Min, Resolution
@@ -75,6 +75,31 @@ def test_timedelta_module_constants() raises:
     assert_equal(Max.seconds, 0)
     assert_equal(Max.microseconds, 0)
     assert_true(Resolution.__eq__(TimeDelta(microseconds=1)))
+
+
+def test_timedelta_division_and_scaling() raises:
+    var day = TimeDelta(days=1)
+    assert_equal(day / TimeDelta(hours=1), 24.0)
+    assert_equal(day // TimeDelta(hours=5), 4)
+    assert_equal(TimeDelta(hours=-1) // TimeDelta(hours=5), -1)
+    assert_true(day / 3 == TimeDelta(hours=8))
+    assert_true(TimeDelta(microseconds=3) / 2 == TimeDelta(microseconds=2))
+    assert_true(TimeDelta(microseconds=5) / 2 == TimeDelta(microseconds=2))
+    assert_true(TimeDelta(microseconds=-3) / 2 == TimeDelta(microseconds=-2))
+    assert_true(TimeDelta(microseconds=7) // 2 == TimeDelta(microseconds=3))
+    assert_true(day * 1.5 == TimeDelta(hours=36))
+    assert_true(0.5 * day == TimeDelta(hours=12))
+    assert_true(TimeDelta(microseconds=1) * 0.5 == TimeDelta())
+    assert_true(TimeDelta(microseconds=3) * 0.5 == TimeDelta(microseconds=2))
+    assert_true(day / 4.0 == TimeDelta(hours=6))
+    var parts = TimeDelta(hours=25).divmod(day)
+    assert_equal(parts[0], 1)
+    assert_true(parts[1] == TimeDelta(hours=1))
+    assert_true(TimeDelta(seconds=1) != TimeDelta(seconds=2))
+    with assert_raises(contains="division by zero"):
+        _ = day / TimeDelta()
+    with assert_raises(contains="division by zero"):
+        _ = day // 0
 
 
 def main() raises:

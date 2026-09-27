@@ -22,6 +22,16 @@ var local = Morrow(2024, 7, 1, 12, tz=ny)
 
 `to(...)` 保持同一时刻，`replace(tzinfo=...)` 保持墙上时间字段并按新时区解释。地区时区按每个日期解析偏移，包括历史规则。`get` 的 `ZZZ` 和 `strptime` 的 `%Z` 支持地区名称。
 
+## 时区缩写
+
+```text
+print(Morrow(2024, 1, 15).to("America/New_York").tz_abbreviation())  # EST
+print(Morrow(2024, 7, 1).to("America/New_York").tz_abbreviation())   # EDT
+print(Morrow(2024, 1, 15).to("Asia/Shanghai").tz_abbreviation())     # CST
+```
+
+`tz_abbreviation()` 从系统 tzdata 读取缩写（先查 `TZDIR`，再查 `/usr/share/zoneinfo`），与 Python zoneinfo 及 Arrow 的 `ZZZ` 一致。没有字母缩写的时区使用 tzdata 的数字形式，例如 Asia/Singapore 为 `+08`。找不到时区文件时退回数字形式。固定偏移返回 `tzname()`，无时区值返回空字符串。`tzname()` 和 `ZZZ` token 仍返回地区标识。
+
 ## 重复和不存在的时间
 
 ```text

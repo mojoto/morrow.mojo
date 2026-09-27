@@ -1,11 +1,10 @@
 from .util import utf8_width
 from .locale import (
-    locale_id,
-    localized_format,
-    humanized_text,
+    Locale,
     english_relative,
-    localized_month,
-    localized_weekday,
+    frame_index,
+    is_english_locale,
+    locale_grammar,
 )
 from .util import (
     normalize_timestamp,
@@ -22,6 +21,8 @@ from ._libc import (
 )
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
+from ._icu import Calendar
+from ._tzif import tzif_abbreviation
 from .timedelta import TimeDelta
 from .formatter import format_morrow, format_strftime
 from .constants import (
@@ -38,6 +39,7 @@ from .constants import (
 from std.iter import StopIteration
 from std.collections import List
 from std.format import Writable, Writer
+from std.hashlib import Hasher
 
 
 comptime _DI400Y = 146097  # number of days in 400 years
@@ -53,7 +55,9 @@ comptime _HUMANIZE_SECONDS_PER_MONTH = 2635200  # 30.5 days
 comptime _HUMANIZE_SECONDS_PER_QUARTER = 7905600  # 91.5 days
 
 
-struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
+struct Morrow(
+    Copyable, Equatable, Hashable, ImplicitlyCopyable, Movable, Writable
+):
     var year: Int
     var month: Int
     var day: Int
@@ -694,6 +698,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self.fromdatetime(dt, tz_str)
 
     @staticmethod
+    def get(value: MorrowTimeTuple) raises -> Self:
+        """
+        Create a UTC Morrow from time tuple fields, like Arrow's `struct_time`.
+        """
+        return Self(
+            value.year, value.mon, value.mday, value.hour, value.min, value.sec
+        )
+
+    @staticmethod
     def get(iso: MorrowIsoCalendar) raises -> Self:
         """
         Create a UTC Morrow from ISO calendar fields.
@@ -936,6 +949,13 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return Self(year, month, day, hour, minute, second, microsecond, tz)
 
     @staticmethod
+    def _locale_for(name: String) raises -> Locale:
+        """Resolve a locale name, keeping English on the built-in fast path."""
+        if is_english_locale(name):
+            return Locale._fast_english()
+        return Locale(name, _names=True, _relative=False)
+
+    @staticmethod
     def get(
         date_str: String,
         fmt: String,
@@ -944,7 +964,23 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         tz: TimeZone = TimeZone.none(),
         normalize_whitespace: Bool = False,
     ) raises -> Self:
-        _ = locale_id(locale)
+        return Self.get(
+            date_str,
+            fmt,
+            locale=Self._locale_for(locale),
+            tz=tz,
+            normalize_whitespace=normalize_whitespace,
+        )
+
+    @staticmethod
+    def get(
+        date_str: String,
+        fmt: String,
+        *,
+        locale: Locale,
+        tz: TimeZone = TimeZone.none(),
+        normalize_whitespace: Bool = False,
+    ) raises -> Self:
         var value = Self._normalize_whitespace(
             date_str
         ) if normalize_whitespace else date_str
@@ -962,7 +998,23 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         tz: TimeZone = TimeZone.none(),
         normalize_whitespace: Bool = False,
     ) raises -> Self:
-        _ = locale_id(locale)
+        return Self.get(
+            date_str,
+            formats,
+            locale=Self._locale_for(locale),
+            tz=tz,
+            normalize_whitespace=normalize_whitespace,
+        )
+
+    @staticmethod
+    def get(
+        date_str: String,
+        formats: List[String],
+        *,
+        locale: Locale,
+        tz: TimeZone = TimeZone.none(),
+        normalize_whitespace: Bool = False,
+    ) raises -> Self:
         for fmt in formats:
             try:
                 return Self.get(
@@ -981,7 +1033,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         date_str: String,
         fmt: String,
         tzinfo: TimeZone = TimeZone.none(),
-        locale: String = "en",
+        locale: Locale = Locale._fast_english(),
     ) raises -> Self:
         try:
             return Self._parse_arrow_at(date_str, fmt, tzinfo, 0, False, locale)
@@ -1006,7 +1058,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         tzinfo: TimeZone,
         date_start: Int,
         allow_trailing_text: Bool,
-        locale: String = "en",
+        locale: Locale,
     ) raises -> Self:
         var year = 1
         var has_year = False
@@ -1075,13 +1127,17 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 fmt_pos = literal_end + 1
             elif Self._starts_with(fmt, fmt_pos, "YYYY"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 4)
-                year = parsed.value
+                year = parsed.value - locale.year_offset
                 has_year = True
                 date_pos = parsed.pos
                 fmt_pos += 4
             elif Self._starts_with(fmt, fmt_pos, "YY"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                year = Self._parse_two_digit_year(parsed.value)
+                if locale.year_offset != 0:
+                    # Buddhist-era years: 00..99 map to 2500..2599 BE.
+                    year = 2500 + parsed.value - locale.year_offset
+                else:
+                    year = Self._parse_two_digit_year(parsed.value)
                 has_year = True
                 date_pos = parsed.pos
                 fmt_pos += 2
@@ -1125,6 +1181,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 has_day = True
                 date_pos = parsed.pos
                 fmt_pos += 3
+            elif Self._starts_with(fmt, fmt_pos, "Do") and not (
+                locale.is_fast_english()
+            ):
+                var parsed = locale._match_ordinal(date_str, date_pos)
+                day = parsed.value
+                has_day = True
+                date_pos = parsed.pos
+                fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "Do"):
                 var ordinal_start = date_pos
                 var parsed = Self._parse_variable_int(date_str, date_pos, 2)
@@ -1136,9 +1200,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 day = parsed.value
                 has_day = True
                 date_pos = parsed.pos
-                date_pos = Self._parse_ordinal_suffix(
-                    date_str, date_pos, day, locale
-                )
+                date_pos = Self._parse_ordinal_suffix(date_str, date_pos, day)
                 fmt_pos += 2
             elif Self._starts_with(fmt, fmt_pos, "DD"):
                 var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
@@ -1278,12 +1340,14 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
                 date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "A"):
-                date_pos = Self._parse_am_pm(date_str, date_pos, True, locale)
-                am_pm = Self._parsed_am_pm_marker(date_str, date_pos, locale)
+                var parsed = Self._parse_am_pm(date_str, date_pos, locale)
+                am_pm = parsed.value
+                date_pos = parsed.pos
                 fmt_pos += 1
             elif Self._starts_with(fmt, fmt_pos, "a"):
-                date_pos = Self._parse_am_pm(date_str, date_pos, False, locale)
-                am_pm = Self._parsed_am_pm_marker(date_str, date_pos, locale)
+                var parsed = Self._parse_am_pm(date_str, date_pos, locale)
+                am_pm = parsed.value
+                date_pos = parsed.pos
                 fmt_pos += 1
             else:
                 Self._parse_literal_char(date_str, date_pos, fmt, fmt_pos)
@@ -1785,6 +1849,32 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             return "UTC"
         return "UTC" + self.tz.format()
 
+    def tz_abbreviation(self) -> String:
+        """
+        Return the timezone abbreviation in effect, such as "EDT" or "CST".
+
+        Named zones read the system tzdata abbreviation, matching Python's
+        zoneinfo and Arrow's `ZZZ`; tzdata writes zones without letters as
+        numeric offsets such as "+08". Fixed offsets return `tzname()`, and
+        naive values return an empty string.
+        """
+        if self.tz.is_none():
+            return ""
+        if self.tz.zone == "":
+            return self.tzname()
+        var seconds = self._utc_microseconds() // _US_PER_SECOND
+        var text = tzif_abbreviation(
+            self.tz.zone, seconds, self.tz.dst_seconds != 0
+        )
+        if text.byte_length() > 0:
+            return text
+        var offset = abs(self.tz.offset)
+        var result = String("-" if self.tz.offset < 0 else "+")
+        result += String(offset // 3600).ascii_rjust(2, "0")
+        if offset % 3600 != 0:
+            result += String((offset % 3600) // 60).ascii_rjust(2, "0")
+        return result
+
     def utcoffset(self) -> TimeDelta:
         """
         Return this Morrow's resolved UTC offset.
@@ -1827,13 +1917,25 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         return self.to("UTC")._time_tuple()
 
+    @staticmethod
+    def _relative_locale(name: String) raises -> Locale:
+        return Locale(name, _names=False, _relative=True)
+
     def humanize(self, *, locale: String = "en") raises -> String:
-        return humanized_text(self._humanize_en(), locale)
+        return self.humanize(locale=Self._relative_locale(locale))
+
+    def humanize(self, *, locale: Locale) raises -> String:
+        return self._humanize_text(Self.utcnow(), False, "auto", locale)
 
     def humanize(
         self, only_distance: Bool, *, locale: String = "en"
     ) raises -> String:
-        return humanized_text(self._humanize_en(only_distance), locale)
+        return self.humanize(
+            only_distance, locale=Self._relative_locale(locale)
+        )
+
+    def humanize(self, only_distance: Bool, *, locale: Locale) raises -> String:
+        return self._humanize_text(Self.utcnow(), only_distance, "auto", locale)
 
     def humanize(
         self,
@@ -1843,14 +1945,34 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         *,
         locale: String = "en",
     ) raises -> String:
-        return humanized_text(
-            self._humanize_en(other, only_distance, granularity), locale
+        return self.humanize(
+            other,
+            only_distance,
+            granularity,
+            locale=Self._relative_locale(locale),
         )
+
+    def humanize(
+        self,
+        other: Self,
+        only_distance: Bool = False,
+        granularity: String = "auto",
+        *,
+        locale: Locale,
+    ) raises -> String:
+        return self._humanize_text(other, only_distance, granularity, locale)
 
     def humanize(
         self, other: Self, granularity: List[String], *, locale: String = "en"
     ) raises -> String:
-        return humanized_text(self._humanize_en(other, granularity), locale)
+        return self.humanize(
+            other, False, granularity, locale=Self._relative_locale(locale)
+        )
+
+    def humanize(
+        self, other: Self, granularity: List[String], *, locale: Locale
+    ) raises -> String:
+        return self.humanize(other, False, granularity, locale=locale)
 
     def humanize(
         self,
@@ -1860,81 +1982,25 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         *,
         locale: String = "en",
     ) raises -> String:
-        return humanized_text(
-            self._humanize_en(other, only_distance, granularity), locale
+        return self.humanize(
+            other,
+            only_distance,
+            granularity,
+            locale=Self._relative_locale(locale),
         )
 
-    def _humanize_en(
-        self,
-    ) raises -> String:
-        """
-        Return an English human-readable relative difference from now.
-        """
-        return self._humanize_en(Self.utcnow())
-
-    def _humanize_en(
-        self,
-        only_distance: Bool,
-    ) raises -> String:
-        """
-        Return an English human-readable relative difference from now.
-        """
-        return self._humanize_en(Self.utcnow(), only_distance)
-
-    def _humanize_en(
-        self,
-        other: Self,
-        only_distance: Bool = False,
-        granularity: String = "auto",
-    ) raises -> String:
-        """
-        Return an English human-readable relative difference.
-        """
-        self._check_awareness(other)
-        var delta_us = self._utc_microseconds() - other._utc_microseconds()
-        var unit = granularity
-        if unit != "auto":
-            _ = Self._humanize_unit_seconds(unit)
-
-        if delta_us == 0:
-            if only_distance:
-                return "instantly"
-            return "just now"
-
-        var rounded_delta_seconds = Self._rounded_seconds(delta_us)
-        var seconds = abs(rounded_delta_seconds)
-        if unit == "auto":
-            return self._humanize_auto(other, delta_us, only_distance)
-        if unit == "second" and seconds < 2:
-            if only_distance:
-                return "instantly"
-            return "just now"
-        var count = Self._humanize_count(seconds, unit)
-        return Self._format_humanize_result(
-            rounded_delta_seconds, count, unit, only_distance
-        )
-
-    def _humanize_en(
-        self, other: Self, granularity: List[String]
-    ) raises -> String:
-        """
-        Return an English human-readable relative difference with multiple granularities.
-        """
-        return self._humanize_en(other, False, granularity)
-
-    def _humanize_en(
+    def humanize(
         self,
         other: Self,
         only_distance: Bool,
         granularity: List[String],
+        *,
+        locale: Locale,
     ) raises -> String:
-        """
-        Return an English human-readable relative difference with multiple granularities.
-        """
         if len(granularity) == 0:
             raise Error("granularity cannot be empty")
         if len(granularity) == 1 and granularity[0] == "auto":
-            return self._humanize_en(other, only_distance)
+            return self._humanize_text(other, only_distance, "auto", locale)
 
         var ordered_granularity = Self._normalize_humanize_granularity_list(
             granularity
@@ -1948,29 +2014,107 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             and ordered_granularity[0] == "second"
             and remaining < 2
         ):
-            if only_distance:
-                return "instantly"
-            return "just now"
+            return locale._describe(0, 0, False, only_distance)
 
-        var parts = List[String]()
+        var negative = rounded_delta_seconds < 0
+        var frames = List[Int]()
+        var deltas = List[Int]()
         for i in range(len(ordered_granularity)):
             var unit = ordered_granularity[i]
             var unit_seconds = Self._humanize_unit_seconds(unit)
             var count = remaining // unit_seconds
-            parts.append(Self._format_humanize_distance(count, unit))
+            frames.append(Self._humanize_frame(unit, count))
+            deltas.append(-count if negative else count)
             remaining = remaining % unit_seconds
+        if len(frames) == 1:
+            return locale._describe(
+                frames[0], deltas[0], negative, only_distance
+            )
+        return locale._describe_multi(frames, deltas, negative, only_distance)
 
-        var distance = Self._join_humanize_parts(parts)
-        if only_distance:
-            return distance
-        if rounded_delta_seconds >= 0:
-            return "in " + distance
-        return distance + " ago"
+    def _humanize_text(
+        self,
+        other: Self,
+        only_distance: Bool,
+        granularity: String,
+        locale: Locale,
+    ) raises -> String:
+        """
+        Return a human-readable relative difference in the given locale.
+        """
+        self._check_awareness(other)
+        var delta_us = self._utc_microseconds() - other._utc_microseconds()
+        var unit = granularity
+        if unit != "auto":
+            _ = Self._humanize_unit_seconds(unit)
+
+        if delta_us == 0:
+            return locale._describe(0, 0, False, only_distance)
+
+        var rounded_delta_seconds = Self._rounded_seconds(delta_us)
+        var seconds = abs(rounded_delta_seconds)
+        if unit == "auto":
+            return self._humanize_auto(other, delta_us, only_distance, locale)
+        if unit == "second" and seconds < 2:
+            return locale._describe(0, 0, False, only_distance)
+        var count = Self._humanize_count(seconds, unit)
+        return Self._describe_count(
+            locale, rounded_delta_seconds, count, unit, only_distance
+        )
+
+    @staticmethod
+    def _humanize_frame(unit: String, count: Int) raises -> Int:
+        if count == 1:
+            return frame_index(unit)
+        return frame_index(Self._plural_humanize_unit(unit))
+
+    @staticmethod
+    def _describe_count(
+        locale: Locale,
+        delta_seconds: Int,
+        count: Int,
+        unit: String,
+        only_distance: Bool,
+    ) raises -> String:
+        var negative = delta_seconds < 0
+        return locale._describe(
+            Self._humanize_frame(unit, count),
+            -count if negative else count,
+            negative,
+            only_distance,
+        )
 
     def dehumanize(
         self, input_string: String, *, locale: String = "en"
     ) raises -> Self:
-        return self._dehumanize_en(english_relative(input_string, locale))
+        var grammar = locale_grammar(locale)
+        if grammar == 1:
+            return self._dehumanize_en(input_string)
+        if grammar == 2:
+            return self._dehumanize_en(english_relative(input_string))
+        return self.dehumanize(
+            input_string, locale=Self._relative_locale(locale)
+        )
+
+    def dehumanize(
+        self, input_string: String, *, locale: Locale
+    ) raises -> Self:
+        """
+        Shift this Morrow by relative text in the grammar of locale.
+        """
+        var parts = locale._parse_relative(input_string)
+        if len(parts.units) == 0:
+            return self
+        return self.shift(
+            years=parts.count("years"),
+            quarters=parts.count("quarters"),
+            months=parts.count("months"),
+            weeks=parts.count("weeks"),
+            days=parts.count("days"),
+            hours=parts.count("hours"),
+            minutes=parts.count("minutes"),
+            seconds=parts.count("seconds"),
+        )
 
     def _dehumanize_en(self, input_string: String) raises -> Self:
         """
@@ -2062,6 +2206,37 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         var seconds = stamp // _US_PER_SECOND
         if stamp % _US_PER_SECOND < 0:
             seconds -= 1
+        if tz.zone != "":
+            # One calendar serves the instant lookup and the wall resolution.
+            var calendar = Calendar(tz.zone)
+            var info = calendar.at(seconds)
+            var local = Self._from_utc_microseconds_value(
+                stamp + info.offset * _US_PER_SECOND
+            )
+            var zone = tz
+            zone.fold_value = 0
+            var resolved = zone._resolve_with(
+                calendar,
+                local.year,
+                local.month,
+                local.day,
+                local.hour,
+                local.minute,
+                local.second,
+            )
+            if resolved.offset != info.offset and resolved.is_ambiguous:
+                zone.fold_value = 1
+                resolved = zone._resolve_with(
+                    calendar,
+                    local.year,
+                    local.month,
+                    local.day,
+                    local.hour,
+                    local.minute,
+                    local.second,
+                )
+            local.tz = resolved
+            return local
         var target = tz.at(seconds)
         var wall = Self._from_utc_microseconds_value(
             stamp + target.offset * _US_PER_SECOND
@@ -3168,12 +3343,8 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _parse_ordinal_suffix(
-        date_str: String, date_pos: Int, value: Int, locale: String = "en"
+        date_str: String, date_pos: Int, value: Int
     ) raises -> Int:
-        if locale_id(locale) != 0:
-            if Self._starts_with(date_str, date_pos, "日"):
-                return date_pos + 3
-            raise Error("ordinal suffix must be 日")
         if date_pos + 2 > date_str.byte_length():
             raise Error("ordinal suffix is missing")
         var expected = "th"
@@ -3203,10 +3374,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         date_str: String,
         date_pos: Int,
         abbreviated: Bool,
-        locale: String = "en",
+        locale: Locale,
     ) raises -> MorrowParseInt:
+        if not locale.is_fast_english():
+            var matched = locale._match_month(date_str, date_pos, abbreviated)
+            return MorrowParseInt(matched.value, matched.pos)
         for value in range(1, 13):
-            var name = localized_month(value, abbreviated, locale)
+            var name = month_abbreviation(value) if abbreviated else month_name(
+                value
+            )
             if Self._starts_with_ascii_case_insensitive(
                 date_str, date_pos, name
             ):
@@ -3218,10 +3394,15 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         date_str: String,
         date_pos: Int,
         abbreviated: Bool,
-        locale: String = "en",
+        locale: Locale,
     ) raises -> MorrowParseInt:
+        if not locale.is_fast_english():
+            var matched = locale._match_weekday(date_str, date_pos, abbreviated)
+            return MorrowParseInt(matched.value, matched.pos)
         for value in range(1, 8):
-            var name = localized_weekday(value, abbreviated, locale)
+            var name = day_abbreviation(value) if abbreviated else day_name(
+                value
+            )
             if Self._starts_with_ascii_case_insensitive(
                 date_str, date_pos, name
             ):
@@ -3349,39 +3530,26 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     @staticmethod
     def _parse_am_pm(
-        date_str: String, date_pos: Int, upper: Bool, locale: String = "en"
-    ) raises -> Int:
-        if locale_id(locale) != 0:
-            if Self._starts_with(date_str, date_pos, "上午") or Self._starts_with(
-                date_str, date_pos, "下午"
-            ):
-                return date_pos + 6
-            raise Error("AM/PM marker must be 上午 or 下午")
+        date_str: String, date_pos: Int, locale: Locale
+    ) raises -> MorrowParseInt:
+        """Return 1 for AM or 2 for PM and the position after the marker."""
+        if not locale.is_fast_english():
+            var matched = locale._match_meridian(date_str, date_pos)
+            return MorrowParseInt(matched.value, matched.pos)
+        if Self._starts_with(date_str, date_pos, "AM") or Self._starts_with(
+            date_str, date_pos, "am"
+        ):
+            return MorrowParseInt(1, date_pos + 2)
+        if Self._starts_with(date_str, date_pos, "PM") or Self._starts_with(
+            date_str, date_pos, "pm"
+        ):
+            return MorrowParseInt(2, date_pos + 2)
+        # Mixed-case markers are accepted without changing the hour (1.0).
         if Self._starts_with_ascii_case_insensitive(
             date_str, date_pos, "AM"
         ) or Self._starts_with_ascii_case_insensitive(date_str, date_pos, "PM"):
-            return date_pos + 2
+            return MorrowParseInt(0, date_pos + 2)
         raise Error("AM/PM marker is invalid")
-
-    @staticmethod
-    def _parsed_am_pm_marker(
-        date_str: String, date_pos: Int, locale: String = "en"
-    ) raises -> Int:
-        if locale_id(locale) != 0:
-            return 1 if date_str[byte = date_pos - 6 : date_pos] == "上午" else 2
-        if date_pos < 2:
-            return 0
-        var first = Int(date_str.as_bytes()[date_pos - 2])
-        var second = Int(date_str.as_bytes()[date_pos - 1])
-        if (first == ord("A") and second == ord("M")) or (
-            first == ord("a") and second == ord("m")
-        ):
-            return 1
-        if (first == ord("P") and second == ord("M")) or (
-            first == ord("p") and second == ord("m")
-        ):
-            return 2
-        return 0
 
     @staticmethod
     def _validate_day_time_args(
@@ -3441,78 +3609,93 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         )
 
     def _humanize_auto(
-        self, other: Self, delta_us: Int, only_distance: Bool
+        self,
+        other: Self,
+        delta_us: Int,
+        only_distance: Bool,
+        locale: Locale,
     ) raises -> String:
         var rounded_delta_seconds = Self._rounded_seconds(delta_us)
         var seconds = abs(rounded_delta_seconds)
         if seconds < 60:
             if seconds < 10:
-                if only_distance:
-                    return "instantly"
-                return "just now"
-            return Self._format_humanize_result(
-                rounded_delta_seconds, seconds, "second", only_distance
+                return locale._describe(0, 0, False, only_distance)
+            return Self._describe_count(
+                locale, rounded_delta_seconds, seconds, "second", only_distance
             )
         elif seconds < 3600:
             if seconds < 120:
-                return Self._format_humanize_result(
-                    rounded_delta_seconds, 1, "minute", only_distance
+                return Self._describe_count(
+                    locale, rounded_delta_seconds, 1, "minute", only_distance
                 )
             var minutes = seconds // 60
             if minutes < 2:
                 minutes = 2
-            return Self._format_humanize_result(
-                rounded_delta_seconds, minutes, "minute", only_distance
+            return Self._describe_count(
+                locale, rounded_delta_seconds, minutes, "minute", only_distance
             )
         elif seconds < 86400:
             if seconds < 7200:
-                return Self._format_humanize_result(
-                    rounded_delta_seconds, 1, "hour", only_distance
+                return Self._describe_count(
+                    locale, rounded_delta_seconds, 1, "hour", only_distance
                 )
             var hours = seconds // 3600
             if hours < 2:
                 hours = 2
-            return Self._format_humanize_result(
-                rounded_delta_seconds, hours, "hour", only_distance
+            return Self._describe_count(
+                locale, rounded_delta_seconds, hours, "hour", only_distance
             )
 
         var calendar_months = self._humanize_calendar_months(other)
         if seconds < 172800:
-            return Self._format_humanize_result(
-                rounded_delta_seconds, 1, "day", only_distance
+            return Self._describe_count(
+                locale, rounded_delta_seconds, 1, "day", only_distance
             )
         elif seconds < 604800:
             var days = seconds // 86400
             if days < 2:
                 days = 2
-            return Self._format_humanize_result(
-                rounded_delta_seconds, days, "day", only_distance
+            return Self._describe_count(
+                locale, rounded_delta_seconds, days, "day", only_distance
             )
         elif calendar_months >= 1 and seconds < 31536000:
-            return Self._format_humanize_result(
-                rounded_delta_seconds, calendar_months, "month", only_distance
+            return Self._describe_count(
+                locale,
+                rounded_delta_seconds,
+                calendar_months,
+                "month",
+                only_distance,
+            )
+        elif seconds < 2592000 and not locale.has_timeframe("weeks"):
+            # Locales without week text fall back to days, unlike Arrow.
+            return Self._describe_count(
+                locale,
+                rounded_delta_seconds,
+                seconds // 86400,
+                "day",
+                only_distance,
             )
         elif seconds < 1209600:
-            return Self._format_humanize_result(
-                rounded_delta_seconds, 1, "week", only_distance
+            return Self._describe_count(
+                locale, rounded_delta_seconds, 1, "week", only_distance
             )
         elif seconds < 2592000:
             var weeks = seconds // 604800
             if weeks < 2:
                 weeks = 2
-            return Self._format_humanize_result(
-                rounded_delta_seconds, weeks, "week", only_distance
+            return Self._describe_count(
+                locale, rounded_delta_seconds, weeks, "week", only_distance
             )
         elif seconds < 63072000:
-            return Self._format_humanize_result(
-                rounded_delta_seconds, 1, "year", only_distance
+            return Self._describe_count(
+                locale, rounded_delta_seconds, 1, "year", only_distance
             )
 
         var years = seconds // 31536000
         if years < 2:
             years = 2
-        return Self._format_humanize_result(
-            rounded_delta_seconds, years, "year", only_distance
+        return Self._describe_count(
+            locale, rounded_delta_seconds, years, "year", only_distance
         )
 
     def _humanize_calendar_months(self, other: Self) raises -> Int:
@@ -3546,17 +3729,6 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return months
 
     @staticmethod
-    def _format_humanize_result(
-        delta_seconds: Int, count: Int, unit: String, only_distance: Bool
-    ) raises -> String:
-        var distance = Self._format_humanize_distance(count, unit)
-        if only_distance:
-            return distance
-        if delta_seconds >= 0:
-            return "in " + distance
-        return distance + " ago"
-
-    @staticmethod
     def _rounded_seconds(delta_us: Int) -> Int:
         var sign = 1
         var abs_us = delta_us
@@ -3570,18 +3742,6 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         elif remainder == _US_PER_SECOND // 2 and seconds % 2 == 1:
             seconds += 1
         return sign * seconds
-
-    @staticmethod
-    def _join_humanize_parts(parts: List[String]) -> String:
-        if len(parts) == 0:
-            return ""
-        if len(parts) == 1:
-            return String(parts[0])
-
-        var result = String(parts[0])
-        for i in range(1, len(parts) - 1):
-            result += " " + parts[i]
-        return result + " and " + parts[len(parts) - 1]
 
     @staticmethod
     def _humanize_count(seconds: Int, unit: String) raises -> Int:
@@ -3735,15 +3895,6 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         return ordered^
 
     @staticmethod
-    def _format_humanize_distance(count: Int, unit: String) raises -> String:
-        var unit_ = Self._normalize_humanize_unit(unit)
-        if count == 1:
-            if unit_ == "hour":
-                return "an hour"
-            return "a " + unit_
-        return String(count) + " " + Self._plural_humanize_unit(unit_)
-
-    @staticmethod
     def _normalize_humanize_unit(unit: String) raises -> String:
         if unit == "second" or unit == "seconds":
             return "second"
@@ -3801,7 +3952,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
         if self.tz.is_none() != other.tz.is_none():
             raise Error("cannot mix naive and timezone-aware dates")
 
-    def _utc_microseconds(self) raises -> Int:
+    def _utc_microseconds(self) -> Int:
         var seconds = (
             (self.toordinal() - _UNIX_EPOCH_ORDINAL) * 86400
             + self.hour * 3600
@@ -3845,6 +3996,28 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             '2013-05-09 03:56:47 -00:00'
 
         """
+        if is_english_locale(locale):
+            return self._format_tokens(fmt)
+        return self.format(
+            fmt, locale=Locale(locale, _names=True, _relative=False)
+        )
+
+    def format(self, fmt: String, *, locale: Locale) raises -> String:
+        """Format with month, weekday, ordinal and AM/PM text from locale."""
+        if locale.is_fast_english():
+            return self._format_tokens(fmt)
+        return self._format_tokens(
+            locale._localize_format(
+                fmt,
+                self.year,
+                self.month,
+                self.day,
+                self.isoweekday(),
+                self.hour,
+            )
+        )
+
+    def _format_tokens(self, fmt: String) raises -> String:
         return format_morrow(
             self.year,
             self.month,
@@ -3857,9 +4030,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
             self.tz.name,
             self.tz.is_none(),
             self.isoweekday(),
-            localized_format(
-                fmt, self.month, self.day, self.isoweekday(), self.hour, locale
-            ),
+            fmt,
         )
 
     def strftime(self, fmt: String) raises -> String:
@@ -3981,7 +4152,7 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def write_to(self, mut writer: Some[Writer]):
         writer.write(self._isoformat_auto())
 
-    def toordinal(self) raises -> Int:
+    def toordinal(self) -> Int:
         """
         Return the proleptic Gregorian ordinal of the date, where January 1 of year 1 has ordinal 1.
         """
@@ -4125,10 +4296,19 @@ struct Morrow(Copyable, ImplicitlyCopyable, Movable, Writable):
     def __str__(self) raises -> String:
         return self.isoformat()
 
-    def __eq__(self, other: Self) raises -> Bool:
+    def __eq__(self, other: Self) -> Bool:
+        """Equal instants; naive and aware values are never equal."""
         if self.tz.is_none() != other.tz.is_none():
             return False
         return self._utc_microseconds() == other._utc_microseconds()
+
+    def __ne__(self, other: Self) -> Bool:
+        return not self == other
+
+    def __hash__[H: Hasher](self, mut hasher: H):
+        """Hash consistently with `==`: equal instants hash equally."""
+        self.tz.is_none().__hash__(hasher)
+        self._utc_microseconds().__hash__(hasher)
 
     def __le__(self, other: Self) raises -> Bool:
         self._check_awareness(other)
