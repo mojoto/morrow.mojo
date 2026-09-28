@@ -304,14 +304,26 @@ struct ZoneData(Movable):
         var year = _utc_year(timestamp)
         var daylight = False
         var latest = Int.MIN
+        # Later events win ties: "all year" rules end one year exactly when
+        # the next begins (e.g. XXX-2<+01>-1,0/0,J365/23).
         for y in range(year - 1, year + 2):
             var edges = self._rule_transitions(y)
-            if edges[0] <= timestamp and edges[0] > latest:
-                latest = edges[0]
-                daylight = True
-            if edges[1] <= timestamp and edges[1] > latest:
-                latest = edges[1]
-                daylight = False
+            var start = edges[0]
+            var end = edges[1]
+            if start <= end:
+                if start <= timestamp and start >= latest:
+                    latest = start
+                    daylight = True
+                if end <= timestamp and end >= latest:
+                    latest = end
+                    daylight = False
+            else:
+                if end <= timestamp and end >= latest:
+                    latest = end
+                    daylight = False
+                if start <= timestamp and start >= latest:
+                    latest = start
+                    daylight = True
         return self._rule_info(daylight)
 
     def _next_transition(self, timestamp: Int) -> Optional[_Transition]:

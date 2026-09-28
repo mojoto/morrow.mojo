@@ -2,6 +2,7 @@ from std.testing import assert_equal, assert_true, assert_raises, TestSuite
 from std.testing.prop import Rng
 
 from morrow import Morrow, TimeZone, TimeDelta
+from morrow._tzif import ZoneData, _parse_footer
 
 
 def test_zone_conversion_and_history() raises:
@@ -304,29 +305,12 @@ def test_tzdata_matches_icu() raises:
         assert_true(Bool(fast._data), name)
         var slow = _icu_zone(name)
         for _ in range(200):
-            var stamp = rng.rand_int(min=-2208988800, max=4102444800)
+            # Before 2025 both sources are settled; later rules depend on the
+            # installed tzdata and ICU versions, which CI images do not pin.
+            var stamp = rng.rand_int(min=-2208988800, max=1735689600)
             var a = fast.at(stamp)
             var b = slow.at(stamp)
-            assert_equal(
-                a.offset,
-                b.offset,
-                name
-                + " at "
-                + String(stamp)
-                + " dst "
-                + String(a.dst_seconds)
-                + " footer "
-                + fast._data.value()[].std_name
-                + String(fast._data.value()[].std_offset)
-                + fast._data.value()[].dst_name
-                + String(fast._data.value()[].dst_offset)
-                + " last "
-                + String(
-                    fast._data.value()[].times[
-                        len(fast._data.value()[].times) - 1
-                    ]
-                ),
-            )
+            assert_equal(a.offset, b.offset, name + " at " + String(stamp))
             var local = Morrow.utcfromtimestamp(stamp + b.offset)
             for fold in [0, 1]:
                 var x = fast.resolve(
@@ -361,6 +345,33 @@ def test_named_zones_are_shared() raises:
     # Names absent from tzdata still reach ICU and its validation.
     with assert_raises(contains="unknown IANA timezone"):
         _ = TimeZone.from_name("Invalid/Zone")
+
+
+def _footer_zone(footer: String) raises -> ZoneData:
+    var zone = ZoneData()
+    zone.offsets.append(0)
+    zone.abbreviations.append("LMT")
+    _parse_footer(footer, zone)
+    return zone^
+
+
+def test_posix_footer_rules() raises:
+    # zic's "DST all year" encoding: a dummy +02 standard time never applies.
+    var permanent = _footer_zone("XXX-2<+01>-1,0/0,J365/23")
+    for stamp in [0, 1735689600, 1767225599, 1767225600, 3786360145]:
+        assert_equal(permanent.info_at(stamp).offset, 3600, String(stamp))
+    var eastern = _footer_zone("EST5EDT,M3.2.0,M11.1.0")
+    assert_equal(eastern.info_at(1710053999).offset, -18000)  # 01:59:59 EST
+    assert_equal(eastern.info_at(1710054000).offset, -14400)  # 03:00 EDT
+    assert_equal(eastern.info_at(1730613599).offset, -14400)  # 01:59:59 EDT
+    assert_equal(eastern.info_at(1730613600).offset, -18000)  # 01:00 EST
+    assert_equal(eastern.abbreviation(1720000000), "EDT")
+    # Southern hemisphere: daylight time spans the new year.
+    var chile = _footer_zone("<-04>4<-03>,M9.1.6/24,M4.1.6/24")
+    assert_equal(chile.info_at(1735689600).offset, -10800)  # January
+    assert_equal(chile.info_at(1751328000).offset, -14400)  # July
+    var wall = chile.resolve_wall(1743908400 - 14400 + 1800, 0)
+    assert_true(wall.ambiguous)
 
 
 def main() raises:
