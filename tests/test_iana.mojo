@@ -310,7 +310,22 @@ def test_tzdata_matches_icu() raises:
             assert_equal(
                 a.offset,
                 b.offset,
-                name + " at " + String(stamp) + " dst " + String(a.dst_seconds),
+                name
+                + " at "
+                + String(stamp)
+                + " dst "
+                + String(a.dst_seconds)
+                + " footer "
+                + fast._data.value()[].std_name
+                + String(fast._data.value()[].std_offset)
+                + fast._data.value()[].dst_name
+                + String(fast._data.value()[].dst_offset)
+                + " last "
+                + String(
+                    fast._data.value()[].times[
+                        len(fast._data.value()[].times) - 1
+                    ]
+                ),
             )
             var local = Morrow.utcfromtimestamp(stamp + b.offset)
             for fold in [0, 1]:

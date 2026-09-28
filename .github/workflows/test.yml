@@ -29,6 +29,7 @@ jobs:
             echo "::group::Mojo ${version}"
             export MOJO_VERSION="${version}"
             make install
+            cat /usr/share/zoneinfo/+VERSION /usr/share/zoneinfo/tzdata.zi 2>/dev/null | head -1 || true
             make test
             TZ=America/New_York uv run mojo run -I . tests/test_iterators.mojo
             uv run --with arrow==1.4.0 python tools/check_arrow.py
