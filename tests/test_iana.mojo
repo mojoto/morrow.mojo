@@ -307,7 +307,11 @@ def test_tzdata_matches_icu() raises:
             var stamp = rng.rand_int(min=-2208988800, max=4102444800)
             var a = fast.at(stamp)
             var b = slow.at(stamp)
-            assert_equal(a.offset, b.offset, name)
+            assert_equal(
+                a.offset,
+                b.offset,
+                name + " at " + String(stamp) + " dst " + String(a.dst_seconds),
+            )
             var local = Morrow.utcfromtimestamp(stamp + b.offset)
             for fold in [0, 1]:
                 var x = fast.resolve(
