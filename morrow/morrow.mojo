@@ -22,7 +22,6 @@ from ._libc import (
 from ._libc import CTimeval, CTm
 from .timezone import TimeZone
 from ._icu import Calendar
-from ._tzif import tzif_abbreviation
 from .timedelta import TimeDelta
 from .formatter import format_morrow, format_strftime
 from .constants import (
@@ -1862,12 +1861,10 @@ struct Morrow(
             return ""
         if self.tz.zone == "":
             return self.tzname()
-        var seconds = self._utc_microseconds() // _US_PER_SECOND
-        var text = tzif_abbreviation(
-            self.tz.zone, seconds, self.tz.dst_seconds != 0
-        )
-        if text.byte_length() > 0:
-            return text
+        if self.tz._data:
+            return self.tz._data.value()[].abbreviation(
+                self._utc_microseconds() // _US_PER_SECOND
+            )
         var offset = abs(self.tz.offset)
         var result = String("-" if self.tz.offset < 0 else "+")
         result += String(offset // 3600).ascii_rjust(2, "0")
@@ -2206,6 +2203,29 @@ struct Morrow(
         var seconds = stamp // _US_PER_SECOND
         if stamp % _US_PER_SECOND < 0:
             seconds -= 1
+        if tz._data:
+            ref data = tz._data.value()[]
+            var info = data.info_at(seconds)
+            var local = Self._from_utc_microseconds_value(
+                stamp + info.offset * _US_PER_SECOND
+            )
+            var wall = (
+                (local.toordinal() - _UNIX_EPOCH_ORDINAL) * 86400
+                + local.hour * 3600
+                + local.minute * 60
+                + local.second
+            )
+            var resolved = data.resolve_wall(wall, 0)
+            var zone = tz
+            zone.offset = info.offset
+            zone.dst_seconds = info.dst
+            zone.fold_value = 1 if (
+                resolved.ambiguous and resolved.offset != info.offset
+            ) else 0
+            zone.is_ambiguous = resolved.ambiguous
+            zone.is_imaginary = False
+            local.tz = zone^
+            return local
         if tz.zone != "":
             # One calendar serves the instant lookup and the wall resolution.
             var calendar = Calendar(tz.zone)

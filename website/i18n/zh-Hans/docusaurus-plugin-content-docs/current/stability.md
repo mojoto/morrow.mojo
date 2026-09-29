@@ -12,7 +12,7 @@ sidebar_position: 11
 
 语言支持 81 种[内置语言](./locales.md)及自定义 `Locale`。语言文本属于数据，翻译修正可能在次版本中改变输出。通用自然语言解析、任意正则表达式和 Windows 分发不在支持范围内。
 
-时区规则来自安装的 ICU 数据。规则更新可能改变历史或未来偏移，而无需改变 Morrow API。如果要求不同机器采用完全相同的规则，应使用相同版本的 ICU 数据。
+时区规则来自安装的 tzdata；没有时区文件的时区使用 ICU 数据。规则更新可能改变历史或未来偏移，而无需改变 Morrow API。如果要求不同机器采用完全相同的规则，应使用相同版本的 tzdata。
 
 ## 编译器与平台
 
@@ -24,7 +24,7 @@ sidebar_position: 11
 
 预编译 `.mojoc` 文件与编译器及目标平台绑定。源码兼容不等于不同 Mojo 版本的二进制兼容，请下载同时匹配两者的发布包。新编译器经过验证并提供对应制品后才进入支持范围。
 
-命名时区和本地时区需要 ICU。macOS 自带；Debian/Ubuntu 可安装 `libicu-dev`，Conda 包声明了运行时依赖。UTC 和固定偏移计算不需要 ICU。
+命名时区和本地时区读取系统 tzdata（macOS 和大多数 Linux 自带，Debian/Ubuntu 上为 `tzdata` 包），缺少时区文件时回退到 ICU。Debian/Ubuntu 可安装 `libicu-dev` 以支持回退，Conda 包声明了 ICU 运行时依赖。UTC 和固定偏移计算两者都不需要。
 
 ## 发布验证
 

@@ -14,7 +14,7 @@ Version 1.1 is additive; documented 1.0 behavior is unchanged, including English
 - `tz_abbreviation()` returns tzdata abbreviations such as `EDT`. `tzname()` and `ZZZ` still return the region identifier.
 - `TimeDelta` adds `/`, `//`, `divmod()`, float scaling and hashing.
 - `Morrow.get` accepts a `MorrowTimeTuple`.
-- Converting to a named zone reuses one ICU calendar, which takes about 40% less time in the IANA benchmark.
+- Named and local zones read the system tzdata in pure Mojo and fall back to ICU only when a zone file is missing. Each zone is parsed once per process, so the IANA benchmark drops from 23 µs to 0.3 µs per conversion, including when a region name is passed. `dst()` is inferred from tzdata and can differ from ICU in a few historical periods; offsets are unchanged.
 
 ## Upgrading to 1.0
 

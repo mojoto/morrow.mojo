@@ -70,7 +70,8 @@ Morrow is UTC by default, supports IANA and fixed-offset time zones, parses ISO 
 strings and POSIX timestamps, and formats values with date/time tokens or
 Python-style `strftime`. Formatting, parsing, and relative time support 81
 languages, and custom locales can be defined with `Locale`. Named and local time
-zones require ICU (provided by macOS; install `libicu-dev` on Debian/Ubuntu).
+zones read the system tzdata, falling back to ICU when a zone file is missing
+(ICU is provided by macOS; install `libicu-dev` on Debian/Ubuntu).
 
 ## Development
 
