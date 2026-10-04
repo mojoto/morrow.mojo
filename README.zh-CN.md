@@ -29,7 +29,7 @@ pixi workspace channel add --prepend https://repo.prefix.dev/modular-community
 pixi add morrow
 ```
 
-该包会把与编译器版本兼容的 `morrow.mojoc` 安装到当前 Pixi 环境，无需复制源码即可导入。
+该包会把与编译器版本兼容的 `morrow.mojoc` 安装到当前 Pixi 环境，无需复制源码即可导入。channel 上的 Morrow 1.1 基于 Mojo 1.1 构建；使用 Mojo 1.0 的项目在该 channel 上会解析到 Morrow 0.7.0，如需在 Mojo 1.0 上使用 1.1，请下载对应的 [release 包](https://github.com/mojoto/morrow.mojo/releases)。
 
 ## 用法
 
@@ -71,8 +71,8 @@ CI 在 Linux x86-64、Linux ARM64 和 macOS ARM64 上测试并预编译两个版
 Release 按编译器版本分别构建，请选择匹配的归档。
 为兼容 1.0 保留的字符串 API 会在 Mojo 1.1 下产生弃用警告。
 
-`make package` 会为同一 Morrow 版本构建两个 Conda 变体，分别精确依赖对应的 Mojo 编译器版本。
-将两个构建发布到同一 channel 后，Pixi 可根据使用方项目的编译器约束选择匹配的构建。
+`make package` 会为每个支持的编译器各构建一个 Conda 包，分别精确依赖对应的 Mojo 编译器版本。
+Modular Community channel 的每个配方只构建一个编译器版本，目前发布的是 Mojo 1.1 构建。
 
 
 运行 `make help` 可以查看所有可用目标。
