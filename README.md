@@ -34,7 +34,11 @@ pixi add morrow
 ```
 
 The package installs a compiler-compatible `morrow.mojoc` into the active Pixi
-environment, so it can be imported without copying source files.
+environment, so it can be imported without copying source files. Morrow 1.1 on
+the channel is built for Mojo 1.1; projects on Mojo 1.0 resolve Morrow 0.7.0
+there, so use the matching
+[release archive](https://github.com/mojoto/morrow.mojo/releases) to get 1.1
+on Mojo 1.0.
 
 ## Usage
 
@@ -81,9 +85,9 @@ CI tests and precompiles both versions on Linux x86-64, Linux ARM64, and macOS A
 Release archives are built separately for each compiler version; choose the matching archive.
 Mojo 1.1 emits deprecation warnings for the string API retained for 1.0 compatibility.
 
-`make package` builds two Conda variants of the same Morrow version, each requiring
-its exact Mojo compiler version. Publish both builds to the same channel so Pixi
-can select the build matching the compiler constraint in the consuming project.
+`make package` builds one Conda package per supported compiler, each requiring its
+exact Mojo compiler version. The Modular Community channel builds a single compiler
+per recipe and currently publishes the Mojo 1.1 build.
 
 
 Run `make help` to list the available targets.

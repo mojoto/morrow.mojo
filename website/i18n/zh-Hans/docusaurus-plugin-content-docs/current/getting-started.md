@@ -15,7 +15,7 @@ pixi workspace channel add --prepend https://repo.prefix.dev/modular-community
 pixi add morrow
 ```
 
-该包会把与编译器版本兼容的 `morrow.mojoc` 安装到当前环境，其他 Mojo 包可以直接导入。
+该包会把与编译器版本兼容的 `morrow.mojoc` 安装到当前环境，其他 Mojo 包可以直接导入。channel 上的 Morrow 1.1 基于 Mojo 1.1 构建；使用 Mojo 1.0 的项目在该 channel 上会解析到 Morrow 0.7.0，如需在 Mojo 1.0 上使用 1.1，请下载对应的 [release 包](https://github.com/mojoto/morrow.mojo/releases)。
 
 ## 从源码开发
 
