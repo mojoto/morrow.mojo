@@ -1,7 +1,7 @@
 """Locale data and rules shared by formatting, parsing and relative time text."""
+from ._text import utf8_width, starts_at, find_byte, pad
 from std.format import Writable, Writer
 
-from .util import utf8_width
 from ._locale_data import (
     LOCALE_ZH_CN,
     LOCALE_ZH_TW,
@@ -96,15 +96,6 @@ def locale_grammar(name: String) raises -> Int:
     return 0
 
 
-def starts_at(value: String, position: Int, token: String) -> Bool:
-    if position < 0 or position + token.byte_length() > value.byte_length():
-        return False
-    for i in range(token.byte_length()):
-        if value.as_bytes()[position + i] != token.as_bytes()[i]:
-            return False
-    return True
-
-
 def _is_char_boundary(value: String, position: Int) -> Bool:
     if position <= 0 or position >= value.byte_length():
         return True
@@ -136,13 +127,6 @@ def _starts_with_range(
     return True
 
 
-def _find_byte(value: String, byte: Int, start: Int, end: Int) -> Int:
-    for i in range(start, end):
-        if Int(value.as_bytes()[i]) == byte:
-            return i
-    return end
-
-
 def _ascii_int(value: String, start: Int, end: Int) -> Int:
     var sign = 1
     var i = start
@@ -161,8 +145,8 @@ def _pair_text(encoded: String, number: Int) -> String:
     var start = 0
     var length = encoded.byte_length()
     while start < length:
-        var end = _find_byte(encoded, 0x1E, start, length)
-        var field = _find_byte(encoded, 0x1F, start, end)
+        var end = find_byte(encoded, 0x1E, start, length)
+        var field = find_byte(encoded, 0x1F, start, end)
         if _ascii_int(encoded, start, field) == number:
             return String(encoded[byte = field + 1 : end])
         start = end + 1
@@ -174,8 +158,8 @@ def _pair_number(encoded: String, text: String) -> Int:
     var start = 0
     var length = encoded.byte_length()
     while start < length:
-        var end = _find_byte(encoded, 0x1E, start, length)
-        var field = _find_byte(encoded, 0x1F, start, end)
+        var end = find_byte(encoded, 0x1E, start, length)
+        var field = find_byte(encoded, 0x1F, start, end)
         if end - field - 1 == text.byte_length() and starts_at(
             encoded, field + 1, text
         ):
@@ -189,7 +173,7 @@ def _nth_field(encoded: String, index: Int) -> String:
     var length = encoded.byte_length()
     var current = 0
     while start <= length:
-        var end = _find_byte(encoded, 0x1F, start, length)
+        var end = find_byte(encoded, 0x1F, start, length)
         if current == index:
             return String(encoded[byte=start:end])
         current += 1
@@ -199,7 +183,7 @@ def _nth_field(encoded: String, index: Int) -> String:
 
 def _decimal(value: Int, width: Int) -> String:
     var sign = "-" if value < 0 else ""
-    return sign + String(abs(value)).ascii_rjust(width, "0")
+    return sign + pad(abs(value), width)
 
 
 struct TimeFrame(Copyable, Movable):
@@ -269,9 +253,9 @@ struct TimeFrame(Copyable, Movable):
         var length = self._data.byte_length()
         var start = 0
         for _ in range(index):
-            start = _find_byte(self._data, 0x1E, start, length) + 1
-        var end = _find_byte(self._data, 0x1E, start, length)
-        var field = _find_byte(self._data, 0x1F, start, end)
+            start = find_byte(self._data, 0x1E, start, length) + 1
+        var end = find_byte(self._data, 0x1E, start, length)
+        var field = find_byte(self._data, 0x1F, start, end)
         if field == end:
             return (start, end)
         return (field + 1, end)
@@ -280,9 +264,9 @@ struct TimeFrame(Copyable, Movable):
         var length = self._data.byte_length()
         var start = 0
         for _ in range(index):
-            start = _find_byte(self._data, 0x1E, start, length) + 1
-        var end = _find_byte(self._data, 0x1E, start, length)
-        var field = _find_byte(self._data, 0x1F, start, end)
+            start = find_byte(self._data, 0x1E, start, length) + 1
+        var end = find_byte(self._data, 0x1E, start, length)
+        var field = find_byte(self._data, 0x1F, start, end)
         if field == end:
             return (start, start)
         return (start, field)
@@ -921,8 +905,8 @@ struct Locale(Copyable, Movable, Writable):
         var start = 0
         var length = self._ordinal_parse.byte_length()
         while start < length:
-            var end = _find_byte(self._ordinal_parse, 0x1E, start, length)
-            var field = _find_byte(self._ordinal_parse, 0x1F, start, end)
+            var end = find_byte(self._ordinal_parse, 0x1E, start, length)
+            var field = find_byte(self._ordinal_parse, 0x1F, start, end)
             var text_length = end - field - 1
             if pos + text_length > result.pos and (
                 starts_at_ignore_case(
@@ -1036,8 +1020,8 @@ struct Locale(Copyable, Movable, Writable):
             var start = 0
             var i = 0
             while start < length:
-                var end = _find_byte(data, 0x1E, start, length)
-                var field = _find_byte(data, 0x1F, start, end)
+                var end = find_byte(data, 0x1E, start, length)
+                var field = find_byte(data, 0x1F, start, end)
                 var form_start = start if field == end else field + 1
                 var matched: LocaleMatch
                 if compact:

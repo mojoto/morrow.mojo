@@ -1,4 +1,27 @@
-from .util import normalize_timestamp, _ymd2ord, _days_in_month
+from ._text import is_digit, pad
+from ._calendar import (
+    US_PER_SECOND,
+    US_PER_MINUTE,
+    US_PER_HOUR,
+    US_PER_DAY,
+    SECONDS_PER_DAY,
+    UNIX_EPOCH_ORDINAL,
+    MAX_ORDINAL,
+    MAX_TIMESTAMP,
+    MAX_TIMESTAMP_MS,
+    MAX_TIMESTAMP_US,
+    days_in_month,
+    ymd2ord,
+    ord2ymd,
+    isoweekday_of,
+    day_of_year,
+    iso_week1_monday,
+    iso_calendar,
+    epoch_seconds,
+    normalize_timestamp,
+    month_abbreviation,
+    day_abbreviation,
+)
 from .locale import Locale, english_relative, is_english_locale, locale_grammar
 from ._libc import (
     c_gettimeofday,
@@ -11,15 +34,6 @@ from .timezone import TimeZone
 from ._icu import Calendar
 from .timedelta import TimeDelta
 from .formatter import format_morrow, format_strftime
-from .constants import (
-    MAX_ORDINAL,
-    MAX_TIMESTAMP,
-    MAX_TIMESTAMP_MS,
-    MAX_TIMESTAMP_US,
-    days_before_month,
-    day_abbreviation,
-    month_abbreviation,
-)
 from std.iter import StopIteration
 from std.collections import List
 from std.format import Writable, Writer
@@ -32,7 +46,7 @@ from ._parser import (
     _find_strptime_extension_directive,
     _parse_strptime_timezone_name,
     _parse_strptime_timezone_offset,
-    _is_ascii_digit,
+    is_digit,
     _normalize_whitespace,
     _parse_isoformat,
 )
@@ -46,14 +60,6 @@ from ._humanize import (
     _normalize_humanize_granularity_list,
 )
 
-comptime _DI400Y = 146097  # number of days in 400 years
-comptime _DI100Y = 36524  #    "    "   "   " 100   "
-comptime _DI4Y = 1461  #    "    "   "   "   4   "
-comptime _US_PER_SECOND = 1000000
-comptime _US_PER_MINUTE = 60 * _US_PER_SECOND
-comptime _US_PER_HOUR = 60 * _US_PER_MINUTE
-comptime _US_PER_DAY = 24 * _US_PER_HOUR
-comptime _UNIX_EPOCH_ORDINAL = 719163  # 1970-01-01
 comptime _UNBOUNDED_LIMIT = -2147483648
 
 
@@ -265,8 +271,8 @@ struct Morrow(
                 seconds = timestamp // 1000
                 microseconds = (timestamp % 1000) * 1000
             elif timestamp < MAX_TIMESTAMP_US:
-                seconds = timestamp // _US_PER_SECOND
-                microseconds = timestamp % _US_PER_SECOND
+                seconds = timestamp // US_PER_SECOND
+                microseconds = timestamp % US_PER_SECOND
             else:
                 raise Error("timestamp is too large")
         return CTimeval(seconds, microseconds)
@@ -282,9 +288,9 @@ struct Morrow(
         var microseconds = Int(
             (timestamp_ - Float64(seconds)) * 1000000.0 + 0.5
         )
-        if microseconds >= _US_PER_SECOND:
+        if microseconds >= US_PER_SECOND:
             seconds += 1
-            microseconds -= _US_PER_SECOND
+            microseconds -= US_PER_SECOND
         return CTimeval(seconds, microseconds)
 
     @staticmethod
@@ -848,19 +854,14 @@ struct Morrow(
                 value_end = value_start
                 while (
                     value_end < normalized_date.byte_length()
-                    and _is_ascii_digit(
-                        Int(normalized_date.as_bytes()[value_end])
-                    )
+                    and is_digit(Int(normalized_date.as_bytes()[value_end]))
                     and value_end - value_start < 6
                 ):
                     value_end += 1
                 if value_end == value_start:
                     raise Error("microsecond is missing")
-                if (
-                    value_end < normalized_date.byte_length()
-                    and _is_ascii_digit(
-                        Int(normalized_date.as_bytes()[value_end])
-                    )
+                if value_end < normalized_date.byte_length() and is_digit(
+                    Int(normalized_date.as_bytes()[value_end])
                 ):
                     raise Error("unconverted data remains")
 
@@ -958,8 +959,8 @@ struct Morrow(
         """
         var total_us = self._utc_microseconds()
         if total_us < 0:
-            return -((-total_us) // _US_PER_SECOND)
-        return total_us // _US_PER_SECOND
+            return -((-total_us) // US_PER_SECOND)
+        return total_us // US_PER_SECOND
 
     def for_json(self) raises -> String:
         """
@@ -988,15 +989,15 @@ struct Morrow(
             + " "
             + month_abbreviation(self.month)
             + " "
-            + String(self.day).ascii_rjust(2, " ")
+            + pad(self.day, 2, " ")
             + " "
-            + String(self.hour).ascii_rjust(2, "0")
+            + pad(self.hour, 2)
             + ":"
-            + String(self.minute).ascii_rjust(2, "0")
+            + pad(self.minute, 2)
             + ":"
-            + String(self.second).ascii_rjust(2, "0")
+            + pad(self.second, 2)
             + " "
-            + String(self.year).ascii_rjust(4, "0")
+            + pad(self.year, 4)
         )
 
     def date(self) -> MorrowDate:
@@ -1062,13 +1063,13 @@ struct Morrow(
             return self.tzname()
         if self.tz._data:
             return self.tz._data.value()[].abbreviation(
-                self._utc_microseconds() // _US_PER_SECOND
+                self._utc_microseconds() // US_PER_SECOND
             )
         var offset = abs(self.tz.offset)
         var result = String("-" if self.tz.offset < 0 else "+")
-        result += String(offset // 3600).ascii_rjust(2, "0")
+        result += pad(offset // 3600, 2)
         if offset % 3600 != 0:
-            result += String((offset % 3600) // 60).ascii_rjust(2, "0")
+            result += pad((offset % 3600) // 60, 2)
         return result
 
     def utcoffset(self) -> TimeDelta:
@@ -1260,20 +1261,22 @@ struct Morrow(
 
     @staticmethod
     def _from_instant_microseconds(stamp: Int, tz: TimeZone) raises -> Self:
-        var seconds = stamp // _US_PER_SECOND
-        if stamp % _US_PER_SECOND < 0:
+        var seconds = stamp // US_PER_SECOND
+        if stamp % US_PER_SECOND < 0:
             seconds -= 1
         if tz._data:
             ref data = tz._data.value()[]
             var info = data.info_at(seconds)
             var local = Self._from_utc_microseconds_value(
-                stamp + info.offset * _US_PER_SECOND
+                stamp + info.offset * US_PER_SECOND
             )
-            var wall = (
-                (local.toordinal() - _UNIX_EPOCH_ORDINAL) * 86400
-                + local.hour * 3600
-                + local.minute * 60
-                + local.second
+            var wall = epoch_seconds(
+                local.year,
+                local.month,
+                local.day,
+                local.hour,
+                local.minute,
+                local.second,
             )
             var resolved = data.resolve_wall(wall, 0)
             var zone = tz
@@ -1291,7 +1294,7 @@ struct Morrow(
             var calendar = Calendar(tz.zone)
             var info = calendar.at(seconds)
             var local = Self._from_utc_microseconds_value(
-                stamp + info.offset * _US_PER_SECOND
+                stamp + info.offset * US_PER_SECOND
             )
             var zone = tz
             zone.fold_value = 0
@@ -1319,7 +1322,7 @@ struct Morrow(
             return local
         var target = tz.at(seconds)
         var wall = Self._from_utc_microseconds_value(
-            stamp + target.offset * _US_PER_SECOND
+            stamp + target.offset * US_PER_SECOND
         )
         var candidate = Self(
             wall.year,
@@ -1463,7 +1466,7 @@ struct Morrow(
         if month < 1:
             month += 12
             year -= 1
-        var max_day = _days_in_month(year, month)
+        var max_day = days_in_month(year, month)
         var day = self.day if self.day <= max_day else max_day
         Self._validate_fields(
             year,
@@ -1997,7 +2000,7 @@ struct Morrow(
             or frame == "month"
             or frame == "months"
         ):
-            if shifted.day < original_day and original_day <= _days_in_month(
+            if shifted.day < original_day and original_day <= days_in_month(
                 shifted.year, shifted.month
             ):
                 return shifted.replace(day=original_day)
@@ -2017,7 +2020,7 @@ struct Morrow(
             raise Error("year must be in 1..9999")
         if month < 1 or month > 12:
             raise Error("month must be in 1..12")
-        if day < 1 or day > _days_in_month(year, month):
+        if day < 1 or day > days_in_month(year, month):
             raise Error("day is out of range for month")
         if hour < 0 or hour > 23:
             raise Error("hour must be in 0..23")
@@ -2025,7 +2028,7 @@ struct Morrow(
             raise Error("minute must be in 0..59")
         if second < 0 or second > 59:
             raise Error("second must be in 0..59")
-        if microsecond < 0 or microsecond >= _US_PER_SECOND:
+        if microsecond < 0 or microsecond >= US_PER_SECOND:
             raise Error("microsecond must be in 0..999999")
 
     @staticmethod
@@ -2043,19 +2046,19 @@ struct Morrow(
 
     @staticmethod
     def _from_utc_microseconds_value(total_us: Int) raises -> Self:
-        var seconds = total_us // _US_PER_SECOND
-        var microsecond = total_us % _US_PER_SECOND
+        var seconds = total_us // US_PER_SECOND
+        var microsecond = total_us % US_PER_SECOND
         if microsecond < 0:
             seconds -= 1
-            microsecond += _US_PER_SECOND
+            microsecond += US_PER_SECOND
 
-        var days = seconds // 86400
-        var seconds_in_day = seconds % 86400
+        var days = seconds // SECONDS_PER_DAY
+        var seconds_in_day = seconds % SECONDS_PER_DAY
         if seconds_in_day < 0:
             days -= 1
-            seconds_in_day += 86400
+            seconds_in_day += SECONDS_PER_DAY
 
-        var date = Self.fromordinal(_UNIX_EPOCH_ORDINAL + days)
+        var date = Self.fromordinal(UNIX_EPOCH_ORDINAL + days)
         var hour = seconds_in_day // 3600
         var minute = (seconds_in_day % 3600) // 60
         var second = seconds_in_day % 60
@@ -2104,22 +2107,22 @@ struct Morrow(
             days, hours, minutes, seconds, microseconds
         )
         var total_us = (
-            (self.hour * 3600 + self.minute * 60 + self.second) * _US_PER_SECOND
+            (self.hour * 3600 + self.minute * 60 + self.second) * US_PER_SECOND
             + self.microsecond
-            + hours * _US_PER_HOUR
-            + minutes * _US_PER_MINUTE
-            + seconds * _US_PER_SECOND
+            + hours * US_PER_HOUR
+            + minutes * US_PER_MINUTE
+            + seconds * US_PER_SECOND
             + microseconds
         )
-        var extra_days = total_us // _US_PER_DAY
-        var remaining_us = total_us % _US_PER_DAY
+        var extra_days = total_us // US_PER_DAY
+        var remaining_us = total_us % US_PER_DAY
         var date = Self.fromordinal(self.toordinal() + days + extra_days)
-        var hour = remaining_us // _US_PER_HOUR
-        remaining_us = remaining_us % _US_PER_HOUR
-        var minute = remaining_us // _US_PER_MINUTE
-        remaining_us = remaining_us % _US_PER_MINUTE
-        var second = remaining_us // _US_PER_SECOND
-        var microsecond = remaining_us % _US_PER_SECOND
+        var hour = remaining_us // US_PER_HOUR
+        remaining_us = remaining_us % US_PER_HOUR
+        var minute = remaining_us // US_PER_MINUTE
+        remaining_us = remaining_us % US_PER_MINUTE
+        var second = remaining_us // US_PER_SECOND
+        var microsecond = remaining_us % US_PER_SECOND
         return Self(
             date.year,
             date.month,
@@ -2136,14 +2139,10 @@ struct Morrow(
             raise Error("cannot mix naive and timezone-aware dates")
 
     def _utc_microseconds(self) -> Int:
-        var seconds = (
-            (self.toordinal() - _UNIX_EPOCH_ORDINAL) * 86400
-            + self.hour * 3600
-            + self.minute * 60
-            + self.second
-            - self.tz.offset
+        var seconds = epoch_seconds(
+            self.year, self.month, self.day, self.hour, self.minute, self.second
         )
-        return seconds * _US_PER_SECOND + self.microsecond
+        return (seconds - self.tz.offset) * US_PER_SECOND + self.microsecond
 
     def _time_tuple(self) raises -> MorrowTimeTuple:
         return MorrowTimeTuple(
@@ -2154,7 +2153,7 @@ struct Morrow(
             self.minute,
             self.second,
             self.weekday(),
-            self.toordinal() - _ymd2ord(self.year, 1, 1) + 1,
+            day_of_year(self.year, self.month, self.day),
             1 if self.tz.dst_seconds != 0 else 0,
         )
 
@@ -2261,11 +2260,11 @@ struct Morrow(
         if timespec == "auto":
             if self.microsecond == 0:
                 time_str = (
-                    String(self.hour).ascii_rjust(2, "0")
+                    pad(self.hour, 2)
                     + ":"
-                    + String(self.minute).ascii_rjust(2, "0")
+                    + pad(self.minute, 2)
                     + ":"
-                    + String(self.second).ascii_rjust(2, "0")
+                    + pad(self.second, 2)
                 )
             else:
                 time_str = self._time_string_microseconds()
@@ -2273,30 +2272,26 @@ struct Morrow(
             time_str = self._time_string_microseconds()
         elif timespec == "milliseconds":
             time_str = (
-                String(self.hour).ascii_rjust(2, "0")
+                pad(self.hour, 2)
                 + ":"
-                + String(self.minute).ascii_rjust(2, "0")
+                + pad(self.minute, 2)
                 + ":"
-                + String(self.second).ascii_rjust(2, "0")
+                + pad(self.second, 2)
                 + "."
-                + String(self.microsecond // 1000).ascii_rjust(3, "0")
+                + pad(self.microsecond // 1000, 3)
             )
         elif timespec == "seconds":
             time_str = (
-                String(self.hour).ascii_rjust(2, "0")
+                pad(self.hour, 2)
                 + ":"
-                + String(self.minute).ascii_rjust(2, "0")
+                + pad(self.minute, 2)
                 + ":"
-                + String(self.second).ascii_rjust(2, "0")
+                + pad(self.second, 2)
             )
         elif timespec == "minutes":
-            time_str = (
-                String(self.hour).ascii_rjust(2, "0")
-                + ":"
-                + String(self.minute).ascii_rjust(2, "0")
-            )
+            time_str = pad(self.hour, 2) + ":" + pad(self.minute, 2)
         elif timespec == "hours":
-            time_str = String(self.hour).ascii_rjust(2, "0")
+            time_str = pad(self.hour, 2)
         else:
             raise Error()
         if self.tz.is_none():
@@ -2306,22 +2301,22 @@ struct Morrow(
 
     def _date_string(self) -> String:
         return (
-            String(self.year).ascii_rjust(4, "0")
+            pad(self.year, 4)
             + "-"
-            + String(self.month).ascii_rjust(2, "0")
+            + pad(self.month, 2)
             + "-"
-            + String(self.day).ascii_rjust(2, "0")
+            + pad(self.day, 2)
         )
 
     def _time_string_microseconds(self) -> String:
         return (
-            String(self.hour).ascii_rjust(2, "0")
+            pad(self.hour, 2)
             + ":"
-            + String(self.minute).ascii_rjust(2, "0")
+            + pad(self.minute, 2)
             + ":"
-            + String(self.second).ascii_rjust(2, "0")
+            + pad(self.second, 2)
             + "."
-            + String(self.microsecond).ascii_rjust(6, "0")
+            + pad(self.microsecond, 6)
         )
 
     def _isoformat_auto(self) -> String:
@@ -2339,7 +2334,7 @@ struct Morrow(
         """
         Return the proleptic Gregorian ordinal of the date, where January 1 of year 1 has ordinal 1.
         """
-        return _ymd2ord(self.year, self.month, self.day)
+        return ymd2ord(self.year, self.month, self.day)
 
     @staticmethod
     def fromordinal(ordinal: Int) raises -> Self:
@@ -2350,74 +2345,8 @@ struct Morrow(
         """
         if ordinal < 1 or ordinal > MAX_ORDINAL:
             raise Error("ordinal is out of range")
-
-        # n is a 1-based index, starting at 1-Jan-1.  The pattern of leap years
-        # repeats exactly every 400 years.  The basic strategy is to find the
-        # closest 400-year boundary at or before n, then work with the offset
-        # from that boundary to n.  Life is much clearer if we subtract 1 from
-        # n first -- then the values of n at 400-year boundaries are exactly
-        # those divisible by _DI400Y:
-        #
-        #     D  M   Y            n              n-1
-        #     -- --- ----        ----------     ----------------
-        #     31 Dec -400        -_DI400Y       -_DI400Y -1
-        #      1 Jan -399         -_DI400Y +1   -_DI400Y      400-year boundary
-        #     ...
-        #     30 Dec  000        -1             -2
-        #     31 Dec  000         0             -1
-        #      1 Jan  001         1              0            400-year boundary
-        #      2 Jan  001         2              1
-        #      3 Jan  001         3              2
-        #     ...
-        #     31 Dec  400         _DI400Y        _DI400Y -1
-        #      1 Jan  401         _DI400Y +1     _DI400Y      400-year boundary
-        var n = ordinal
-        n -= 1
-        var n400 = n // _DI400Y
-        n = n % _DI400Y
-        var year = n400 * 400 + 1  # ..., -399, 1, 401, ...
-
-        # Now n is the (non-negative) offset, in days, from January 1 of year, to
-        # the desired date.  Now compute how many 100-year cycles precede n.
-        # Note that it's possible for n100 to equal 4!  In that case 4 full
-        # 100-year cycles precede the desired day, which implies the desired
-        # day is December 31 at the end of a 400-year cycle.
-        var n100 = n // _DI100Y
-        n = n % _DI100Y
-
-        # Now compute how many 4-year cycles precede it.
-        var n4 = n // _DI4Y
-        n = n % _DI4Y
-
-        # And now how many single years.  Again n1 can be 4, and again meaning
-        # that the desired day is December 31 at the end of the 4-year cycle.
-        var n1 = n // 365
-        n = n % 365
-
-        year += n100 * 100 + n4 * 4 + n1
-        if n1 == 4 or n100 == 4:
-            return Self(year - 1, 12, 31)
-
-        # Now the year is correct, and n is the offset from January 1.  We find
-        # the month via an estimate that's either exact or one too large.
-        var leapyear = n1 == 3 and (n4 != 24 or n100 == 3)
-        var month = (n + 50) >> 5
-        var preceding: Int
-        if month > 2 and leapyear:
-            preceding = days_before_month(month) + 1
-        else:
-            preceding = days_before_month(month)
-        if preceding > n:  # estimate is too large
-            month -= 1
-            if month > 2 and leapyear:
-                preceding = days_before_month(month) + 1
-            else:
-                preceding = days_before_month(month)
-        n -= preceding
-
-        # Now the year and month are correct, and n is the offset from the
-        # start of that month:  we're done!
-        return Self(year, month, n + 1)
+        var ymd = ord2ymd(ordinal)
+        return Self(ymd[0], ymd[1], ymd[2])
 
     @staticmethod
     def fromisocalendar(
@@ -2428,8 +2357,8 @@ struct Morrow(
         """
         if iso_weekday < 1 or iso_weekday > 7:
             raise Error("iso_weekday must be in 1..7")
-        var week1 = Self._iso_week1_monday(iso_year)
-        var next_week1 = Self._iso_week1_monday(iso_year + 1)
+        var week1 = iso_week1_monday(iso_year)
+        var next_week1 = iso_week1_monday(iso_year + 1)
         var max_week = (next_week1 - week1) // 7
         if iso_week < 1 or iso_week > max_week:
             raise Error("iso_week is out of range for iso_year")
@@ -2441,34 +2370,14 @@ struct Morrow(
         """
         Return the day of the week as an integer, where Monday is 1 and Sunday is 7.
         """
-        # 1-Jan-0001 is a Monday
-        return self.toordinal() % 7 or 7
+        return isoweekday_of(self.toordinal())
 
     def isocalendar(self) raises -> MorrowIsoCalendar:
         """
         Return the ISO year, week number, and ISO weekday.
         """
-        var ordinal = self.toordinal()
-        var iso_year = self.year
-        var week1 = Self._iso_week1_monday(iso_year)
-        if ordinal < week1:
-            iso_year -= 1
-            week1 = Self._iso_week1_monday(iso_year)
-        else:
-            var next_week1 = Self._iso_week1_monday(iso_year + 1)
-            if ordinal >= next_week1:
-                iso_year += 1
-                week1 = next_week1
-
-        return MorrowIsoCalendar(
-            iso_year, (ordinal - week1) // 7 + 1, self.isoweekday()
-        )
-
-    @staticmethod
-    def _iso_week1_monday(year: Int) raises -> Int:
-        var fourth_jan = _ymd2ord(year, 1, 4)
-        var weekday = fourth_jan % 7 or 7
-        return fourth_jan - weekday + 1
+        var iso = iso_calendar(self.year, self.month, self.day)
+        return MorrowIsoCalendar(iso[0], iso[1], iso[2])
 
     def weekday(self) raises -> Int:
         """
@@ -2611,11 +2520,11 @@ struct MorrowDate(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def to_string(self) -> String:
         return (
-            String(self.year).ascii_rjust(4, "0")
+            pad(self.year, 4)
             + "-"
-            + String(self.month).ascii_rjust(2, "0")
+            + pad(self.month, 2)
             + "-"
-            + String(self.day).ascii_rjust(2, "0")
+            + pad(self.day, 2)
         )
 
 
@@ -2648,13 +2557,13 @@ struct MorrowTime(Copyable, ImplicitlyCopyable, Movable, Writable):
 
     def to_string(self) -> String:
         var result = (
-            String(self.hour).ascii_rjust(2, "0")
+            pad(self.hour, 2)
             + ":"
-            + String(self.minute).ascii_rjust(2, "0")
+            + pad(self.minute, 2)
             + ":"
-            + String(self.second).ascii_rjust(2, "0")
+            + pad(self.second, 2)
             + "."
-            + String(self.microsecond).ascii_rjust(6, "0")
+            + pad(self.microsecond, 6)
         )
         if not self.tz.is_none():
             result += self.tz.format()

@@ -1,20 +1,11 @@
+"""Thin wrappers over the libc time functions Morrow calls."""
+
 from std.ffi import external_call
 from std.memory import Pointer
-from std.memory.alloc import unsafe_alloc
 
-# C type aliases
-comptime c_void = UInt8
 comptime c_char = UInt8
-comptime c_schar = Int8
-comptime c_uchar = UInt8
-comptime c_short = Int16
-comptime c_ushort = UInt16
 comptime c_int = Int32
-comptime c_uint = UInt32
 comptime c_long = Int64
-comptime c_ulong = UInt64
-comptime c_float = Float32
-comptime c_double = Float64
 
 
 struct CTimeval(TrivialRegisterPassable):
@@ -132,16 +123,3 @@ def c_gmtime(tv_sec: Int) -> CTm:
         Pointer(to=tv_sec_), Pointer(to=tm)
     )
     return tm^
-
-
-def to_char_ptr(s: String) -> Pointer[c_char, MutUntrackedOrigin]:
-    """Only ASCII-based strings."""
-    var ptr = unsafe_alloc[c_char](s.byte_length())
-    for i in range(s.byte_length()):
-        ptr.unsafe_store(i, UInt8(ord(s[byte=i])))
-    return ptr
-
-
-def c_mktime(mut tm: CTm) -> Int:
-    """Resolve local wall fields using the host timezone rules."""
-    return external_call["mktime", Int](Pointer(to=tm))

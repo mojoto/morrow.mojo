@@ -1,17 +1,26 @@
 """Parsing helpers behind Morrow.get, Morrow.strptime and Morrow.fromisoformat."""
+from ._text import (
+    utf8_width,
+    is_digit,
+    is_alnum,
+    is_space,
+    starts_at,
+    starts_at_ascii_ignore_case,
+)
+from ._calendar import (
+    US_PER_SECOND,
+    ymd2ord,
+    month_name,
+    month_abbreviation,
+    day_name,
+    day_abbreviation,
+)
 
-from .util import utf8_width, _ymd2ord
 from .locale import Locale
 from ._libc import CTm
 from .timezone import TimeZone
-from .constants import (
-    day_abbreviation,
-    day_name,
-    month_abbreviation,
-    month_name,
-)
 from std.collections import List
-from .morrow import Morrow, _US_PER_SECOND
+from .morrow import Morrow, US_PER_SECOND
 
 
 struct MorrowParseInt(Copyable, ImplicitlyCopyable, Movable):
@@ -111,8 +120,8 @@ def _parse_isoformat(date_str: String) raises -> Morrow:
     elif (
         length >= 7
         and date_str.as_bytes()[4] == 45
-        and _is_ascii_digit(Int(date_str.as_bytes()[5]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[6]))
+        and is_digit(Int(date_str.as_bytes()[5]))
+        and is_digit(Int(date_str.as_bytes()[6]))
         and (
             length == 7
             or date_str.as_bytes()[7] == 84
@@ -139,28 +148,28 @@ def _parse_isoformat(date_str: String) raises -> Morrow:
     elif (
         length >= 8
         and date_str.as_bytes()[4] == 45
-        and _is_ascii_digit(Int(date_str.as_bytes()[5]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[6]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[7]))
+        and is_digit(Int(date_str.as_bytes()[5]))
+        and is_digit(Int(date_str.as_bytes()[6]))
+        and is_digit(Int(date_str.as_bytes()[7]))
     ):
         year = Int(date_str[byte=0:4])
         var day_of_year = Int(date_str[byte=5:8])
         if day_of_year < 1 or day_of_year > 366:
             raise Error("isoformat day of year is invalid")
-        var date = Morrow.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
+        var date = Morrow.fromordinal(ymd2ord(year, 1, 1) + day_of_year - 1)
         year = date.year
         month = date.month
         day = date.day
         pos = 8
     elif (
         length >= 7
-        and _is_ascii_digit(Int(date_str.as_bytes()[0]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[1]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[2]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[3]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[4]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[5]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[6]))
+        and is_digit(Int(date_str.as_bytes()[0]))
+        and is_digit(Int(date_str.as_bytes()[1]))
+        and is_digit(Int(date_str.as_bytes()[2]))
+        and is_digit(Int(date_str.as_bytes()[3]))
+        and is_digit(Int(date_str.as_bytes()[4]))
+        and is_digit(Int(date_str.as_bytes()[5]))
+        and is_digit(Int(date_str.as_bytes()[6]))
         and (
             length == 7
             or date_str.as_bytes()[7] == 84
@@ -172,23 +181,23 @@ def _parse_isoformat(date_str: String) raises -> Morrow:
         var day_of_year = Int(date_str[byte=4:7])
         if day_of_year < 1 or day_of_year > 366:
             raise Error("isoformat day of year is invalid")
-        var date = Morrow.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
+        var date = Morrow.fromordinal(ymd2ord(year, 1, 1) + day_of_year - 1)
         year = date.year
         month = date.month
         day = date.day
         pos = 7
     elif (
         length >= 6
-        and _is_ascii_digit(Int(date_str.as_bytes()[0]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[1]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[2]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[3]))
+        and is_digit(Int(date_str.as_bytes()[0]))
+        and is_digit(Int(date_str.as_bytes()[1]))
+        and is_digit(Int(date_str.as_bytes()[2]))
+        and is_digit(Int(date_str.as_bytes()[3]))
         and (
             date_str.as_bytes()[4] == 45
             or date_str.as_bytes()[4] == 47
             or date_str.as_bytes()[4] == 46
         )
-        and _is_ascii_digit(Int(date_str.as_bytes()[5]))
+        and is_digit(Int(date_str.as_bytes()[5]))
     ):
         year = Int(date_str[byte=0:4])
         var date_separator = Int(date_str.as_bytes()[4])
@@ -258,14 +267,12 @@ def _parse_isoformat(date_str: String) raises -> Morrow:
                 pos += 2
                 has_second = True
         else:
-            if pos < length and _is_ascii_digit(Int(date_str.as_bytes()[pos])):
+            if pos < length and is_digit(Int(date_str.as_bytes()[pos])):
                 if length < pos + 2:
                     raise Error("isoformat minute is invalid")
                 minute = Int(date_str[byte = pos : pos + 2])
                 pos += 2
-                if pos < length and _is_ascii_digit(
-                    Int(date_str.as_bytes()[pos])
-                ):
+                if pos < length and is_digit(Int(date_str.as_bytes()[pos])):
                     if length < pos + 2:
                         raise Error("isoformat second is invalid")
                     second = Int(date_str[byte = pos : pos + 2])
@@ -298,9 +305,9 @@ def _parse_isoformat(date_str: String) raises -> Morrow:
     if pos != length:
         raise Error("isoformat string has trailing data")
     var carried_fraction = False
-    if microsecond >= _US_PER_SECOND:
-        second += microsecond // _US_PER_SECOND
-        microsecond = microsecond % _US_PER_SECOND
+    if microsecond >= US_PER_SECOND:
+        second += microsecond // US_PER_SECOND
+        microsecond = microsecond % US_PER_SECOND
         carried_fraction = True
     if carried_fraction and second >= 60:
         Morrow._validate_fields(year, month, day, hour, minute, 0, microsecond)
@@ -404,13 +411,13 @@ def _parse_arrow_at(
                     date_pos += 1
                     literal_pos += 1
             fmt_pos = literal_end + 1
-        elif _starts_with(fmt, fmt_pos, "YYYY"):
+        elif starts_at(fmt, fmt_pos, "YYYY"):
             var parsed = _parse_fixed_int(date_str, date_pos, 4)
             year = parsed.value - locale.year_offset
             has_year = True
             date_pos = parsed.pos
             fmt_pos += 4
-        elif _starts_with(fmt, fmt_pos, "YY"):
+        elif starts_at(fmt, fmt_pos, "YY"):
             var parsed = _parse_fixed_int(date_str, date_pos, 2)
             if locale.year_offset != 0:
                 # Buddhist-era years: 00..99 map to 2500..2599 BE.
@@ -420,51 +427,49 @@ def _parse_arrow_at(
             has_year = True
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "MMMM"):
+        elif starts_at(fmt, fmt_pos, "MMMM"):
             var parsed = _parse_month_name(date_str, date_pos, False, locale)
             month = parsed.value
             has_month = True
             date_pos = parsed.pos
             fmt_pos += 4
-        elif _starts_with(fmt, fmt_pos, "MMM"):
+        elif starts_at(fmt, fmt_pos, "MMM"):
             var parsed = _parse_month_name(date_str, date_pos, True, locale)
             month = parsed.value
             has_month = True
             date_pos = parsed.pos
             fmt_pos += 3
-        elif _starts_with(fmt, fmt_pos, "MM"):
+        elif starts_at(fmt, fmt_pos, "MM"):
             var parsed = _parse_fixed_int(date_str, date_pos, 2)
             month = parsed.value
             has_month = True
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "M"):
+        elif starts_at(fmt, fmt_pos, "M"):
             var parsed = _parse_variable_int(date_str, date_pos, 2)
             month = parsed.value
             has_month = True
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "DDDD"):
+        elif starts_at(fmt, fmt_pos, "DDDD"):
             var parsed = _parse_fixed_int(date_str, date_pos, 3)
             day_of_year = parsed.value
             has_day = True
             date_pos = parsed.pos
             fmt_pos += 4
-        elif _starts_with(fmt, fmt_pos, "DDD"):
+        elif starts_at(fmt, fmt_pos, "DDD"):
             var parsed = _parse_variable_int(date_str, date_pos, 3)
             day_of_year = parsed.value
             has_day = True
             date_pos = parsed.pos
             fmt_pos += 3
-        elif _starts_with(fmt, fmt_pos, "Do") and not (
-            locale.is_fast_english()
-        ):
+        elif starts_at(fmt, fmt_pos, "Do") and not (locale.is_fast_english()):
             var parsed = locale._match_ordinal(date_str, date_pos)
             day = parsed.value
             has_day = True
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "Do"):
+        elif starts_at(fmt, fmt_pos, "Do"):
             var ordinal_start = date_pos
             var parsed = _parse_variable_int(date_str, date_pos, 2)
             if (
@@ -477,19 +482,19 @@ def _parse_arrow_at(
             date_pos = parsed.pos
             date_pos = _parse_ordinal_suffix(date_str, date_pos, day)
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "DD"):
+        elif starts_at(fmt, fmt_pos, "DD"):
             var parsed = _parse_fixed_int(date_str, date_pos, 2)
             day = parsed.value
             has_day = True
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "D"):
+        elif starts_at(fmt, fmt_pos, "D"):
             var parsed = _parse_variable_int(date_str, date_pos, 2)
             day = parsed.value
             has_day = True
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "W"):
+        elif starts_at(fmt, fmt_pos, "W"):
             var parsed = _parse_iso_week_date(date_str, date_pos)
             var date = Morrow.fromisocalendar(
                 parsed.year, parsed.week, parsed.weekday
@@ -502,58 +507,58 @@ def _parse_arrow_at(
             has_day = True
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "dddd"):
+        elif starts_at(fmt, fmt_pos, "dddd"):
             var parsed = _parse_weekday_name(date_str, date_pos, False, locale)
             parsed_weekday_name = parsed.value
             date_pos = parsed.pos
             fmt_pos += 4
-        elif _starts_with(fmt, fmt_pos, "ddd"):
+        elif starts_at(fmt, fmt_pos, "ddd"):
             var parsed = _parse_weekday_name(date_str, date_pos, True, locale)
             parsed_weekday_name = parsed.value
             date_pos = parsed.pos
             fmt_pos += 3
-        elif _starts_with(fmt, fmt_pos, "d"):
+        elif starts_at(fmt, fmt_pos, "d"):
             var parsed = _parse_fixed_int(date_str, date_pos, 1)
             if parsed.value < 1 or parsed.value > 7:
                 raise Error("weekday must be in 1..7")
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "HH"):
+        elif starts_at(fmt, fmt_pos, "HH"):
             var parsed = _parse_fixed_int(date_str, date_pos, 2)
             hour = parsed.value
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "H"):
+        elif starts_at(fmt, fmt_pos, "H"):
             var parsed = _parse_variable_int(date_str, date_pos, 2)
             hour = parsed.value
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "hh"):
+        elif starts_at(fmt, fmt_pos, "hh"):
             var parsed = _parse_fixed_int(date_str, date_pos, 2)
             hour = parsed.value
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "h"):
+        elif starts_at(fmt, fmt_pos, "h"):
             var parsed = _parse_variable_int(date_str, date_pos, 2)
             hour = parsed.value
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "mm"):
+        elif starts_at(fmt, fmt_pos, "mm"):
             var parsed = _parse_fixed_int(date_str, date_pos, 2)
             minute = parsed.value
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "m"):
+        elif starts_at(fmt, fmt_pos, "m"):
             var parsed = _parse_variable_int(date_str, date_pos, 2)
             minute = parsed.value
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "ss"):
+        elif starts_at(fmt, fmt_pos, "ss"):
             var parsed = _parse_fixed_int(date_str, date_pos, 2)
             second = parsed.value
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "s"):
+        elif starts_at(fmt, fmt_pos, "s"):
             var parsed = _parse_variable_int(date_str, date_pos, 2)
             second = parsed.value
             date_pos = parsed.pos
@@ -571,7 +576,7 @@ def _parse_arrow_at(
             microsecond = parsed.value
             date_pos = parsed.pos
             fmt_pos = token_end
-        elif _starts_with(fmt, fmt_pos, "X"):
+        elif starts_at(fmt, fmt_pos, "X"):
             if fmt_pos + 1 != fmt.byte_length():
                 raise Error("timestamp token must be the full format")
             var timestamp_str = String(date_str[byte=date_pos:])
@@ -580,7 +585,7 @@ def _parse_arrow_at(
             if not tzinfo.is_none():
                 return parsed.replace(tzinfo=tzinfo)
             return parsed
-        elif _starts_with(fmt, fmt_pos, "x"):
+        elif starts_at(fmt, fmt_pos, "x"):
             if fmt_pos + 1 != fmt.byte_length():
                 raise Error("timestamp token must be the full format")
             var timestamp_str = String(date_str[byte=date_pos:])
@@ -591,27 +596,27 @@ def _parse_arrow_at(
             if not tzinfo.is_none():
                 return parsed.replace(tzinfo=tzinfo)
             return parsed
-        elif _starts_with(fmt, fmt_pos, "ZZZ"):
+        elif starts_at(fmt, fmt_pos, "ZZZ"):
             var parsed = _parse_timezone_name(date_str, date_pos)
             tz = parsed.tz
             date_pos = parsed.pos
             fmt_pos += 3
-        elif _starts_with(fmt, fmt_pos, "ZZ"):
+        elif starts_at(fmt, fmt_pos, "ZZ"):
             var parsed = _parse_timezone_offset(date_str, date_pos, True)
             tz = parsed.tz
             date_pos = parsed.pos
             fmt_pos += 2
-        elif _starts_with(fmt, fmt_pos, "Z"):
+        elif starts_at(fmt, fmt_pos, "Z"):
             var parsed = _parse_timezone_offset(date_str, date_pos, False)
             tz = parsed.tz
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "A"):
+        elif starts_at(fmt, fmt_pos, "A"):
             var parsed = _parse_am_pm(date_str, date_pos, locale)
             am_pm = parsed.value
             date_pos = parsed.pos
             fmt_pos += 1
-        elif _starts_with(fmt, fmt_pos, "a"):
+        elif starts_at(fmt, fmt_pos, "a"):
             var parsed = _parse_am_pm(date_str, date_pos, locale)
             am_pm = parsed.value
             date_pos = parsed.pos
@@ -641,7 +646,7 @@ def _parse_arrow_at(
             raise Error("month component is not allowed with day of year")
         if day_of_year < 1 or day_of_year > 366:
             raise Error("day of year is invalid")
-        var date = Morrow.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
+        var date = Morrow.fromordinal(ymd2ord(year, 1, 1) + day_of_year - 1)
         year = date.year
         month = date.month
         day = date.day
@@ -659,9 +664,9 @@ def _parse_arrow_at(
         year = date.year
         month = date.month
         day = date.day
-    if microsecond >= _US_PER_SECOND:
-        second += microsecond // _US_PER_SECOND
-        microsecond = microsecond % _US_PER_SECOND
+    if microsecond >= US_PER_SECOND:
+        second += microsecond // US_PER_SECOND
+        microsecond = microsecond % US_PER_SECOND
     var midnight_end_of_day = False
     if hour == 24:
         if minute != 0:
@@ -763,8 +768,8 @@ def _parse_strptime_timezone_offset(
     var pos = date_pos + 1
     if (
         pos + 2 > date_str.byte_length()
-        or not _is_ascii_digit(Int(date_str.as_bytes()[pos]))
-        or not _is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
+        or not is_digit(Int(date_str.as_bytes()[pos]))
+        or not is_digit(Int(date_str.as_bytes()[pos + 1]))
     ):
         raise Error("timezone hour is invalid")
     var hours = Int(date_str[byte = pos : pos + 2])
@@ -776,8 +781,8 @@ def _parse_strptime_timezone_offset(
         pos += 1
         if (
             pos + 2 > date_str.byte_length()
-            or not _is_ascii_digit(Int(date_str.as_bytes()[pos]))
-            or not _is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
+            or not is_digit(Int(date_str.as_bytes()[pos]))
+            or not is_digit(Int(date_str.as_bytes()[pos + 1]))
         ):
             raise Error("timezone minute is invalid")
         minutes = Int(date_str[byte = pos : pos + 2])
@@ -786,8 +791,8 @@ def _parse_strptime_timezone_offset(
             pos += 1
             if (
                 pos + 2 > date_str.byte_length()
-                or not _is_ascii_digit(Int(date_str.as_bytes()[pos]))
-                or not _is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
+                or not is_digit(Int(date_str.as_bytes()[pos]))
+                or not is_digit(Int(date_str.as_bytes()[pos + 1]))
             ):
                 raise Error("timezone second is invalid")
             seconds = Int(date_str[byte = pos : pos + 2])
@@ -795,16 +800,16 @@ def _parse_strptime_timezone_offset(
     else:
         if (
             pos + 2 > date_str.byte_length()
-            or not _is_ascii_digit(Int(date_str.as_bytes()[pos]))
-            or not _is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
+            or not is_digit(Int(date_str.as_bytes()[pos]))
+            or not is_digit(Int(date_str.as_bytes()[pos + 1]))
         ):
             raise Error("timezone minute is invalid")
         minutes = Int(date_str[byte = pos : pos + 2])
         pos += 2
         if (
             pos + 2 <= date_str.byte_length()
-            and _is_ascii_digit(Int(date_str.as_bytes()[pos]))
-            and _is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
+            and is_digit(Int(date_str.as_bytes()[pos]))
+            and is_digit(Int(date_str.as_bytes()[pos + 1]))
         ):
             seconds = Int(date_str[byte = pos : pos + 2])
             pos += 2
@@ -832,7 +837,7 @@ def _parse_iso_timezone_offset(
     if pos + 2 > date_str.byte_length():
         raise Error("isoformat timezone hour is invalid")
     for i in range(2):
-        if not _is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
+        if not is_digit(Int(date_str.as_bytes()[pos + i])):
             raise Error("isoformat timezone hour is invalid")
     pos += 2
 
@@ -852,13 +857,13 @@ def _parse_iso_timezone_offset(
         if pos + 2 > date_str.byte_length():
             raise Error("isoformat timezone minute is invalid")
         for i in range(2):
-            if not _is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
+            if not is_digit(Int(date_str.as_bytes()[pos + i])):
                 raise Error("isoformat timezone minute is invalid")
         pos += 2
     elif (
         pos + 2 <= date_str.byte_length()
-        and _is_ascii_digit(Int(date_str.as_bytes()[pos]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
+        and is_digit(Int(date_str.as_bytes()[pos]))
+        and is_digit(Int(date_str.as_bytes()[pos + 1]))
     ):
         pos += 2
     else:
@@ -871,42 +876,14 @@ def _parse_iso_timezone_offset(
     )
 
 
-def _starts_with(s: String, pos: Int, pattern: String) -> Bool:
-    if pos + pattern.byte_length() > s.byte_length():
-        return False
-    for i in range(pattern.byte_length()):
-        if Int(s.as_bytes()[pos + i]) != Int(pattern.as_bytes()[i]):
-            return False
-    return True
-
-
-def _starts_with_ascii_case_insensitive(
-    s: String, pos: Int, pattern: String
-) -> Bool:
-    if pos + pattern.byte_length() > s.byte_length():
-        return False
-    for i in range(pattern.byte_length()):
-        if _ascii_lower(Int(s.as_bytes()[pos + i])) != _ascii_lower(
-            Int(pattern.as_bytes()[i])
-        ):
-            return False
-    return True
-
-
-def _ascii_lower(c: Int) -> Int:
-    if c >= ord("A") and c <= ord("Z"):
-        return c + 32
-    return c
-
-
 def _has_left_parse_boundary(s: String, pos: Int) -> Bool:
     if pos == 0:
         return True
     var c = Int(s.as_bytes()[pos - 1])
-    if _is_ascii_whitespace(c):
+    if is_space(c):
         return True
     if _is_parse_punctuation(c):
-        return pos == 1 or _is_ascii_whitespace(Int(s.as_bytes()[pos - 2]))
+        return pos == 1 or is_space(Int(s.as_bytes()[pos - 2]))
     return False
 
 
@@ -914,10 +891,10 @@ def _has_right_parse_boundary(s: String, pos: Int) -> Bool:
     if pos == s.byte_length():
         return True
     var c = Int(s.as_bytes()[pos])
-    if _is_ascii_whitespace(c):
+    if is_space(c):
         return True
     if _is_parse_punctuation(c):
-        return pos + 1 == s.byte_length() or _is_ascii_whitespace(
+        return pos + 1 == s.byte_length() or is_space(
             Int(s.as_bytes()[pos + 1])
         )
     return False
@@ -945,29 +922,13 @@ def _is_parse_punctuation(c: Int) -> Bool:
     )
 
 
-def _is_ascii_alphanumeric(c: Int) -> Bool:
-    return (
-        _is_ascii_digit(c)
-        or (c >= ord("A") and c <= ord("Z"))
-        or (c >= ord("a") and c <= ord("z"))
-    )
-
-
-def _is_ascii_digit(c: Int) -> Bool:
-    return c >= ord("0") and c <= ord("9")
-
-
-def _is_ascii_whitespace(c: Int) -> Bool:
-    return c == ord(" ") or (c >= 9 and c <= 13)
-
-
 def _normalize_whitespace(s: String) -> String:
     var result = ""
     var pending_space = False
     var i = 0
     while i < s.byte_length():
         var width = utf8_width(s, i)
-        if _is_ascii_whitespace(Int(s.as_bytes()[i])):
+        if is_space(Int(s.as_bytes()[i])):
             if result.byte_length() > 0:
                 pending_space = True
         else:
@@ -1012,7 +973,7 @@ def _is_single_optional_whitespace_regex_literal(
 
 def _parse_whitespace_regex(date_str: String, date_pos: Int) raises -> Int:
     var pos = date_pos
-    while pos < date_str.byte_length() and _is_ascii_whitespace(
+    while pos < date_str.byte_length() and is_space(
         Int(date_str.as_bytes()[pos])
     ):
         pos += 1
@@ -1023,7 +984,7 @@ def _parse_whitespace_regex(date_str: String, date_pos: Int) raises -> Int:
 
 def _parse_optional_whitespace_regex(date_str: String, date_pos: Int) -> Int:
     var pos = date_pos
-    while pos < date_str.byte_length() and _is_ascii_whitespace(
+    while pos < date_str.byte_length() and is_space(
         Int(date_str.as_bytes()[pos])
     ):
         pos += 1
@@ -1033,7 +994,7 @@ def _parse_optional_whitespace_regex(date_str: String, date_pos: Int) -> Int:
 def _parse_single_optional_whitespace_regex(
     date_str: String, date_pos: Int
 ) -> Int:
-    if date_pos < date_str.byte_length() and _is_ascii_whitespace(
+    if date_pos < date_str.byte_length() and is_space(
         Int(date_str.as_bytes()[date_pos])
     ):
         return date_pos + 1
@@ -1055,7 +1016,7 @@ def _parse_fixed_int(
     if date_pos + count > date_str.byte_length():
         raise Error("date string is shorter than numeric token")
     for i in range(count):
-        if not _is_ascii_digit(Int(date_str.as_bytes()[date_pos + i])):
+        if not is_digit(Int(date_str.as_bytes()[date_pos + i])):
             raise Error("numeric token contains non-digit data")
     return MorrowParseInt(
         Int(date_str[byte = date_pos : date_pos + count]), date_pos + count
@@ -1069,7 +1030,7 @@ def _parse_variable_int(
     var end = date_pos + max_count
     if end > date_str.byte_length():
         end = date_str.byte_length()
-    while pos < end and _is_ascii_digit(Int(date_str.as_bytes()[pos])):
+    while pos < end and is_digit(Int(date_str.as_bytes()[pos])):
         pos += 1
     if pos == date_pos:
         raise Error("numeric token is missing")
@@ -1080,7 +1041,7 @@ def _parse_subsecond(
     date_str: String, date_pos: Int, count: Int
 ) raises -> MorrowParseInt:
     var pos = date_pos
-    while pos < date_str.byte_length() and _is_ascii_digit(
+    while pos < date_str.byte_length() and is_digit(
         Int(date_str.as_bytes()[pos])
     ):
         pos += 1
@@ -1119,7 +1080,7 @@ def _validate_timestamp_seconds_token(timestamp_str: String) raises:
             raise Error("timestamp token is missing")
 
     var digit_start = pos
-    while pos < length and _is_ascii_digit(Int(timestamp_str.as_bytes()[pos])):
+    while pos < length and is_digit(Int(timestamp_str.as_bytes()[pos])):
         pos += 1
     var digit_count = pos - digit_start
     if digit_count == 0:
@@ -1130,9 +1091,7 @@ def _validate_timestamp_seconds_token(timestamp_str: String) raises:
         has_fraction = True
         pos += 1
         var fraction_start = pos
-        while pos < length and _is_ascii_digit(
-            Int(timestamp_str.as_bytes()[pos])
-        ):
+        while pos < length and is_digit(Int(timestamp_str.as_bytes()[pos])):
             pos += 1
         if pos == fraction_start:
             raise Error("timestamp token fraction is missing")
@@ -1152,7 +1111,7 @@ def _validate_expanded_timestamp_token(timestamp_str: String) raises:
         pos += 1
         if pos == length:
             raise Error("timestamp token is missing")
-    while pos < length and _is_ascii_digit(Int(timestamp_str.as_bytes()[pos])):
+    while pos < length and is_digit(Int(timestamp_str.as_bytes()[pos])):
         pos += 1
     if pos != length:
         raise Error("timestamp token has invalid characters")
@@ -1173,7 +1132,7 @@ def _parse_ordinal_suffix(
             expected = "nd"
         elif mod10 == 3:
             expected = "rd"
-    if _starts_with_ascii_case_insensitive(date_str, date_pos, expected):
+    if starts_at_ascii_ignore_case(date_str, date_pos, expected):
         return date_pos + 2
     raise Error("ordinal suffix is invalid")
 
@@ -1197,7 +1156,7 @@ def _parse_month_name(
         var name = month_abbreviation(value) if abbreviated else month_name(
             value
         )
-        if _starts_with_ascii_case_insensitive(date_str, date_pos, name):
+        if starts_at_ascii_ignore_case(date_str, date_pos, name):
             return MorrowParseInt(value, date_pos + name.byte_length())
     raise Error("month name is invalid")
 
@@ -1213,7 +1172,7 @@ def _parse_weekday_name(
         return MorrowParseInt(matched.value, matched.pos)
     for value in range(1, 8):
         var name = day_abbreviation(value) if abbreviated else day_name(value)
-        if _starts_with_ascii_case_insensitive(date_str, date_pos, name):
+        if starts_at_ascii_ignore_case(date_str, date_pos, name):
             return MorrowParseInt(value, date_pos + name.byte_length())
     raise Error("weekday name is invalid")
 
@@ -1235,14 +1194,14 @@ def _parse_iso_week_date(
 
     var weekday = 1
     if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 45:
-        if pos + 1 < date_str.byte_length() and _is_ascii_digit(
+        if pos + 1 < date_str.byte_length() and is_digit(
             Int(date_str.as_bytes()[pos + 1])
         ):
             pos += 1
             var weekday_parsed = _parse_fixed_int(date_str, pos, 1)
             weekday = weekday_parsed.value
             pos = weekday_parsed.pos
-    elif pos < date_str.byte_length() and _is_ascii_digit(
+    elif pos < date_str.byte_length() and is_digit(
         Int(date_str.as_bytes()[pos])
     ):
         var weekday_parsed = _parse_fixed_int(date_str, pos, 1)
@@ -1263,7 +1222,7 @@ def _parse_timezone_name(
     while end < date_str.byte_length():
         var c = Int(date_str.as_bytes()[end])
         if not (
-            _is_ascii_alphanumeric(c)
+            is_alnum(c)
             or c == ord("/")
             or c == ord("_")
             or c == ord("-")
@@ -1272,13 +1231,9 @@ def _parse_timezone_name(
             break
         end += 1
     var name = String(date_str[byte=date_pos:end])
-    if name.byte_length() == 3 and _starts_with_ascii_case_insensitive(
-        name, 0, "UTC"
-    ):
+    if name.byte_length() == 3 and starts_at_ascii_ignore_case(name, 0, "UTC"):
         return MorrowParseTimeZone(Morrow._utc_timezone(), end)
-    if name.byte_length() == 3 and _starts_with_ascii_case_insensitive(
-        name, 0, "GMT"
-    ):
+    if name.byte_length() == 3 and starts_at_ascii_ignore_case(name, 0, "GMT"):
         return MorrowParseTimeZone(TimeZone(0, "GMT"), end)
     return MorrowParseTimeZone(TimeZone.from_name(name), end)
 
@@ -1286,7 +1241,7 @@ def _parse_timezone_name(
 def _parse_timezone_offset(
     date_str: String, date_pos: Int, colon: Bool
 ) raises -> MorrowParseTimeZone:
-    if _starts_with(date_str, date_pos, "Z"):
+    if starts_at(date_str, date_pos, "Z"):
         return MorrowParseTimeZone(Morrow._utc_timezone(), date_pos + 1)
     if date_pos >= date_str.byte_length():
         raise Error("timezone is missing")
@@ -1299,7 +1254,7 @@ def _parse_timezone_offset(
     if pos + 2 > date_str.byte_length():
         raise Error("timezone hour is invalid")
     for i in range(2):
-        if not _is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
+        if not is_digit(Int(date_str.as_bytes()[pos + i])):
             raise Error("timezone hour is invalid")
     pos += 2
 
@@ -1314,7 +1269,7 @@ def _parse_timezone_offset(
                 colon_pos,
             )
         for i in range(2):
-            if not _is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
+            if not is_digit(Int(date_str.as_bytes()[pos + i])):
                 return MorrowParseTimeZone(
                     TimeZone.from_utc(
                         String(date_str[byte=date_pos:colon_pos])
@@ -1324,8 +1279,8 @@ def _parse_timezone_offset(
         pos += 2
     elif (
         pos + 2 <= date_str.byte_length()
-        and _is_ascii_digit(Int(date_str.as_bytes()[pos]))
-        and _is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
+        and is_digit(Int(date_str.as_bytes()[pos]))
+        and is_digit(Int(date_str.as_bytes()[pos + 1]))
     ):
         if colon:
             raise Error("timezone offset minutes must contain a colon")
@@ -1342,17 +1297,17 @@ def _parse_am_pm(
     if not locale.is_fast_english():
         var matched = locale._match_meridian(date_str, date_pos)
         return MorrowParseInt(matched.value, matched.pos)
-    if _starts_with(date_str, date_pos, "AM") or _starts_with(
+    if starts_at(date_str, date_pos, "AM") or starts_at(
         date_str, date_pos, "am"
     ):
         return MorrowParseInt(1, date_pos + 2)
-    if _starts_with(date_str, date_pos, "PM") or _starts_with(
+    if starts_at(date_str, date_pos, "PM") or starts_at(
         date_str, date_pos, "pm"
     ):
         return MorrowParseInt(2, date_pos + 2)
     # Mixed-case markers are accepted without changing the hour (1.0).
-    if _starts_with_ascii_case_insensitive(
+    if starts_at_ascii_ignore_case(
         date_str, date_pos, "AM"
-    ) or _starts_with_ascii_case_insensitive(date_str, date_pos, "PM"):
+    ) or starts_at_ascii_ignore_case(date_str, date_pos, "PM"):
         return MorrowParseInt(0, date_pos + 2)
     raise Error("AM/PM marker is invalid")

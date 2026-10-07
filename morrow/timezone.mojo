@@ -1,3 +1,5 @@
+from ._text import is_digit, equals_ascii_ignore_case, pad
+from ._calendar import epoch_seconds
 from std.format import Writable, Writer
 
 from ._libc import c_gettimeofday
@@ -6,7 +8,6 @@ from std.memory import ArcPointer
 
 from ._icu import Calendar
 from ._tzif import ZoneData, load_zone
-from .util import _ymd2ord
 
 
 struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
@@ -139,12 +140,7 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         if result.zone == "":
             return result
         if result._data:
-            var wall = (
-                (_ymd2ord(year, month, day) - 719163) * 86400
-                + hour * 3600
-                + minute * 60
-                + second
-            )
+            var wall = epoch_seconds(year, month, day, hour, minute, second)
             var info = result._data.value()[].resolve_wall(
                 wall, result.fold_value
             )
@@ -169,12 +165,7 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
     ) raises -> TimeZone:
         """Resolve wall fields with an already open calendar for this zone."""
         var result = self
-        var wall = (
-            (_ymd2ord(year, month, day) - 719163) * 86400
-            + hour * 3600
-            + minute * 60
-            + second
-        )
+        var wall = epoch_seconds(year, month, day, hour, minute, second)
         var info = calendar.wall(
             year, month, day, hour, minute, second, wall, result.fold_value
         )
@@ -191,9 +182,9 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         if utc_str.byte_length() == 0:
             raise Error("utc_str is empty")
-        if _equals_ascii_case_insensitive(utc_str, "UTC") or utc_str == "Z":
+        if equals_ascii_ignore_case(utc_str, "UTC") or utc_str == "Z":
             return TimeZone(0, "utc")
-        if _equals_ascii_case_insensitive(utc_str, "GMT"):
+        if equals_ascii_ignore_case(utc_str, "GMT"):
             return TimeZone(0, "GMT")
         for byte in utc_str.as_bytes():
             if byte > 127:
@@ -208,8 +199,8 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
 
         if (
             utc_str.byte_length() < p + 2
-            or not _is_ascii_digit(Int(utc_str.as_bytes()[p]))
-            or not _is_ascii_digit(Int(utc_str.as_bytes()[p + 1]))
+            or not is_digit(Int(utc_str.as_bytes()[p]))
+            or not is_digit(Int(utc_str.as_bytes()[p + 1]))
         ):
             raise Error("utc_str format is invalid")
         var hours: Int = Int(utc_str[byte = p : p + 2])
@@ -230,14 +221,14 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
             minutes = Int(utc_str[byte = p + 1 : p + 3])
         elif (
             utc_str.byte_length() == p + 4
-            and _is_ascii_digit(Int(utc_str.as_bytes()[p]))
-            and _is_ascii_digit(Int(utc_str.as_bytes()[p + 1]))
-            and _is_ascii_digit(Int(utc_str.as_bytes()[p + 2]))
-            and _is_ascii_digit(Int(utc_str.as_bytes()[p + 3]))
+            and is_digit(Int(utc_str.as_bytes()[p]))
+            and is_digit(Int(utc_str.as_bytes()[p + 1]))
+            and is_digit(Int(utc_str.as_bytes()[p + 2]))
+            and is_digit(Int(utc_str.as_bytes()[p + 3]))
         ):
             minutes = Int(utc_str[byte = p : p + 2])
             seconds = Int(utc_str[byte = p + 2 : p + 4])
-        elif utc_str.byte_length() == p + 2 and _is_ascii_digit(
+        elif utc_str.byte_length() == p + 2 and is_digit(
             Int(utc_str.as_bytes()[p])
         ):
             minutes = Int(utc_str[byte = p : p + 2])
@@ -254,44 +245,20 @@ struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):
         """
         Format the TimeZone as a string.
         """
-        var sign: String
-        var offset_abs: Int
-        if self.offset < 0:
-            sign = "-"
-            offset_abs = -self.offset
-        else:
-            sign = "+"
-            offset_abs = self.offset
-        var hh = offset_abs // 3600
-        var mm = (offset_abs % 3600) // 60
-        var result = (
-            sign
-            + String(hh).ascii_rjust(2, "0")
-            + sep
-            + String(mm).ascii_rjust(2, "0")
-        )
-        var ss = offset_abs % 60
-        if ss != 0:
-            result += sep + String(ss).ascii_rjust(2, "0")
-        return result
+        return format_offset(self.offset, sep)
 
 
-def _is_ascii_digit(c: Int) -> Bool:
-    return c >= ord("0") and c <= ord("9")
-
-
-def _equals_ascii_case_insensitive(left: String, right: String) -> Bool:
-    if left.byte_length() != right.byte_length():
-        return False
-    for i in range(left.byte_length()):
-        if _ascii_lower(Int(left.as_bytes()[i])) != _ascii_lower(
-            Int(right.as_bytes()[i])
-        ):
-            return False
-    return True
-
-
-def _ascii_lower(c: Int) -> Int:
-    if c >= ord("A") and c <= ord("Z"):
-        return c + 32
-    return c
+def format_offset(
+    offset: Int, sep: String = ":", include_seconds: Bool = True
+) -> String:
+    """A UTC offset as "+HH:MM", with ":SS" when seconds are nonzero."""
+    var magnitude = abs(offset)
+    var result = (
+        ("-" if offset < 0 else "+")
+        + pad(magnitude // 3600, 2)
+        + sep
+        + pad((magnitude % 3600) // 60, 2)
+    )
+    if include_seconds and magnitude % 60 != 0:
+        result += sep + pad(magnitude % 60, 2)
+    return result

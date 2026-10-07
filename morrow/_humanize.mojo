@@ -1,9 +1,9 @@
 """Relative-time helpers behind Morrow.humanize and Morrow.dehumanize."""
+from ._calendar import US_PER_SECOND, days_in_month
 
-from .util import _days_in_month
 from .locale import Locale, frame_index
 from std.collections import List
-from .morrow import Morrow, _US_PER_SECOND
+from .morrow import Morrow, US_PER_SECOND
 
 
 comptime _HUMANIZE_SECONDS_PER_MONTH = 2635200  # 30.5 days
@@ -253,7 +253,7 @@ def _humanize_calendar_months(value: Morrow, other: Morrow) raises -> Int:
             previous_month = 12
             previous_year -= 1
         days = (
-            end.day + _days_in_month(previous_year, previous_month) - start.day
+            end.day + days_in_month(previous_year, previous_month) - start.day
         )
 
     if days > 14:
@@ -269,11 +269,11 @@ def _rounded_seconds(delta_us: Int) -> Int:
     if abs_us < 0:
         sign = -1
         abs_us = -abs_us
-    var seconds = abs_us // _US_PER_SECOND
-    var remainder = abs_us % _US_PER_SECOND
-    if remainder > _US_PER_SECOND // 2:
+    var seconds = abs_us // US_PER_SECOND
+    var remainder = abs_us % US_PER_SECOND
+    if remainder > US_PER_SECOND // 2:
         seconds += 1
-    elif remainder == _US_PER_SECOND // 2 and seconds % 2 == 1:
+    elif remainder == US_PER_SECOND // 2 and seconds % 2 == 1:
         seconds += 1
     return sign * seconds
 

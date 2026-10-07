@@ -4,6 +4,8 @@ Named zones are parsed once into `ZoneData`, shared by every copy of a
 `TimeZone`, so conversions need no file or ICU access. ICU remains the
 fallback when no zone file exists.
 """
+from ._text import is_digit, is_alpha
+from ._calendar import UNIX_EPOCH_ORDINAL, days_in_month, ymd2ord
 from std.collections import Optional
 from std.ffi import _get_global, external_call
 from std.memory import ArcPointer, Pointer
@@ -11,9 +13,7 @@ from std.memory.alloc import unsafe_alloc
 from std.os import getenv
 from std.os.path import exists
 
-from .util import _days_in_month, _ymd2ord
 
-comptime _EPOCH_ORDINAL = 719163
 comptime _WINDOW = 93600  # 26 hours: wider than any UTC offset.
 
 
@@ -78,14 +78,6 @@ def _i64(data: List[UInt8], pos: Int) -> Int:
     return value
 
 
-def _is_alpha(byte: Int) -> Bool:
-    return (byte >= 65 and byte <= 90) or (byte >= 97 and byte <= 122)
-
-
-def _is_digit(byte: Int) -> Bool:
-    return byte >= 48 and byte <= 57
-
-
 struct _Cursor:
     """Parser position over a POSIX TZ string."""
 
@@ -104,7 +96,7 @@ struct _Cursor:
     def number(mut self) raises -> Int:
         var start = self.pos
         var value = 0
-        while _is_digit(self.peek()):
+        while is_digit(self.peek()):
             value = value * 10 + self.peek() - 48
             self.pos += 1
         if self.pos == start:
@@ -120,7 +112,7 @@ struct _Cursor:
                 self.pos += 1
             self.pos += 1
             return String(self.text[byte = start + 1 : self.pos - 1])
-        while _is_alpha(self.peek()):
+        while is_alpha(self.peek()):
             self.pos += 1
         if self.pos - start < 3:
             raise Error("invalid POSIX TZ name")
@@ -159,18 +151,18 @@ struct _Rule(Copyable, ImplicitlyCopyable, Movable):
         var ordinal: Int
         if self.kind == 0:
             var day = self.day
-            if day >= 60 and _days_in_month(year, 2) == 29:
+            if day >= 60 and days_in_month(year, 2) == 29:
                 day += 1
-            ordinal = _ymd2ord(year, 1, 1) + day - 1
+            ordinal = ymd2ord(year, 1, 1) + day - 1
         elif self.kind == 1:
-            ordinal = _ymd2ord(year, 1, 1) + self.day
+            ordinal = ymd2ord(year, 1, 1) + self.day
         else:
-            var first = _ymd2ord(year, self.month, 1)
+            var first = ymd2ord(year, self.month, 1)
             var day = 1 + (self.day - first % 7 + 7) % 7 + (self.week - 1) * 7
-            while day > _days_in_month(year, self.month):
+            while day > days_in_month(year, self.month):
                 day -= 7
             ordinal = first + day - 1
-        return (ordinal - _EPOCH_ORDINAL) * 86400 + self.time
+        return (ordinal - UNIX_EPOCH_ORDINAL) * 86400 + self.time
 
 
 def _parse_rule(mut cursor: _Cursor) raises -> _Rule:

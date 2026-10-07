@@ -1,15 +1,15 @@
-from .util import utf8_width
-from .constants import (
+from ._text import utf8_width, pad
+from .timezone import format_offset
+from ._calendar import (
+    US_PER_SECOND,
+    day_of_year,
+    iso_calendar,
+    epoch_seconds,
     month_name,
     month_abbreviation,
     day_name,
     day_abbreviation,
 )
-from .util import _ymd2ord
-
-
-comptime _US_PER_SECOND = 1000000
-comptime _UNIX_EPOCH_ORDINAL = 719163  # 1970-01-01
 
 
 def format_morrow(
@@ -308,8 +308,8 @@ def _format_modified_number(value: Int, width: Int, modifier: Int) -> String:
     if modifier == ord("-"):
         return String(value)
     if modifier == ord("_"):
-        return String(value).ascii_rjust(width, " ")
-    return String(value).ascii_rjust(width, "0")
+        return pad(value, width, " ")
+    return pad(value, width)
 
 
 def _replace_strftime_modified_directive(
@@ -328,8 +328,8 @@ def _replace_strftime_modified_directive(
     directive: Int,
     directive_text: String,
 ) raises -> String:
-    var day_of_year = _day_of_year(year, month, day)
-    var iso_week = _format_iso_week(year, month, day, weekday)
+    var day_of_year = day_of_year(year, month, day)
+    var iso_week = _format_iso_week(year, month, day)
     if modifier == ord("E") or modifier == ord("O"):
         return _replace_strftime_directive(
             year,
@@ -351,11 +351,11 @@ def _replace_strftime_modified_directive(
     if directive == ord("m"):
         return _format_modified_number(month, 2, modifier)
     if directive == ord("y"):
-        return String(String(year).ascii_rjust(4, "0")[byte=2:4])
+        return String(pad(year, 4)[byte=2:4])
     if directive == ord("Y"):
-        return String(year).ascii_rjust(4, "0")
+        return pad(year, 4)
     if directive == ord("C"):
-        return String(year // 100).ascii_rjust(2, "0")
+        return pad(year // 100, 2)
     if directive == ord("h"):
         return month_abbreviation(month)
     if directive == ord("H"):
@@ -411,8 +411,8 @@ def _replace_strftime_directive(
     directive: Int,
     directive_text: String,
 ) raises -> String:
-    var day_of_year = _day_of_year(year, month, day)
-    var iso_week = _format_iso_week(year, month, day, weekday)
+    var day_of_year = day_of_year(year, month, day)
+    var iso_week = _format_iso_week(year, month, day)
     if directive == ord("%"):
         return "%"
     if directive == ord("a"):
@@ -424,9 +424,9 @@ def _replace_strftime_directive(
     if directive == ord("u"):
         return String(weekday)
     if directive == ord("d"):
-        return String(day).ascii_rjust(2, "0")
+        return pad(day, 2)
     if directive == ord("e"):
-        return String(day).ascii_rjust(2, " ")
+        return pad(day, 2, " ")
     if directive == ord("b"):
         return month_abbreviation(month)
     if directive == ord("h"):
@@ -434,39 +434,39 @@ def _replace_strftime_directive(
     if directive == ord("B"):
         return month_name(month)
     if directive == ord("m"):
-        return String(month).ascii_rjust(2, "0")
+        return pad(month, 2)
     if directive == ord("y"):
-        return String(String(year).ascii_rjust(4, "0")[byte=2:4])
+        return String(pad(year, 4)[byte=2:4])
     if directive == ord("Y"):
-        return String(year).ascii_rjust(4, "0")
+        return pad(year, 4)
     if directive == ord("C"):
-        return String(year // 100).ascii_rjust(2, "0")
+        return pad(year // 100, 2)
     if directive == ord("H"):
-        return String(hour).ascii_rjust(2, "0")
+        return pad(hour, 2)
     if directive == ord("k"):
-        return String(hour).ascii_rjust(2, " ")
+        return pad(hour, 2, " ")
     if directive == ord("I"):
         var hour_12 = hour % 12
         if hour_12 == 0:
             hour_12 = 12
-        return String(hour_12).ascii_rjust(2, "0")
+        return pad(hour_12, 2)
     if directive == ord("l"):
         var hour_12 = hour % 12
         if hour_12 == 0:
             hour_12 = 12
-        return String(hour_12).ascii_rjust(2, " ")
+        return pad(hour_12, 2, " ")
     if directive == ord("r"):
         return _format_strftime_12_hour_time(hour, minute, second)
     if directive == ord("p"):
         return "AM" if hour < 12 else "PM"
     if directive == ord("M"):
-        return String(minute).ascii_rjust(2, "0")
+        return pad(minute, 2)
     if directive == ord("S"):
-        return String(second).ascii_rjust(2, "0")
+        return pad(second, 2)
     if directive == ord("f"):
-        return String(microsecond).ascii_rjust(6, "0")
+        return pad(microsecond, 6)
     if directive == ord("z"):
-        return _format_timezone(0 if tz_is_none else tz_offset, "", True)
+        return format_offset(0 if tz_is_none else tz_offset, "")
     if directive == ord("Z"):
         if tz_is_none or tz_name == "utc" or tz_name == "UTC":
             return "UTC"
@@ -474,9 +474,9 @@ def _replace_strftime_directive(
             return tz_name
         if tz_offset == 0:
             return "UTC"
-        return "UTC" + _format_timezone(tz_offset, include_seconds=True)
+        return "UTC" + format_offset(tz_offset)
     if directive == ord("j"):
-        return String(day_of_year).ascii_rjust(3, "0")
+        return pad(day_of_year, 3)
     if directive == ord("U"):
         return _format_week_number(day_of_year, 0 if weekday == 7 else weekday)
     if directive == ord("W"):
@@ -488,34 +488,18 @@ def _replace_strftime_directive(
     if directive == ord("V"):
         return String(iso_week[byte=6:8])
     if directive == ord("F"):
-        return (
-            String(year).ascii_rjust(4, "0")
-            + "-"
-            + String(month).ascii_rjust(2, "0")
-            + "-"
-            + String(day).ascii_rjust(2, "0")
-        )
+        return pad(year, 4) + "-" + pad(month, 2) + "-" + pad(day, 2)
     if directive == ord("T"):
-        return (
-            String(hour).ascii_rjust(2, "0")
-            + ":"
-            + String(minute).ascii_rjust(2, "0")
-            + ":"
-            + String(second).ascii_rjust(2, "0")
-        )
+        return pad(hour, 2) + ":" + pad(minute, 2) + ":" + pad(second, 2)
     if directive == ord("R"):
-        return (
-            String(hour).ascii_rjust(2, "0")
-            + ":"
-            + String(minute).ascii_rjust(2, "0")
-        )
+        return pad(hour, 2) + ":" + pad(minute, 2)
     if directive == ord("D"):
         return (
-            String(month).ascii_rjust(2, "0")
+            pad(month, 2)
             + "/"
-            + String(day).ascii_rjust(2, "0")
+            + pad(day, 2)
             + "/"
-            + String(String(year).ascii_rjust(4, "0")[byte=2:4])
+            + String(pad(year, 4)[byte=2:4])
         )
     if directive == ord("v"):
         return _format_strftime_v(year, month, day)
@@ -525,32 +509,26 @@ def _replace_strftime_directive(
             + " "
             + month_abbreviation(month)
             + " "
-            + String(day).ascii_rjust(2, " ")
+            + pad(day, 2, " ")
             + " "
-            + String(hour).ascii_rjust(2, "0")
+            + pad(hour, 2)
             + ":"
-            + String(minute).ascii_rjust(2, "0")
+            + pad(minute, 2)
             + ":"
-            + String(second).ascii_rjust(2, "0")
+            + pad(second, 2)
             + " "
-            + String(year).ascii_rjust(4, "0")
+            + pad(year, 4)
         )
     if directive == ord("x"):
         return (
-            String(month).ascii_rjust(2, "0")
+            pad(month, 2)
             + "/"
-            + String(day).ascii_rjust(2, "0")
+            + pad(day, 2)
             + "/"
-            + String(String(year).ascii_rjust(4, "0")[byte=2:4])
+            + String(pad(year, 4)[byte=2:4])
         )
     if directive == ord("X"):
-        return (
-            String(hour).ascii_rjust(2, "0")
-            + ":"
-            + String(minute).ascii_rjust(2, "0")
-            + ":"
-            + String(second).ascii_rjust(2, "0")
-        )
+        return pad(hour, 2) + ":" + pad(minute, 2) + ":" + pad(second, 2)
     if directive == ord("s"):
         return String(
             _timestamp_seconds(
@@ -571,11 +549,11 @@ def _format_strftime_12_hour_time(
     if hour_12 == 0:
         hour_12 = 12
     return (
-        String(hour_12).ascii_rjust(2, "0")
+        pad(hour_12, 2)
         + ":"
-        + String(minute).ascii_rjust(2, "0")
+        + pad(minute, 2)
         + ":"
-        + String(second).ascii_rjust(2, "0")
+        + pad(second, 2)
         + " "
         + ("AM" if hour < 12 else "PM")
     )
@@ -583,11 +561,7 @@ def _format_strftime_12_hour_time(
 
 def _format_strftime_v(year: Int, month: Int, day: Int) -> String:
     return (
-        String(day).ascii_rjust(2, " ")
-        + "-"
-        + month_abbreviation(month)
-        + "-"
-        + String(year).ascii_rjust(4, "0")
+        pad(day, 2, " ") + "-" + month_abbreviation(month) + "-" + pad(year, 4)
     )
 
 
@@ -611,33 +585,33 @@ def _replace_token(
         if token_count == 1:
             return "Y"
         if token_count == 2:
-            return String(String(year).ascii_rjust(4, "0")[byte=2:4])
+            return String(pad(year, 4)[byte=2:4])
         if token_count == 4:
-            return String(year).ascii_rjust(4, "0")
+            return pad(year, 4)
     elif token == _M:
         if token_count == 1:
             return String(month)
         if token_count == 2:
-            return String(month).ascii_rjust(2, "0")
+            return pad(month, 2)
         if token_count == 3:
             return month_abbreviation(month)
         if token_count == 4:
             return month_name(month)
     elif token == _D:
-        var day_of_year = _day_of_year(year, month, day)
+        var day_of_year = day_of_year(year, month, day)
         if token_count == 1:
             return String(day)
         if token_count == 2:
-            return String(day).ascii_rjust(2, "0")
+            return pad(day, 2)
         if token_count == 3:
             return String(day_of_year)
         if token_count == 4:
-            return String(day_of_year).ascii_rjust(3, "0")
+            return pad(day_of_year, 3)
     elif token == _H:
         if token_count == 1:
             return String(hour)
         if token_count == 2:
-            return String(hour).ascii_rjust(2, "0")
+            return pad(hour, 2)
     elif token == _h:
         var h_12 = hour % 12
         if h_12 == 0:
@@ -645,30 +619,30 @@ def _replace_token(
         if token_count == 1:
             return String(h_12)
         if token_count == 2:
-            return String(h_12).ascii_rjust(2, "0")
+            return pad(h_12, 2)
     elif token == _m:
         if token_count == 1:
             return String(minute)
         if token_count == 2:
-            return String(minute).ascii_rjust(2, "0")
+            return pad(minute, 2)
     elif token == _s:
         if token_count == 1:
             return String(second)
         if token_count == 2:
-            return String(second).ascii_rjust(2, "0")
+            return pad(second, 2)
     elif token == _S:
         if token_count == 1:
             return String(microsecond // 100000)
         if token_count == 2:
-            return String(microsecond // 10000).ascii_rjust(2, "0")
+            return pad(microsecond // 10000, 2)
         if token_count == 3:
-            return String(microsecond // 1000).ascii_rjust(3, "0")
+            return pad(microsecond // 1000, 3)
         if token_count == 4:
-            return String(microsecond // 100).ascii_rjust(4, "0")
+            return pad(microsecond // 100, 4)
         if token_count == 5:
-            return String(microsecond // 10).ascii_rjust(5, "0")
+            return pad(microsecond // 10, 5)
         if token_count == 6:
-            return String(microsecond).ascii_rjust(6, "0")
+            return pad(microsecond, 6)
     elif token == _d:
         if token_count == 1:
             return String(weekday)
@@ -684,15 +658,15 @@ def _replace_token(
                 return tz_name
             if tz_offset == 0:
                 return "UTC"
-            return "UTC" + _format_timezone(tz_offset, include_seconds=True)
+            return "UTC" + format_offset(tz_offset)
         var separator = "" if token_count == 1 else ":"
         if tz_is_none:
-            return _format_timezone(0, separator)
+            return format_offset(0, separator, False)
         else:
-            return _format_timezone(tz_offset, separator)
+            return format_offset(tz_offset, separator, False)
 
     elif token == _W:
-        return _format_iso_week(year, month, day, weekday)
+        return _format_iso_week(year, month, day)
     elif token == _X:
         return _format_timestamp_seconds(
             _timestamp_seconds(
@@ -705,7 +679,7 @@ def _replace_token(
             _timestamp_seconds(
                 year, month, day, hour, minute, second, tz_offset
             )
-            * _US_PER_SECOND
+            * US_PER_SECOND
             + microsecond
         )
     elif token == _a:
@@ -713,31 +687,6 @@ def _replace_token(
     elif token == _A:
         return "AM" if hour < 12 else "PM"
     return ""
-
-
-def _format_timezone(
-    offset: Int, sep: String = ":", include_seconds: Bool = False
-) -> String:
-    var sign: String
-    var offset_abs: Int
-    if offset < 0:
-        sign = "-"
-        offset_abs = -offset
-    else:
-        sign = "+"
-        offset_abs = offset
-    var hh = offset_abs // 3600
-    var mm = (offset_abs % 3600) // 60
-    var result = (
-        sign
-        + String(hh).ascii_rjust(2, "0")
-        + sep
-        + String(mm).ascii_rjust(2, "0")
-    )
-    var ss = offset_abs % 60
-    if include_seconds and ss != 0:
-        result += sep + String(ss).ascii_rjust(2, "0")
-    return result
 
 
 def _format_ordinal(value: Int) -> String:
@@ -755,18 +704,12 @@ def _format_ordinal(value: Int) -> String:
 
 
 def _format_week_number(day_of_year: Int, weekday_zero_based: Int) -> String:
-    return String(_week_number(day_of_year, weekday_zero_based)).ascii_rjust(
-        2, "0"
-    )
+    return pad(_week_number(day_of_year, weekday_zero_based), 2)
 
 
 def _week_number(day_of_year: Int, weekday_zero_based: Int) -> Int:
     var yday_zero_based = day_of_year - 1
     return (yday_zero_based + 7 - weekday_zero_based) // 7
-
-
-def _day_of_year(year: Int, month: Int, day: Int) raises -> Int:
-    return _ymd2ord(year, month, day) - _ymd2ord(year, 1, 1) + 1
 
 
 def _timestamp_seconds(
@@ -777,58 +720,27 @@ def _timestamp_seconds(
     minute: Int,
     second: Int,
     tz_offset: Int,
-) raises -> Int:
-    return (
-        (_ymd2ord(year, month, day) - _UNIX_EPOCH_ORDINAL) * 86400
-        + hour * 3600
-        + minute * 60
-        + second
-        - tz_offset
-    )
+) -> Int:
+    return epoch_seconds(year, month, day, hour, minute, second) - tz_offset
 
 
 def _format_timestamp_seconds(seconds: Int, microsecond: Int) -> String:
     if seconds == 0 and microsecond > 0:
-        return String(Float64(microsecond) / Float64(_US_PER_SECOND))
+        return String(Float64(microsecond) / Float64(US_PER_SECOND))
     if seconds < 0 and microsecond > 0:
-        var total_us = seconds * _US_PER_SECOND + microsecond
-        return String(Float64(total_us) / Float64(_US_PER_SECOND))
+        var total_us = seconds * US_PER_SECOND + microsecond
+        return String(Float64(total_us) / Float64(US_PER_SECOND))
 
-    var fraction = String(microsecond).ascii_rjust(6, "0")
+    var fraction = pad(microsecond, 6)
     var end = fraction.byte_length()
     while end > 1 and fraction.as_bytes()[end - 1] == 48:
         end -= 1
     return String(seconds) + "." + String(fraction[byte=0:end])
 
 
-def _format_iso_week(
-    year: Int, month: Int, day: Int, weekday: Int
-) raises -> String:
-    var ordinal = _ymd2ord(year, month, day)
-    var iso_year = year
-    var week1 = _iso_week1_monday(iso_year)
-    if ordinal < week1:
-        iso_year -= 1
-        week1 = _iso_week1_monday(iso_year)
-    else:
-        var next_week1 = _iso_week1_monday(iso_year + 1)
-        if ordinal >= next_week1:
-            iso_year += 1
-            week1 = next_week1
-    var week = (ordinal - week1) // 7 + 1
-    return (
-        String(iso_year).ascii_rjust(4, "0")
-        + "-W"
-        + String(week).ascii_rjust(2, "0")
-        + "-"
-        + String(weekday)
-    )
-
-
-def _iso_week1_monday(year: Int) raises -> Int:
-    var fourth_jan = _ymd2ord(year, 1, 4)
-    var weekday = fourth_jan % 7 or 7
-    return fourth_jan - weekday + 1
+def _format_iso_week(year: Int, month: Int, day: Int) -> String:
+    var iso = iso_calendar(year, month, day)
+    return pad(iso[0], 4) + "-W" + pad(iso[1], 2) + "-" + String(iso[2])
 
 
 def _sub_chr_max(c: Int) -> Int:
