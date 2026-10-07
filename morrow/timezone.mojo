@@ -1,12 +1,14 @@
+"""Fixed UTC offsets and IANA zones resolved from tzdata or ICU."""
+
+from std.format import Writable, Writer
+from std.collections import Optional
+from std.memory import ArcPointer
+
 from ._text import is_digit, equals_ascii_ignore_case, pad
 from ._calendar import epoch_seconds
 from ._libc import c_gettimeofday
 from ._icu import Calendar
 from ._tzif import ZoneData, load_zone
-from std.format import Writable, Writer
-
-from std.collections import Optional
-from std.memory import ArcPointer
 
 
 struct TimeZone(Copyable, ImplicitlyCopyable, Movable, Writable):

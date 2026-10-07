@@ -1,9 +1,9 @@
 """Parsing behind Morrow.get, Morrow.strptime and Morrow.fromisoformat.
 
-Three grammars live here: ISO 8601 (`_parse_isoformat`, plus the lenient
-`_parse_iso_auto` used by `Morrow.get(str)`), Arrow format tokens
-(`_parse_arrow`), and libc strptime extended with %f, %z and %Z
-(`_parse_strptime`). Positions are byte offsets into the input.
+Three grammars live here: ISO 8601 (`parse_isoformat`, plus the lenient
+`parse_iso_auto` used by `Morrow.get(str)`), Arrow format tokens
+(`parse_arrow`), and libc strptime extended with %f, %z and %Z
+(`parse_strptime`). Positions are byte offsets into the input.
 """
 
 from std.collections import List
@@ -72,10 +72,10 @@ struct _ParsedZone(Copyable, ImplicitlyCopyable, Movable):
 # ISO 8601.
 
 
-def _parse_iso_auto(date_str: String) raises -> Morrow:
+def parse_iso_auto(date_str: String) raises -> Morrow:
     """ISO text, also accepted with one punctuation mark on either side."""
     try:
-        return _parse_isoformat(date_str)
+        return parse_isoformat(date_str)
     except e:
         pass
 
@@ -86,23 +86,23 @@ def _parse_iso_auto(date_str: String) raises -> Morrow:
     var trailing = _is_parse_punctuation(_byte(date_str, length - 1))
     if leading:
         try:
-            return _parse_isoformat(String(date_str[byte=1:]))
+            return parse_isoformat(String(date_str[byte=1:]))
         except e:
             pass
     if trailing:
         try:
-            return _parse_isoformat(String(date_str[byte = 0 : length - 1]))
+            return parse_isoformat(String(date_str[byte = 0 : length - 1]))
         except e:
             pass
     if length > 1 and leading and trailing:
         try:
-            return _parse_isoformat(String(date_str[byte = 1 : length - 1]))
+            return parse_isoformat(String(date_str[byte = 1 : length - 1]))
         except e:
             pass
     raise Error("date string does not match ISO format")
 
 
-def _parse_isoformat(date_str: String) raises -> Morrow:
+def parse_isoformat(date_str: String) raises -> Morrow:
     """
     Create a Morrow from an ISO 8601 string.
     """
@@ -349,7 +349,7 @@ struct _Fields:
         self.meridian = 0
 
 
-def _parse_arrow(
+def parse_arrow(
     date_str: String,
     fmt: String,
     tzinfo: TimeZone = TimeZone.none(),
@@ -373,14 +373,14 @@ def _parse_arrow(
     raise Error("date string does not match format")
 
 
-def _parse_arrow_formats(
+def parse_arrow_formats(
     date_str: String,
     formats: List[String],
     tzinfo: TimeZone = TimeZone.none(),
 ) raises -> Morrow:
     for i in range(len(formats)):
         try:
-            return _parse_arrow(date_str, formats[i], tzinfo)
+            return parse_arrow(date_str, formats[i], tzinfo)
         except e:
             pass
     raise Error("date string does not match any format")
@@ -988,7 +988,7 @@ def _is_parse_punctuation(c: Int) -> Bool:
     )
 
 
-def _normalize_whitespace(s: String) -> String:
+def collapse_whitespace(s: String) -> String:
     """Trim ASCII whitespace and collapse each inner run to one space."""
     var result = ""
     var pending_space = False
@@ -1010,7 +1010,7 @@ def _normalize_whitespace(s: String) -> String:
 # strptime.
 
 
-def _parse_strptime(
+def parse_strptime(
     date_str: String, fmt: String, tzinfo: TimeZone
 ) raises -> Morrow:
     """Parse with libc strptime, handling %f, %z and %Z in Mojo.

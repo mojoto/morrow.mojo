@@ -1,4 +1,5 @@
 """Private ICU calendar bridge; each query owns its calendar (no global TZ mutation)."""
+
 from std.ffi import OwnedDLHandle
 from std.memory import Pointer
 from std.os import getenv

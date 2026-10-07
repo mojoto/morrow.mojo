@@ -1,7 +1,10 @@
+"""TimeDelta, a duration normalized to days, seconds and microseconds."""
+
 from std.format import Writable, Writer
 from std.hashlib import Hasher
 
 from ._text import pad
+
 
 comptime SECONDS_OF_DAY = 24 * 3600
 

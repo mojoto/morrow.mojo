@@ -1,3 +1,9 @@
+"""The Morrow datetime type: construction, conversion, arithmetic and output."""
+
+from std.collections import List
+from std.format import Writable, Writer
+from std.hashlib import Hasher
+
 from ._text import pad
 from ._calendar import (
     US_PER_SECOND,
@@ -37,22 +43,20 @@ from ._icu import Calendar
 from .timedelta import TimeDelta
 from .formatter import format_morrow, format_strftime
 from ._parser import (
-    _parse_iso_auto,
-    _parse_arrow,
-    _parse_arrow_formats,
-    _normalize_whitespace,
-    _parse_isoformat,
-    _parse_strptime,
+    parse_iso_auto,
+    parse_arrow,
+    parse_arrow_formats,
+    collapse_whitespace,
+    parse_isoformat,
+    parse_strptime,
 )
 from ._humanize import (
-    _relative_locale,
-    _humanize_text,
-    _dehumanize_en,
-    _humanize_granular,
+    relative_locale,
+    humanize_text,
+    dehumanize_en,
+    humanize_granular,
 )
-from std.collections import List
-from std.format import Writable, Writer
-from std.hashlib import Hasher
+
 
 comptime _UNBOUNDED_LIMIT = -2147483648
 
@@ -427,7 +431,7 @@ struct Morrow(
         """
         Create a UTC Morrow from an ISO 8601 string.
         """
-        return _parse_iso_auto(date_str)
+        return parse_iso_auto(date_str)
 
     @staticmethod
     def get(date_str: String, normalize_whitespace: Bool) raises -> Self:
@@ -435,15 +439,15 @@ struct Morrow(
         Create a UTC Morrow from an ISO 8601 string, optionally normalizing ASCII whitespace.
         """
         if normalize_whitespace:
-            return _parse_iso_auto(_normalize_whitespace(date_str))
-        return _parse_iso_auto(date_str)
+            return parse_iso_auto(collapse_whitespace(date_str))
+        return parse_iso_auto(date_str)
 
     @staticmethod
     def get(date_str: String, formats: List[String]) raises -> Self:
         """
         Create a Morrow by trying Arrow format tokens in order.
         """
-        return _parse_arrow_formats(date_str, formats)
+        return parse_arrow_formats(date_str, formats)
 
     @staticmethod
     def get(
@@ -453,13 +457,13 @@ struct Morrow(
         Create a Morrow by trying Arrow format tokens in order, optionally normalizing ASCII whitespace.
         """
         if not normalize_whitespace:
-            return _parse_arrow_formats(date_str, formats)
+            return parse_arrow_formats(date_str, formats)
 
         var normalized_formats = List[String]()
         for i in range(len(formats)):
-            normalized_formats.append(_normalize_whitespace(formats[i]))
-        return _parse_arrow_formats(
-            _normalize_whitespace(date_str), normalized_formats
+            normalized_formats.append(collapse_whitespace(formats[i]))
+        return parse_arrow_formats(
+            collapse_whitespace(date_str), normalized_formats
         )
 
     @staticmethod
@@ -469,7 +473,7 @@ struct Morrow(
         """
         Create a Morrow by trying Arrow format tokens in order and replacing timezone.
         """
-        return _parse_arrow_formats(date_str, formats, tz)
+        return parse_arrow_formats(date_str, formats, tz)
 
     @staticmethod
     def get(
@@ -482,13 +486,13 @@ struct Morrow(
         Create a Morrow by trying Arrow format tokens in order with replacement timezone, optionally normalizing ASCII whitespace.
         """
         if not normalize_whitespace:
-            return _parse_arrow_formats(date_str, formats, tz)
+            return parse_arrow_formats(date_str, formats, tz)
 
         var normalized_formats = List[String]()
         for i in range(len(formats)):
-            normalized_formats.append(_normalize_whitespace(formats[i]))
-        return _parse_arrow_formats(
-            _normalize_whitespace(date_str), normalized_formats, tz
+            normalized_formats.append(collapse_whitespace(formats[i]))
+        return parse_arrow_formats(
+            collapse_whitespace(date_str), normalized_formats, tz
         )
 
     @staticmethod
@@ -498,7 +502,7 @@ struct Morrow(
         """
         Create a Morrow by trying Arrow format tokens in order and parsed replacement timezone.
         """
-        return _parse_arrow_formats(
+        return parse_arrow_formats(
             date_str, formats, Self._parse_timezone_argument(tz_str)
         )
 
@@ -524,7 +528,7 @@ struct Morrow(
         """
         Create a Morrow by parsing a string with Arrow format tokens.
         """
-        return _parse_arrow(date_str, fmt)
+        return parse_arrow(date_str, fmt)
 
     @staticmethod
     def get(
@@ -534,18 +538,18 @@ struct Morrow(
         Create a Morrow by parsing Arrow tokens, optionally normalizing ASCII whitespace.
         """
         if normalize_whitespace:
-            return _parse_arrow(
-                _normalize_whitespace(date_str),
-                _normalize_whitespace(fmt),
+            return parse_arrow(
+                collapse_whitespace(date_str),
+                collapse_whitespace(fmt),
             )
-        return _parse_arrow(date_str, fmt)
+        return parse_arrow(date_str, fmt)
 
     @staticmethod
     def get(date_str: String, fmt: String, tz: TimeZone) raises -> Self:
         """
         Create a Morrow by parsing a string with Arrow format tokens and replacement timezone.
         """
-        return _parse_arrow(date_str, fmt, tz)
+        return parse_arrow(date_str, fmt, tz)
 
     @staticmethod
     def get(
@@ -558,21 +562,19 @@ struct Morrow(
         Create a Morrow by parsing Arrow tokens with replacement timezone, optionally normalizing ASCII whitespace.
         """
         if normalize_whitespace:
-            return _parse_arrow(
-                _normalize_whitespace(date_str),
-                _normalize_whitespace(fmt),
+            return parse_arrow(
+                collapse_whitespace(date_str),
+                collapse_whitespace(fmt),
                 tz,
             )
-        return _parse_arrow(date_str, fmt, tz)
+        return parse_arrow(date_str, fmt, tz)
 
     @staticmethod
     def get(date_str: String, fmt: String, tz_str: String) raises -> Self:
         """
         Create a Morrow by parsing a string with Arrow format tokens and parsed replacement timezone.
         """
-        return _parse_arrow(
-            date_str, fmt, Self._parse_timezone_argument(tz_str)
-        )
+        return parse_arrow(date_str, fmt, Self._parse_timezone_argument(tz_str))
 
     @staticmethod
     def get(
@@ -654,7 +656,7 @@ struct Morrow(
         """
         Create a Morrow from an ISO 8601 string.
         """
-        return _parse_isoformat(date_str)
+        return parse_isoformat(date_str)
 
     @staticmethod
     def _locale_for(name: String) raises -> Locale:
@@ -689,13 +691,11 @@ struct Morrow(
         tz: TimeZone = TimeZone.none(),
         normalize_whitespace: Bool = False,
     ) raises -> Self:
-        var value = _normalize_whitespace(
+        var value = collapse_whitespace(
             date_str
         ) if normalize_whitespace else date_str
-        var pattern = _normalize_whitespace(
-            fmt
-        ) if normalize_whitespace else fmt
-        return _parse_arrow(value, pattern, tz, locale)
+        var pattern = collapse_whitespace(fmt) if normalize_whitespace else fmt
+        return parse_arrow(value, pattern, tz, locale)
 
     @staticmethod
     def get(
@@ -804,7 +804,7 @@ struct Morrow(
         >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S')
             <Morrow [2019-01-20T15:49:10+00:00]>
         """
-        return _parse_strptime(date_str, fmt, tzinfo)
+        return parse_strptime(date_str, fmt, tzinfo)
 
     @staticmethod
     def strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:
@@ -1015,20 +1015,18 @@ struct Morrow(
         return self.to("UTC")._time_tuple()
 
     def humanize(self, *, locale: String = "en") raises -> String:
-        return self.humanize(locale=_relative_locale(locale))
+        return self.humanize(locale=relative_locale(locale))
 
     def humanize(self, *, locale: Locale) raises -> String:
-        return _humanize_text(self, Self.utcnow(), False, "auto", locale)
+        return humanize_text(self, Self.utcnow(), False, "auto", locale)
 
     def humanize(
         self, only_distance: Bool, *, locale: String = "en"
     ) raises -> String:
-        return self.humanize(only_distance, locale=_relative_locale(locale))
+        return self.humanize(only_distance, locale=relative_locale(locale))
 
     def humanize(self, only_distance: Bool, *, locale: Locale) raises -> String:
-        return _humanize_text(
-            self, Self.utcnow(), only_distance, "auto", locale
-        )
+        return humanize_text(self, Self.utcnow(), only_distance, "auto", locale)
 
     def humanize(
         self,
@@ -1042,7 +1040,7 @@ struct Morrow(
             other,
             only_distance,
             granularity,
-            locale=_relative_locale(locale),
+            locale=relative_locale(locale),
         )
 
     def humanize(
@@ -1053,13 +1051,13 @@ struct Morrow(
         *,
         locale: Locale,
     ) raises -> String:
-        return _humanize_text(self, other, only_distance, granularity, locale)
+        return humanize_text(self, other, only_distance, granularity, locale)
 
     def humanize(
         self, other: Self, granularity: List[String], *, locale: String = "en"
     ) raises -> String:
         return self.humanize(
-            other, False, granularity, locale=_relative_locale(locale)
+            other, False, granularity, locale=relative_locale(locale)
         )
 
     def humanize(
@@ -1079,7 +1077,7 @@ struct Morrow(
             other,
             only_distance,
             granularity,
-            locale=_relative_locale(locale),
+            locale=relative_locale(locale),
         )
 
     def humanize(
@@ -1090,7 +1088,7 @@ struct Morrow(
         *,
         locale: Locale,
     ) raises -> String:
-        return _humanize_granular(
+        return humanize_granular(
             self, other, only_distance, granularity, locale
         )
 
@@ -1099,10 +1097,10 @@ struct Morrow(
     ) raises -> Self:
         var grammar = locale_grammar(locale)
         if grammar == 1:
-            return _dehumanize_en(self, input_string)
+            return dehumanize_en(self, input_string)
         if grammar == 2:
-            return _dehumanize_en(self, english_relative(input_string))
-        return self.dehumanize(input_string, locale=_relative_locale(locale))
+            return dehumanize_en(self, english_relative(input_string))
+        return self.dehumanize(input_string, locale=relative_locale(locale))
 
     def dehumanize(
         self, input_string: String, *, locale: Locale

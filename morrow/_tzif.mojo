@@ -4,14 +4,16 @@ Named zones are parsed once into `ZoneData`, shared by every copy of a
 `TimeZone`, so conversions need no file or ICU access. ICU remains the
 fallback when no zone file exists.
 """
-from ._text import is_digit, is_alpha
-from ._calendar import UNIX_EPOCH_ORDINAL, days_in_month, ymd2ord
+
 from std.collections import Optional
 from std.ffi import _get_global, external_call
 from std.memory import ArcPointer, Pointer
 from std.memory.alloc import unsafe_alloc
 from std.os import getenv
 from std.os.path import exists
+
+from ._text import is_digit, is_alpha
+from ._calendar import UNIX_EPOCH_ORDINAL, days_in_month, ymd2ord
 
 
 comptime _WINDOW = 93600  # 26 hours: wider than any UTC offset.

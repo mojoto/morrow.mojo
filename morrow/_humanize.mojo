@@ -1,20 +1,21 @@
 """Relative-time helpers behind Morrow.humanize and Morrow.dehumanize."""
+
+from std.collections import List
+
 from ._calendar import US_PER_SECOND, days_in_month
 from .locale import Locale, frame_index
 from .morrow import Morrow
-
-from std.collections import List
 
 
 comptime _HUMANIZE_SECONDS_PER_MONTH = 2635200  # 30.5 days
 comptime _HUMANIZE_SECONDS_PER_QUARTER = 7905600  # 91.5 days
 
 
-def _relative_locale(name: String) raises -> Locale:
+def relative_locale(name: String) raises -> Locale:
     return Locale(name, _names=False, _relative=True)
 
 
-def _humanize_text(
+def humanize_text(
     value: Morrow,
     other: Morrow,
     only_distance: Bool,
@@ -67,7 +68,7 @@ def _describe_count(
     )
 
 
-def _dehumanize_en(value: Morrow, input_string: String) raises -> Morrow:
+def dehumanize_en(value: Morrow, input_string: String) raises -> Morrow:
     """
     Shift this Morrow by an English human-readable relative difference.
     """
@@ -375,7 +376,7 @@ def _normalize_humanize_granularity_list(
     return ordered^
 
 
-def _humanize_granular(
+def humanize_granular(
     value: Morrow,
     other: Morrow,
     only_distance: Bool,
@@ -386,7 +387,7 @@ def _humanize_granular(
     if len(granularity) == 0:
         raise Error("granularity cannot be empty")
     if len(granularity) == 1 and granularity[0] == "auto":
-        return _humanize_text(value, other, only_distance, "auto", locale)
+        return humanize_text(value, other, only_distance, "auto", locale)
 
     var ordered_granularity = _normalize_humanize_granularity_list(granularity)
     value._check_awareness(other)
