@@ -24,14 +24,16 @@ def _zone_path(zone: String) -> String:
         var tz = getenv("TZ")
         if tz.byte_length() == 0:
             return "/etc/localtime" if exists("/etc/localtime") else ""
-        var name = String(tz[byte=1:]) if tz.as_bytes()[0] == 58 else tz
-        if name.byte_length() > 0 and name.as_bytes()[0] == 47:
+        var name = (
+            String(tz[byte=1:]) if Int(tz.as_bytes()[0]) == ord(":") else tz
+        )
+        if name.byte_length() > 0 and Int(name.as_bytes()[0]) == ord("/"):
             return name if exists(name) else ""
         return _zone_path(name)
     if (
         zone.byte_length() == 0
         or zone.find("..") >= 0
-        or zone.as_bytes()[0] == 47
+        or Int(zone.as_bytes()[0]) == ord("/")
     ):
         return ""
     var roots = List[String]()
@@ -108,7 +110,7 @@ struct _Cursor:
     def name(mut self) raises -> String:
         var start = self.pos
         if self.peek() == 60:
-            while self.peek() != 62:
+            while self.peek() != ord(">"):
                 if self.peek() < 0:
                     raise Error("invalid POSIX TZ name")
                 self.pos += 1
@@ -123,16 +125,16 @@ struct _Cursor:
     def seconds(mut self) raises -> Int:
         """[+-]hh[:mm[:ss]] as signed seconds."""
         var sign = 1
-        if self.peek() == 45:
+        if self.peek() == ord("-"):
             sign = -1
             self.pos += 1
-        elif self.peek() == 43:
+        elif self.peek() == ord("+"):
             self.pos += 1
         var total = self.number() * 3600
-        if self.peek() == 58:
+        if self.peek() == ord(":"):
             self.pos += 1
             total += self.number() * 60
-            if self.peek() == 58:
+            if self.peek() == ord(":"):
                 self.pos += 1
                 total += self.number()
         return sign * total
@@ -169,10 +171,10 @@ struct _Rule(Copyable, ImplicitlyCopyable, Movable):
 
 def _parse_rule(mut cursor: _Cursor) raises -> _Rule:
     var rule: _Rule
-    if cursor.peek() == 74:
+    if cursor.peek() == ord("J"):
         cursor.pos += 1
         rule = _Rule(0, 0, 0, cursor.number(), 7200)
-    elif cursor.peek() == 77:
+    elif cursor.peek() == ord("M"):
         cursor.pos += 1
         var month = cursor.number()
         cursor.pos += 1
@@ -181,7 +183,7 @@ def _parse_rule(mut cursor: _Cursor) raises -> _Rule:
         rule = _Rule(2, month, week, cursor.number(), 7200)
     else:
         rule = _Rule(1, 0, 0, cursor.number(), 7200)
-    if cursor.peek() == 47:
+    if cursor.peek() == ord("/"):
         cursor.pos += 1
         rule.time = cursor.seconds()
     return rule
@@ -439,13 +441,13 @@ def _parse_footer(footer: String, mut zone: ZoneData) raises:
         return
     zone.dst_name = cursor.name()
     zone.dst_offset = zone.std_offset + 3600
-    if cursor.peek() != 44 and cursor.peek() >= 0:
+    if cursor.peek() != ord(",") and cursor.peek() >= 0:
         zone.dst_offset = -cursor.seconds()
-    if cursor.peek() != 44:
+    if cursor.peek() != ord(","):
         raise Error("POSIX TZ rule is missing")
     cursor.pos += 1
     zone.start = _parse_rule(cursor)
-    if cursor.peek() != 44:
+    if cursor.peek() != ord(","):
         raise Error("POSIX TZ end rule is missing")
     cursor.pos += 1
     zone.end = _parse_rule(cursor)
@@ -466,15 +468,15 @@ def _dst_amount(offset: Int, previous: Int, following: Int) -> Int:
 def _parse(data: List[UInt8]) raises -> ZoneData:
     if (
         len(data) < 44
-        or data[0] != 84
-        or data[1] != 90
-        or data[2] != 105
-        or data[3] != 102
+        or Int(data[0]) != ord("T")
+        or Int(data[1]) != ord("Z")
+        or Int(data[2]) != ord("i")
+        or Int(data[3]) != ord("f")
     ):
         raise Error("not a TZif file")
     var base = 0
     var time_size = 4
-    if data[4] >= 50:
+    if Int(data[4]) >= ord("2"):
         base = 44 + (
             _u32(data, 32) * 5
             + _u32(data, 36) * 6

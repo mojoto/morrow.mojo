@@ -93,7 +93,9 @@ def dehumanize_en(value: Morrow, input_string: String) raises -> Morrow:
     var parsed = False
     var pos = 0
     while pos < phrase.byte_length():
-        while pos < phrase.byte_length() and phrase.as_bytes()[pos] == 32:
+        while pos < phrase.byte_length() and Int(phrase.as_bytes()[pos]) == ord(
+            " "
+        ):
             pos += 1
         if pos >= phrase.byte_length():
             break
@@ -113,7 +115,9 @@ def dehumanize_en(value: Morrow, input_string: String) raises -> Morrow:
         else:
             count = Int(count_word)
 
-        while pos < phrase.byte_length() and phrase.as_bytes()[pos] == 32:
+        while pos < phrase.byte_length() and Int(phrase.as_bytes()[pos]) == ord(
+            " "
+        ):
             pos += 1
         if pos >= phrase.byte_length():
             raise Error("humanized distance is invalid")
@@ -299,7 +303,9 @@ def _normalize_dehumanize_unit(
     count_word: String, count: Int, raw_unit: String
 ) raises -> String:
     var unit = raw_unit
-    if unit.byte_length() > 0 and unit.as_bytes()[unit.byte_length() - 1] == 44:
+    if unit.byte_length() > 0 and Int(
+        unit.as_bytes()[unit.byte_length() - 1]
+    ) == ord(","):
         var unit_without_comma = String(unit[byte = 0 : unit.byte_length() - 1])
         unit = unit_without_comma^
 

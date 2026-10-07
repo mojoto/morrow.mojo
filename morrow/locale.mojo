@@ -2,7 +2,7 @@
 
 from std.format import Writable, Writer
 
-from ._text import utf8_width, starts_at, find_byte, pad
+from ._text import utf8_width, is_digit, starts_at, find_byte, pad
 from ._locale_data import (
     LOCALE_ZH_CN,
     LOCALE_ZH_TW,
@@ -53,10 +53,9 @@ def frame_index(frame: String) raises -> Int:
     """Return the index of a humanize timeframe such as "hours"."""
     if frame == "now":
         return 0
-    var plural = (
-        frame.byte_length() > 0
-        and frame.as_bytes()[frame.byte_length() - 1] == 115
-    )
+    var plural = frame.byte_length() > 0 and Int(
+        frame.as_bytes()[frame.byte_length() - 1]
+    ) == ord("s")
     var unit = String(
         frame[byte = 0 : frame.byte_length() - 1]
     ) if plural else frame
@@ -132,7 +131,7 @@ def _starts_with_range(
 def _ascii_int(value: String, start: Int, end: Int) -> Int:
     var sign = 1
     var i = start
-    if i < end and value.as_bytes()[i] == 45:
+    if i < end and Int(value.as_bytes()[i]) == ord("-"):
         sign = -1
         i += 1
     var number = 0
@@ -674,7 +673,7 @@ struct Locale(Copyable, Movable, Writable):
                 elif i == len(parts) - 1:
                     humanized += " " + self.and_word
                     var first = parts[i].as_bytes()[0]
-                    if first >= 48 and first <= 57:
+                    if is_digit(Int(first)):
                         humanized += "־"
                     humanized += parts[i]
                 else:
@@ -792,9 +791,9 @@ struct Locale(Copyable, Movable, Writable):
         var i = 0
         var literal = False
         while i < fmt.byte_length():
-            if fmt.as_bytes()[i] == 91:
+            if Int(fmt.as_bytes()[i]) == ord("["):
                 literal = True
-            elif fmt.as_bytes()[i] == 93:
+            elif Int(fmt.as_bytes()[i]) == ord("]"):
                 literal = False
             if not literal:
                 var consumed = 0
@@ -814,10 +813,10 @@ struct Locale(Copyable, Movable, Writable):
                 elif starts_at(fmt, i, "Do"):
                     text = self.ordinal_number(day)
                     consumed = 2
-                elif fmt.as_bytes()[i] == 65:
+                elif Int(fmt.as_bytes()[i]) == ord("A"):
                     text = self.meridian(hour, "A")
                     consumed = 1
-                elif fmt.as_bytes()[i] == 97:
+                elif Int(fmt.as_bytes()[i]) == ord("a"):
                     text = self.meridian(hour, "a")
                     consumed = 1
                 elif self.year_offset != 0 and starts_at(fmt, i, "YYYY"):
@@ -930,13 +929,12 @@ struct Locale(Copyable, Movable, Writable):
             while (
                 end < value.byte_length()
                 and end - pos < 2
-                and value.as_bytes()[end] >= 48
-                and value.as_bytes()[end] <= 57
+                and is_digit(Int(value.as_bytes()[end]))
             ):
                 number = number * 10 + Int(value.as_bytes()[end]) - 48
                 end += 1
             if end > pos and not (
-                end - pos > 1 and value.as_bytes()[pos] == 48
+                end - pos > 1 and Int(value.as_bytes()[pos]) == ord("0")
             ):
                 return LocaleMatch(number, end)
         raise Error("ordinal day is invalid")
@@ -979,9 +977,9 @@ struct Locale(Copyable, Movable, Writable):
         var placeholder = -1
         for i in range(start, end - 2):
             if (
-                form.as_bytes()[i] == 123
-                and form.as_bytes()[i + 1] == 48
-                and form.as_bytes()[i + 2] == 125
+                Int(form.as_bytes()[i]) == ord("{")
+                and Int(form.as_bytes()[i + 1]) == ord("0")
+                and Int(form.as_bytes()[i + 2]) == ord("}")
             ):
                 placeholder = i
                 break
@@ -997,8 +995,7 @@ struct Locale(Copyable, Movable, Writable):
         while (
             digits_end < text.byte_length()
             and digits_end - digit < 9
-            and text.as_bytes()[digits_end] >= 48
-            and text.as_bytes()[digits_end] <= 57
+            and is_digit(Int(text.as_bytes()[digits_end]))
         ):
             count = count * 10 + Int(text.as_bytes()[digits_end]) - 48
             digits_end += 1
@@ -1056,8 +1053,8 @@ struct Locale(Copyable, Movable, Writable):
     def _skip_separators(text: String, pos: Int) -> Int:
         var result = pos
         while result < text.byte_length():
-            var byte = text.as_bytes()[result]
-            if byte == 32 or byte == 44 or byte == 9:
+            var byte = Int(text.as_bytes()[result])
+            if byte == ord(" ") or byte == ord(",") or byte == ord("\t"):
                 result += 1
             elif starts_at(text, result, "،") or starts_at(text, result, "、"):
                 result += utf8_width(text, result)

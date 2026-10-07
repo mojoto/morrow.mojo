@@ -119,7 +119,7 @@ struct MorrowSpanIterator(Copyable, ImplicitlyCopyable, Movable):
                 raise StopIteration()
             if span.end._utc_microseconds() > end_key:
                 span.end = self.end
-                if self.bounds.as_bytes()[1] == 41:
+                if Int(self.bounds.as_bytes()[1]) == ord(")"):
                     span.end = span.end.shift(microseconds=-1)
         self.started = True
         if self.remaining != _UNBOUNDED_LIMIT:
