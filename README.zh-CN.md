@@ -84,6 +84,7 @@ Modular Community channel 的每个配方只构建一个编译器版本，目前
 | `make test-package` | 构建预编译包并在源码目录之外验证 |
 | `make benchmark` | 每项性能基准运行五组样本 |
 | `make format` | 格式化 `morrow` 和 `tests` 目录 |
+| `make locales` | 从 Arrow 1.4.0 重新生成 `morrow/_locale_data.mojo` |
 | `make build` | 将 `morrow` 预编译为 `morrow.mojoc` |
 | `make package` | 使用 `rattler-build` 构建可分发的 Conda 包 |
 | `make clean` | 删除 `morrow.mojoc` |
@@ -91,6 +92,22 @@ Modular Community channel 的每个配方只构建一个编译器版本，目前
 | `make doc-build` | 构建 Docusaurus 静态站点 |
 | `make doc-serve` | 预览已构建的 Docusaurus 站点 |
 | `make doc-clean` | 删除 Docusaurus 生成文件 |
+
+### 源码结构
+
+公共 API 以 `morrow/__init__.mojo` 导出的内容为准。下划线开头的模块是私有模块，其中供其他模块调用的函数不带前导下划线。
+
+| 模块 | 职责 |
+| --- | --- |
+| `morrow.mojo` | `Morrow` 类型：构造、访问、转换和运算 |
+| `_values.mojo`、`_ranges.mojo` | 日期、时间和区间视图；惰性范围迭代器 |
+| `_parser.mojo` | ISO 8601、Arrow 标记和 strptime 解析 |
+| `formatter.mojo` | Arrow 标记和 strftime 格式化 |
+| `_humanize.mojo`、`locale.mojo` | 相对时间文本和各语言规则 |
+| `_locale_data.mojo` | 由 `tools/gen_locale_data.py` 生成的语言数据，不要手工修改 |
+| `timezone.mojo`、`_tzif.mojo`、`_icu.mojo` | 固定偏移、系统 tzdata 和 ICU 回退 |
+| `timedelta.mojo` | `TimeDelta` |
+| `_calendar.mojo`、`_text.mojo`、`_libc.mojo` | 共用的历法计算、字节级文本工具和 libc 调用 |
 
 文档相关目标需要 Node.js 和 npm。先运行 `make doc-install` 安装依赖，再依次运行 `make doc-build` 和 `make doc-serve` 预览构建结果。
 

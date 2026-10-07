@@ -31,6 +31,8 @@ uv run mojo run -I . tests/test_iana.mojo --skip-all
 
 官方还提供 `PropTest` 执行器。最小调用在本机 1.1 编译通过，但在 1.0 遇到泛型回调类型错误；本项目直接使用两个版本共有的固定种子生成器，保持性质测试一致。
 
+内置语言数据由 Arrow 1.4.0 生成。CI 会运行 `uv run --with arrow==1.4.0 python tools/gen_locale_data.py --check`，`morrow/_locale_data.mojo` 与生成结果不一致时失败；修改生成器后请运行 `make locales`。
+
 ## 覆盖率与工具状态
 
 以下结论于 2026 年 9 月 22 日，结合官方文档及 Mojo 1.0.0、1.1.0 实测确认：
