@@ -18,7 +18,11 @@ pixi add morrow
 ```
 
 The package installs a compiler-compatible `morrow.mojoc` into the active
-environment, so it is available to import from other Mojo packages.
+environment, so it is available to import from other Mojo packages. Morrow 1.1 on
+the channel is built for Mojo 1.1; projects on Mojo 1.0 resolve Morrow 0.7.0
+there, so use the matching
+[release archive](https://github.com/mojoto/morrow.mojo/releases) to get 1.1
+on Mojo 1.0.
 
 ## Develop from source
 
