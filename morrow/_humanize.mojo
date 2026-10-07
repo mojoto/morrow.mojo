@@ -48,7 +48,7 @@ def _humanize_text(
 def _humanize_frame(unit: String, count: Int) raises -> Int:
     if count == 1:
         return frame_index(unit)
-    return frame_index(_plural_humanize_unit(unit))
+    return frame_index(unit + "s")
 
 
 def _describe_count(
@@ -127,7 +127,7 @@ def _dehumanize_en(value: Morrow, input_string: String) raises -> Morrow:
             var unit = _normalize_dehumanize_unit(count_word, count, raw_unit)
             if not future:
                 count = -count
-            result = _shift_humanize_unit(result, unit, count)
+            result = result._shift_frame(unit, count)
             parsed = True
         except e:
             if (
@@ -163,9 +163,7 @@ def _humanize_auto(
             return _describe_count(
                 locale, rounded_delta_seconds, 1, "minute", only_distance
             )
-        var minutes = seconds // 60
-        if minutes < 2:
-            minutes = 2
+        var minutes = max(seconds // 60, 2)
         return _describe_count(
             locale, rounded_delta_seconds, minutes, "minute", only_distance
         )
@@ -174,9 +172,7 @@ def _humanize_auto(
             return _describe_count(
                 locale, rounded_delta_seconds, 1, "hour", only_distance
             )
-        var hours = seconds // 3600
-        if hours < 2:
-            hours = 2
+        var hours = max(seconds // 3600, 2)
         return _describe_count(
             locale, rounded_delta_seconds, hours, "hour", only_distance
         )
@@ -187,9 +183,7 @@ def _humanize_auto(
             locale, rounded_delta_seconds, 1, "day", only_distance
         )
     elif seconds < 604800:
-        var days = seconds // 86400
-        if days < 2:
-            days = 2
+        var days = max(seconds // 86400, 2)
         return _describe_count(
             locale, rounded_delta_seconds, days, "day", only_distance
         )
@@ -215,9 +209,7 @@ def _humanize_auto(
             locale, rounded_delta_seconds, 1, "week", only_distance
         )
     elif seconds < 2592000:
-        var weeks = seconds // 604800
-        if weeks < 2:
-            weeks = 2
+        var weeks = max(seconds // 604800, 2)
         return _describe_count(
             locale, rounded_delta_seconds, weeks, "week", only_distance
         )
@@ -226,9 +218,7 @@ def _humanize_auto(
             locale, rounded_delta_seconds, 1, "year", only_distance
         )
 
-    var years = seconds // 31536000
-    if years < 2:
-        years = 2
+    var years = max(seconds // 31536000, 2)
     return _describe_count(
         locale, rounded_delta_seconds, years, "year", only_distance
     )
@@ -344,134 +334,45 @@ def _is_singular_humanize_unit(unit: String) -> Bool:
 
 
 def _is_plural_humanize_unit(unit: String) -> Bool:
-    return (
-        unit == "seconds"
-        or unit == "minutes"
-        or unit == "hours"
-        or unit == "days"
-        or unit == "weeks"
-        or unit == "months"
-        or unit == "quarters"
-        or unit == "years"
+    return unit.endswith("s") and _is_singular_humanize_unit(
+        String(unit[byte = 0 : unit.byte_length() - 1])
     )
+
+
+def _normalize_humanize_unit(unit: String) raises -> String:
+    """The singular form of a unit such as "hours"."""
+    if _is_singular_humanize_unit(unit):
+        return unit
+    if _is_plural_humanize_unit(unit):
+        return String(unit[byte = 0 : unit.byte_length() - 1])
+    raise Error("unsupported granularity")
 
 
 def _normalize_humanize_granularity_list(
     granularity: List[String],
 ) raises -> List[String]:
-    var has_year = False
-    var has_quarter = False
-    var has_month = False
-    var has_week = False
-    var has_day = False
-    var has_hour = False
-    var has_minute = False
-    var has_second = False
-
+    """Validate units, reject repeats, and order them largest first."""
     for i in range(len(granularity)):
-        var unit = granularity[i]
-        _ = _humanize_unit_seconds(unit)
-        if unit == "year":
-            if has_year:
+        _ = _humanize_unit_seconds(granularity[i])
+        for j in range(i):
+            if granularity[j] == granularity[i]:
                 raise Error("unsupported granularity")
-            has_year = True
-        elif unit == "quarter":
-            if has_quarter:
-                raise Error("unsupported granularity")
-            has_quarter = True
-        elif unit == "month":
-            if has_month:
-                raise Error("unsupported granularity")
-            has_month = True
-        elif unit == "week":
-            if has_week:
-                raise Error("unsupported granularity")
-            has_week = True
-        elif unit == "day":
-            if has_day:
-                raise Error("unsupported granularity")
-            has_day = True
-        elif unit == "hour":
-            if has_hour:
-                raise Error("unsupported granularity")
-            has_hour = True
-        elif unit == "minute":
-            if has_minute:
-                raise Error("unsupported granularity")
-            has_minute = True
-        elif unit == "second":
-            if has_second:
-                raise Error("unsupported granularity")
-            has_second = True
-
+    var largest_first: List[String] = [
+        "year",
+        "quarter",
+        "month",
+        "week",
+        "day",
+        "hour",
+        "minute",
+        "second",
+    ]
     var ordered = List[String]()
-    if has_year:
-        ordered.append("year")
-    if has_quarter:
-        ordered.append("quarter")
-    if has_month:
-        ordered.append("month")
-    if has_week:
-        ordered.append("week")
-    if has_day:
-        ordered.append("day")
-    if has_hour:
-        ordered.append("hour")
-    if has_minute:
-        ordered.append("minute")
-    if has_second:
-        ordered.append("second")
+    for unit in largest_first:
+        for requested in granularity:
+            if requested == unit:
+                ordered.append(unit)
     return ordered^
-
-
-def _normalize_humanize_unit(unit: String) raises -> String:
-    if unit == "second" or unit == "seconds":
-        return "second"
-    elif unit == "minute" or unit == "minutes":
-        return "minute"
-    elif unit == "hour" or unit == "hours":
-        return "hour"
-    elif unit == "day" or unit == "days":
-        return "day"
-    elif unit == "week" or unit == "weeks":
-        return "week"
-    elif unit == "month" or unit == "months":
-        return "month"
-    elif unit == "quarter" or unit == "quarters":
-        return "quarter"
-    elif unit == "year" or unit == "years":
-        return "year"
-    else:
-        raise Error("unsupported granularity")
-
-
-def _plural_humanize_unit(unit: String) raises -> String:
-    if unit == "quarter":
-        return "quarters"
-    return unit + "s"
-
-
-def _shift_humanize_unit(
-    value: Morrow, unit: String, count: Int
-) raises -> Morrow:
-    if unit == "second":
-        return value.shift(seconds=count)
-    elif unit == "minute":
-        return value.shift(minutes=count)
-    elif unit == "hour":
-        return value.shift(hours=count)
-    elif unit == "day":
-        return value.shift(days=count)
-    elif unit == "week":
-        return value.shift(weeks=count)
-    elif unit == "month":
-        return value.shift(months=count)
-    elif unit == "quarter":
-        return value.shift(months=count * 3)
-    elif unit == "year":
-        return value.shift(years=count)
-    else:
-        raise Error("unsupported granularity")
 
 
 def _humanize_granular(
