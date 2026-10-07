@@ -1,25 +1,12 @@
-from .util import utf8_width
-from .locale import (
-    Locale,
-    english_relative,
-    frame_index,
-    is_english_locale,
-    locale_grammar,
-)
-from .util import (
-    normalize_timestamp,
-    _ymd2ord,
-    _days_before_year,
-    _days_in_month,
-)
+from .util import normalize_timestamp, _ymd2ord, _days_in_month
+from .locale import Locale, english_relative, is_english_locale, locale_grammar
 from ._libc import (
     c_gettimeofday,
-    c_localtime,
     c_gmtime,
     c_strptime,
     c_strptime_consumed,
+    CTimeval,
 )
-from ._libc import CTimeval, CTm
 from .timezone import TimeZone
 from ._icu import Calendar
 from .timedelta import TimeDelta
@@ -31,15 +18,33 @@ from .constants import (
     MAX_TIMESTAMP_US,
     days_before_month,
     day_abbreviation,
-    day_name,
     month_abbreviation,
-    month_name,
 )
 from std.iter import StopIteration
 from std.collections import List
 from std.format import Writable, Writer
 from std.hashlib import Hasher
-
+from ._parser import (
+    _parse_iso_auto,
+    _parse_arrow,
+    _parse_arrow_formats,
+    _from_strptime_tm,
+    _find_strptime_extension_directive,
+    _parse_strptime_timezone_name,
+    _parse_strptime_timezone_offset,
+    _is_ascii_digit,
+    _normalize_whitespace,
+    _parse_isoformat,
+)
+from ._humanize import (
+    _relative_locale,
+    _humanize_text,
+    _humanize_frame,
+    _dehumanize_en,
+    _rounded_seconds,
+    _humanize_unit_seconds,
+    _normalize_humanize_granularity_list,
+)
 
 comptime _DI400Y = 146097  # number of days in 400 years
 comptime _DI100Y = 36524  #    "    "   "   " 100   "
@@ -50,8 +55,6 @@ comptime _US_PER_HOUR = 60 * _US_PER_MINUTE
 comptime _US_PER_DAY = 24 * _US_PER_HOUR
 comptime _UNIX_EPOCH_ORDINAL = 719163  # 1970-01-01
 comptime _UNBOUNDED_LIMIT = -2147483648
-comptime _HUMANIZE_SECONDS_PER_MONTH = 2635200  # 30.5 days
-comptime _HUMANIZE_SECONDS_PER_QUARTER = 7905600  # 91.5 days
 
 
 struct Morrow(
@@ -451,7 +454,7 @@ struct Morrow(
         """
         Create a UTC Morrow from an ISO 8601 string.
         """
-        return Self._parse_iso_auto(date_str)
+        return _parse_iso_auto(date_str)
 
     @staticmethod
     def get(date_str: String, normalize_whitespace: Bool) raises -> Self:
@@ -459,54 +462,15 @@ struct Morrow(
         Create a UTC Morrow from an ISO 8601 string, optionally normalizing ASCII whitespace.
         """
         if normalize_whitespace:
-            return Self._parse_iso_auto(Self._normalize_whitespace(date_str))
-        return Self._parse_iso_auto(date_str)
-
-    @staticmethod
-    def _parse_iso_auto(date_str: String) raises -> Self:
-        try:
-            return Self.fromisoformat(date_str)
-        except e:
-            pass
-
-        var length = date_str.byte_length()
-        if length == 0:
-            raise Error("isoformat string is too short")
-
-        if Self._is_parse_punctuation(Int(date_str.as_bytes()[0])):
-            try:
-                return Self.fromisoformat(String(date_str[byte=1:]))
-            except e:
-                pass
-
-        if Self._is_parse_punctuation(Int(date_str.as_bytes()[length - 1])):
-            try:
-                return Self.fromisoformat(
-                    String(date_str[byte = 0 : length - 1])
-                )
-            except e:
-                pass
-
-        if (
-            length > 1
-            and Self._is_parse_punctuation(Int(date_str.as_bytes()[0]))
-            and Self._is_parse_punctuation(Int(date_str.as_bytes()[length - 1]))
-        ):
-            try:
-                return Self.fromisoformat(
-                    String(date_str[byte = 1 : length - 1])
-                )
-            except e:
-                pass
-
-        raise Error("date string does not match ISO format")
+            return _parse_iso_auto(_normalize_whitespace(date_str))
+        return _parse_iso_auto(date_str)
 
     @staticmethod
     def get(date_str: String, formats: List[String]) raises -> Self:
         """
         Create a Morrow by trying Arrow format tokens in order.
         """
-        return Self._parse_arrow_formats(date_str, formats)
+        return _parse_arrow_formats(date_str, formats)
 
     @staticmethod
     def get(
@@ -516,13 +480,13 @@ struct Morrow(
         Create a Morrow by trying Arrow format tokens in order, optionally normalizing ASCII whitespace.
         """
         if not normalize_whitespace:
-            return Self._parse_arrow_formats(date_str, formats)
+            return _parse_arrow_formats(date_str, formats)
 
         var normalized_formats = List[String]()
         for i in range(len(formats)):
-            normalized_formats.append(Self._normalize_whitespace(formats[i]))
-        return Self._parse_arrow_formats(
-            Self._normalize_whitespace(date_str), normalized_formats
+            normalized_formats.append(_normalize_whitespace(formats[i]))
+        return _parse_arrow_formats(
+            _normalize_whitespace(date_str), normalized_formats
         )
 
     @staticmethod
@@ -532,7 +496,7 @@ struct Morrow(
         """
         Create a Morrow by trying Arrow format tokens in order and replacing timezone.
         """
-        return Self._parse_arrow_formats(date_str, formats, tz)
+        return _parse_arrow_formats(date_str, formats, tz)
 
     @staticmethod
     def get(
@@ -545,13 +509,13 @@ struct Morrow(
         Create a Morrow by trying Arrow format tokens in order with replacement timezone, optionally normalizing ASCII whitespace.
         """
         if not normalize_whitespace:
-            return Self._parse_arrow_formats(date_str, formats, tz)
+            return _parse_arrow_formats(date_str, formats, tz)
 
         var normalized_formats = List[String]()
         for i in range(len(formats)):
-            normalized_formats.append(Self._normalize_whitespace(formats[i]))
-        return Self._parse_arrow_formats(
-            Self._normalize_whitespace(date_str), normalized_formats, tz
+            normalized_formats.append(_normalize_whitespace(formats[i]))
+        return _parse_arrow_formats(
+            _normalize_whitespace(date_str), normalized_formats, tz
         )
 
     @staticmethod
@@ -561,7 +525,7 @@ struct Morrow(
         """
         Create a Morrow by trying Arrow format tokens in order and parsed replacement timezone.
         """
-        return Self._parse_arrow_formats(
+        return _parse_arrow_formats(
             date_str, formats, Self._parse_timezone_argument(tz_str)
         )
 
@@ -587,7 +551,7 @@ struct Morrow(
         """
         Create a Morrow by parsing a string with Arrow format tokens.
         """
-        return Self._parse_arrow(date_str, fmt)
+        return _parse_arrow(date_str, fmt)
 
     @staticmethod
     def get(
@@ -597,18 +561,18 @@ struct Morrow(
         Create a Morrow by parsing Arrow tokens, optionally normalizing ASCII whitespace.
         """
         if normalize_whitespace:
-            return Self._parse_arrow(
-                Self._normalize_whitespace(date_str),
-                Self._normalize_whitespace(fmt),
+            return _parse_arrow(
+                _normalize_whitespace(date_str),
+                _normalize_whitespace(fmt),
             )
-        return Self._parse_arrow(date_str, fmt)
+        return _parse_arrow(date_str, fmt)
 
     @staticmethod
     def get(date_str: String, fmt: String, tz: TimeZone) raises -> Self:
         """
         Create a Morrow by parsing a string with Arrow format tokens and replacement timezone.
         """
-        return Self._parse_arrow(date_str, fmt, tz)
+        return _parse_arrow(date_str, fmt, tz)
 
     @staticmethod
     def get(
@@ -621,19 +585,19 @@ struct Morrow(
         Create a Morrow by parsing Arrow tokens with replacement timezone, optionally normalizing ASCII whitespace.
         """
         if normalize_whitespace:
-            return Self._parse_arrow(
-                Self._normalize_whitespace(date_str),
-                Self._normalize_whitespace(fmt),
+            return _parse_arrow(
+                _normalize_whitespace(date_str),
+                _normalize_whitespace(fmt),
                 tz,
             )
-        return Self._parse_arrow(date_str, fmt, tz)
+        return _parse_arrow(date_str, fmt, tz)
 
     @staticmethod
     def get(date_str: String, fmt: String, tz_str: String) raises -> Self:
         """
         Create a Morrow by parsing a string with Arrow format tokens and parsed replacement timezone.
         """
-        return Self._parse_arrow(
+        return _parse_arrow(
             date_str, fmt, Self._parse_timezone_argument(tz_str)
         )
 
@@ -717,235 +681,7 @@ struct Morrow(
         """
         Create a Morrow from an ISO 8601 string.
         """
-        for byte in date_str.as_bytes():
-            if byte > 127:
-                raise Error("ISO date text must contain ASCII characters")
-        var length = date_str.byte_length()
-        if length < 4:
-            raise Error("isoformat string is too short")
-
-        var year: Int
-        var month: Int
-        var day: Int
-        var pos: Int
-        if length == 4:
-            year = Int(date_str[byte=0:4])
-            month = 1
-            day = 1
-            pos = 4
-        elif (
-            length >= 7
-            and date_str.as_bytes()[4] == 45
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[5]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[6]))
-            and (
-                length == 7
-                or date_str.as_bytes()[7] == 84
-                or date_str.as_bytes()[7] == 116
-                or date_str.as_bytes()[7] == 32
-            )
-        ):
-            year = Int(date_str[byte=0:4])
-            month = Int(date_str[byte=5:7])
-            day = 1
-            pos = 7
-        elif length >= 7 and (
-            (date_str.as_bytes()[4] == 45 and date_str.as_bytes()[5] == 87)
-            or date_str.as_bytes()[4] == 87
-        ):
-            var iso_week = Self._parse_iso_week_date(date_str, 0)
-            var date = Self.fromisocalendar(
-                iso_week.year, iso_week.week, iso_week.weekday
-            )
-            year = date.year
-            month = date.month
-            day = date.day
-            pos = iso_week.pos
-        elif (
-            length >= 8
-            and date_str.as_bytes()[4] == 45
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[5]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[6]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[7]))
-        ):
-            year = Int(date_str[byte=0:4])
-            var day_of_year = Int(date_str[byte=5:8])
-            if day_of_year < 1 or day_of_year > 366:
-                raise Error("isoformat day of year is invalid")
-            var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
-            year = date.year
-            month = date.month
-            day = date.day
-            pos = 8
-        elif (
-            length >= 7
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[0]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[1]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[2]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[3]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[4]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[5]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[6]))
-            and (
-                length == 7
-                or date_str.as_bytes()[7] == 84
-                or date_str.as_bytes()[7] == 116
-                or date_str.as_bytes()[7] == 32
-            )
-        ):
-            year = Int(date_str[byte=0:4])
-            var day_of_year = Int(date_str[byte=4:7])
-            if day_of_year < 1 or day_of_year > 366:
-                raise Error("isoformat day of year is invalid")
-            var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
-            year = date.year
-            month = date.month
-            day = date.day
-            pos = 7
-        elif (
-            length >= 6
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[0]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[1]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[2]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[3]))
-            and (
-                date_str.as_bytes()[4] == 45
-                or date_str.as_bytes()[4] == 47
-                or date_str.as_bytes()[4] == 46
-            )
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[5]))
-        ):
-            year = Int(date_str[byte=0:4])
-            var date_separator = Int(date_str.as_bytes()[4])
-            var month_parsed = Self._parse_variable_int(date_str, 5, 2)
-            month = month_parsed.value
-            pos = month_parsed.pos
-            if (
-                pos == length
-                or date_str.as_bytes()[pos] == 84
-                or date_str.as_bytes()[pos] == 116
-                or date_str.as_bytes()[pos] == 32
-            ):
-                if pos != 7:
-                    raise Error("isoformat month is invalid")
-                day = 1
-            elif Int(date_str.as_bytes()[pos]) == date_separator:
-                pos += 1
-                var day_parsed = Self._parse_variable_int(date_str, pos, 2)
-                day = day_parsed.value
-                pos = day_parsed.pos
-            else:
-                raise Error("isoformat date separator is invalid")
-        elif (
-            length >= 10
-            and date_str.as_bytes()[4] == 45
-            and date_str.as_bytes()[7] == 45
-        ):
-            year = Int(date_str[byte=0:4])
-            month = Int(date_str[byte=5:7])
-            day = Int(date_str[byte=8:10])
-            pos = 10
-        else:
-            year = Int(date_str[byte=0:4])
-            month = Int(date_str[byte=4:6])
-            day = Int(date_str[byte=6:8])
-            pos = 8
-
-        var hour = 0
-        var minute = 0
-        var second = 0
-        var microsecond = 0
-        var has_second = False
-        var tz = TimeZone.from_utc("UTC")
-
-        if pos < length:
-            var separator = Int(date_str.as_bytes()[pos])
-            if separator != ord("T") and separator != ord(" "):
-                raise Error("isoformat date/time separator is invalid")
-            pos += 1
-            if length < pos + 2:
-                raise Error("isoformat time is invalid")
-
-            hour = Int(date_str[byte = pos : pos + 2])
-            pos += 2
-
-            if pos < length and date_str.as_bytes()[pos] == 58:
-                pos += 1
-                if length < pos + 2:
-                    raise Error("isoformat minute is invalid")
-                minute = Int(date_str[byte = pos : pos + 2])
-                pos += 2
-                if pos < length and date_str.as_bytes()[pos] == 58:
-                    pos += 1
-                    if length < pos + 2:
-                        raise Error("isoformat second is invalid")
-                    second = Int(date_str[byte = pos : pos + 2])
-                    pos += 2
-                    has_second = True
-            else:
-                if pos < length and Self._is_ascii_digit(
-                    Int(date_str.as_bytes()[pos])
-                ):
-                    if length < pos + 2:
-                        raise Error("isoformat minute is invalid")
-                    minute = Int(date_str[byte = pos : pos + 2])
-                    pos += 2
-                    if pos < length and Self._is_ascii_digit(
-                        Int(date_str.as_bytes()[pos])
-                    ):
-                        if length < pos + 2:
-                            raise Error("isoformat second is invalid")
-                        second = Int(date_str[byte = pos : pos + 2])
-                        pos += 2
-                        has_second = True
-
-            if pos < length and (
-                date_str.as_bytes()[pos] == 46 or date_str.as_bytes()[pos] == 44
-            ):
-                if not has_second:
-                    raise Error("isoformat subsecond requires seconds")
-                pos += 1
-                var parsed = Self._parse_subsecond(date_str, pos, 6)
-                microsecond = parsed.value
-                pos = parsed.pos
-
-            if pos < length:
-                if date_str.as_bytes()[pos] == 90:
-                    tz = TimeZone.from_utc("UTC")
-                    pos += 1
-                elif (
-                    date_str.as_bytes()[pos] == 43
-                    or date_str.as_bytes()[pos] == 45
-                ):
-                    var parsed = Self._parse_iso_timezone_offset(date_str, pos)
-                    tz = parsed.tz
-                    pos = parsed.pos
-                else:
-                    raise Error("isoformat timezone is invalid")
-
-        if pos != length:
-            raise Error("isoformat string has trailing data")
-        var carried_fraction = False
-        if microsecond >= _US_PER_SECOND:
-            second += microsecond // _US_PER_SECOND
-            microsecond = microsecond % _US_PER_SECOND
-            carried_fraction = True
-        if carried_fraction and second >= 60:
-            Self._validate_fields(
-                year, month, day, hour, minute, 0, microsecond
-            )
-            return Self(
-                year, month, day, hour, minute, 0, microsecond, tz
-            ).shift(seconds=second)
-        if hour == 24:
-            if minute != 0 or second != 0 or microsecond != 0:
-                raise Error("midnight at the end of day must be exactly 24:00")
-            Self._validate_fields(year, month, day, 0, 0, 0, 0)
-            return Self(year, month, day, 0, 0, 0, 0, tz).shift(days=1)
-        Self._validate_fields(
-            year, month, day, hour, minute, second, microsecond
-        )
-        return Self(year, month, day, hour, minute, second, microsecond, tz)
+        return _parse_isoformat(date_str)
 
     @staticmethod
     def _locale_for(name: String) raises -> Locale:
@@ -980,13 +716,13 @@ struct Morrow(
         tz: TimeZone = TimeZone.none(),
         normalize_whitespace: Bool = False,
     ) raises -> Self:
-        var value = Self._normalize_whitespace(
+        var value = _normalize_whitespace(
             date_str
         ) if normalize_whitespace else date_str
-        var pattern = Self._normalize_whitespace(
+        var pattern = _normalize_whitespace(
             fmt
         ) if normalize_whitespace else fmt
-        return Self._parse_arrow(value, pattern, tz, locale)
+        return _parse_arrow(value, pattern, tz, locale)
 
     @staticmethod
     def get(
@@ -1023,414 +759,6 @@ struct Morrow(
                     tz=tz,
                     normalize_whitespace=normalize_whitespace,
                 )
-            except e:
-                pass
-        raise Error("date string does not match any format")
-
-    @staticmethod
-    def _parse_arrow(
-        date_str: String,
-        fmt: String,
-        tzinfo: TimeZone = TimeZone.none(),
-        locale: Locale = Locale._fast_english(),
-    ) raises -> Self:
-        try:
-            return Self._parse_arrow_at(date_str, fmt, tzinfo, 0, False, locale)
-        except e:
-            pass
-
-        for date_start in range(date_str.byte_length()):
-            if not Self._has_left_parse_boundary(date_str, date_start):
-                continue
-            try:
-                return Self._parse_arrow_at(
-                    date_str, fmt, tzinfo, date_start, True, locale
-                )
-            except e:
-                pass
-        raise Error("date string does not match format")
-
-    @staticmethod
-    def _parse_arrow_at(
-        date_str: String,
-        fmt: String,
-        tzinfo: TimeZone,
-        date_start: Int,
-        allow_trailing_text: Bool,
-        locale: Locale,
-    ) raises -> Self:
-        var year = 1
-        var has_year = False
-        var month = 1
-        var day = 1
-        var day_of_year = -1
-        var has_month = False
-        var has_day = False
-        var parsed_weekday_name = 0
-        var hour = 0
-        var minute = 0
-        var second = 0
-        var microsecond = 0
-        var tz = Self._utc_timezone()
-        var am_pm = 0
-
-        var date_pos = date_start
-        var fmt_pos = 0
-        while fmt_pos < fmt.byte_length():
-            if fmt.as_bytes()[fmt_pos] >= 128:
-                var width = utf8_width(fmt, fmt_pos)
-                for j in range(width):
-                    Self._parse_literal_char(
-                        date_str, date_pos + j, fmt, fmt_pos + j
-                    )
-                date_pos += width
-                fmt_pos += width
-                continue
-            if fmt.as_bytes()[fmt_pos] == 91:
-                var literal_start = fmt_pos + 1
-                var literal_end = literal_start
-                while literal_end < fmt.byte_length() and Int(
-                    fmt.as_bytes()[literal_end]
-                ) != ord("]"):
-                    literal_end += 1
-                if literal_end >= fmt.byte_length():
-                    Self._parse_literal_char(date_str, date_pos, fmt, fmt_pos)
-                    date_pos += 1
-                    fmt_pos += 1
-                    continue
-
-                if Self._is_whitespace_regex_literal(
-                    fmt, literal_start, literal_end
-                ):
-                    date_pos = Self._parse_whitespace_regex(date_str, date_pos)
-                elif Self._is_optional_whitespace_regex_literal(
-                    fmt, literal_start, literal_end
-                ):
-                    date_pos = Self._parse_optional_whitespace_regex(
-                        date_str, date_pos
-                    )
-                elif Self._is_single_optional_whitespace_regex_literal(
-                    fmt, literal_start, literal_end
-                ):
-                    date_pos = Self._parse_single_optional_whitespace_regex(
-                        date_str, date_pos
-                    )
-                else:
-                    var literal_pos = literal_start
-                    while literal_pos < literal_end:
-                        Self._parse_literal_char(
-                            date_str, date_pos, fmt, literal_pos
-                        )
-                        date_pos += 1
-                        literal_pos += 1
-                fmt_pos = literal_end + 1
-            elif Self._starts_with(fmt, fmt_pos, "YYYY"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 4)
-                year = parsed.value - locale.year_offset
-                has_year = True
-                date_pos = parsed.pos
-                fmt_pos += 4
-            elif Self._starts_with(fmt, fmt_pos, "YY"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                if locale.year_offset != 0:
-                    # Buddhist-era years: 00..99 map to 2500..2599 BE.
-                    year = 2500 + parsed.value - locale.year_offset
-                else:
-                    year = Self._parse_two_digit_year(parsed.value)
-                has_year = True
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "MMMM"):
-                var parsed = Self._parse_month_name(
-                    date_str, date_pos, False, locale
-                )
-                month = parsed.value
-                has_month = True
-                date_pos = parsed.pos
-                fmt_pos += 4
-            elif Self._starts_with(fmt, fmt_pos, "MMM"):
-                var parsed = Self._parse_month_name(
-                    date_str, date_pos, True, locale
-                )
-                month = parsed.value
-                has_month = True
-                date_pos = parsed.pos
-                fmt_pos += 3
-            elif Self._starts_with(fmt, fmt_pos, "MM"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                month = parsed.value
-                has_month = True
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "M"):
-                var parsed = Self._parse_variable_int(date_str, date_pos, 2)
-                month = parsed.value
-                has_month = True
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "DDDD"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 3)
-                day_of_year = parsed.value
-                has_day = True
-                date_pos = parsed.pos
-                fmt_pos += 4
-            elif Self._starts_with(fmt, fmt_pos, "DDD"):
-                var parsed = Self._parse_variable_int(date_str, date_pos, 3)
-                day_of_year = parsed.value
-                has_day = True
-                date_pos = parsed.pos
-                fmt_pos += 3
-            elif Self._starts_with(fmt, fmt_pos, "Do") and not (
-                locale.is_fast_english()
-            ):
-                var parsed = locale._match_ordinal(date_str, date_pos)
-                day = parsed.value
-                has_day = True
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "Do"):
-                var ordinal_start = date_pos
-                var parsed = Self._parse_variable_int(date_str, date_pos, 2)
-                if (
-                    parsed.pos - ordinal_start > 1
-                    and date_str.as_bytes()[ordinal_start] == 48
-                ):
-                    raise Error("ordinal day must not contain a leading zero")
-                day = parsed.value
-                has_day = True
-                date_pos = parsed.pos
-                date_pos = Self._parse_ordinal_suffix(date_str, date_pos, day)
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "DD"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                day = parsed.value
-                has_day = True
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "D"):
-                var parsed = Self._parse_variable_int(date_str, date_pos, 2)
-                day = parsed.value
-                has_day = True
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "W"):
-                var parsed = Self._parse_iso_week_date(date_str, date_pos)
-                var date = Self.fromisocalendar(
-                    parsed.year, parsed.week, parsed.weekday
-                )
-                year = date.year
-                month = date.month
-                day = date.day
-                has_year = True
-                has_month = True
-                has_day = True
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "dddd"):
-                var parsed = Self._parse_weekday_name(
-                    date_str, date_pos, False, locale
-                )
-                parsed_weekday_name = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 4
-            elif Self._starts_with(fmt, fmt_pos, "ddd"):
-                var parsed = Self._parse_weekday_name(
-                    date_str, date_pos, True, locale
-                )
-                parsed_weekday_name = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 3
-            elif Self._starts_with(fmt, fmt_pos, "d"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 1)
-                if parsed.value < 1 or parsed.value > 7:
-                    raise Error("weekday must be in 1..7")
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "HH"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                hour = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "H"):
-                var parsed = Self._parse_variable_int(date_str, date_pos, 2)
-                hour = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "hh"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                hour = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "h"):
-                var parsed = Self._parse_variable_int(date_str, date_pos, 2)
-                hour = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "mm"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                minute = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "m"):
-                var parsed = Self._parse_variable_int(date_str, date_pos, 2)
-                minute = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "ss"):
-                var parsed = Self._parse_fixed_int(date_str, date_pos, 2)
-                second = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "s"):
-                var parsed = Self._parse_variable_int(date_str, date_pos, 2)
-                second = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif fmt.as_bytes()[fmt_pos] == 83:
-                var token_end = fmt_pos
-                while (
-                    token_end < fmt.byte_length()
-                    and fmt.as_bytes()[token_end] == 83
-                ):
-                    token_end += 1
-                var parsed = Self._parse_subsecond(
-                    date_str, date_pos, token_end - fmt_pos
-                )
-                microsecond = parsed.value
-                date_pos = parsed.pos
-                fmt_pos = token_end
-            elif Self._starts_with(fmt, fmt_pos, "X"):
-                if fmt_pos + 1 != fmt.byte_length():
-                    raise Error("timestamp token must be the full format")
-                var timestamp_str = String(date_str[byte=date_pos:])
-                Self._validate_timestamp_seconds_token(timestamp_str)
-                var parsed = Self.utcfromtimestamp(timestamp_str)
-                if not tzinfo.is_none():
-                    return parsed.replace(tzinfo=tzinfo)
-                return parsed
-            elif Self._starts_with(fmt, fmt_pos, "x"):
-                if fmt_pos + 1 != fmt.byte_length():
-                    raise Error("timestamp token must be the full format")
-                var timestamp_str = String(date_str[byte=date_pos:])
-                Self._validate_expanded_timestamp_token(timestamp_str)
-                var parsed = Self._from_expanded_timestamp_value(
-                    Int(timestamp_str)
-                )
-                if not tzinfo.is_none():
-                    return parsed.replace(tzinfo=tzinfo)
-                return parsed
-            elif Self._starts_with(fmt, fmt_pos, "ZZZ"):
-                var parsed = Self._parse_timezone_name(date_str, date_pos)
-                tz = parsed.tz
-                date_pos = parsed.pos
-                fmt_pos += 3
-            elif Self._starts_with(fmt, fmt_pos, "ZZ"):
-                var parsed = Self._parse_timezone_offset(
-                    date_str, date_pos, True
-                )
-                tz = parsed.tz
-                date_pos = parsed.pos
-                fmt_pos += 2
-            elif Self._starts_with(fmt, fmt_pos, "Z"):
-                var parsed = Self._parse_timezone_offset(
-                    date_str, date_pos, False
-                )
-                tz = parsed.tz
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "A"):
-                var parsed = Self._parse_am_pm(date_str, date_pos, locale)
-                am_pm = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 1
-            elif Self._starts_with(fmt, fmt_pos, "a"):
-                var parsed = Self._parse_am_pm(date_str, date_pos, locale)
-                am_pm = parsed.value
-                date_pos = parsed.pos
-                fmt_pos += 1
-            else:
-                Self._parse_literal_char(date_str, date_pos, fmt, fmt_pos)
-                date_pos += 1
-                fmt_pos += 1
-
-        if allow_trailing_text:
-            if not Self._has_right_parse_boundary(date_str, date_pos):
-                raise Error("date string does not match format boundary")
-        elif date_pos != date_str.byte_length():
-            raise Error("date string has trailing data")
-        if am_pm == 1:
-            if hour > 12:
-                raise Error("hour must be in 0..12 for AM")
-            if hour == 12:
-                hour = 0
-        elif am_pm == 2:
-            if hour < 12:
-                hour += 12
-        if day_of_year != -1:
-            if not has_year:
-                raise Error("year component is required with day of year")
-            if has_month:
-                raise Error("month component is not allowed with day of year")
-            if day_of_year < 1 or day_of_year > 366:
-                raise Error("day of year is invalid")
-            var date = Self.fromordinal(_ymd2ord(year, 1, 1) + day_of_year - 1)
-            year = date.year
-            month = date.month
-            day = date.day
-        elif parsed_weekday_name != 0 and not has_day:
-            if not has_year:
-                year = 1970
-            if not has_month:
-                month = 1
-            Self._validate_fields(year, month, 1, 0, 0, 0, 0)
-            var first_day = Self(year, month, 1)
-            var weekday_offset = parsed_weekday_name - first_day.isoweekday()
-            if weekday_offset < 0:
-                weekday_offset += 7
-            var date = first_day.shift(days=weekday_offset)
-            year = date.year
-            month = date.month
-            day = date.day
-        if microsecond >= _US_PER_SECOND:
-            second += microsecond // _US_PER_SECOND
-            microsecond = microsecond % _US_PER_SECOND
-        var midnight_end_of_day = False
-        if hour == 24:
-            if minute != 0:
-                raise Error(
-                    "midnight at the end of day must not contain minutes"
-                )
-            if second != 0:
-                raise Error(
-                    "midnight at the end of day must not contain seconds"
-                )
-            if microsecond != 0:
-                raise Error(
-                    "midnight at the end of day must not contain microseconds"
-                )
-            hour = 0
-            midnight_end_of_day = True
-        if not tzinfo.is_none():
-            tz = tzinfo
-        Self._validate_fields(
-            year, month, day, hour, minute, second, microsecond
-        )
-        var parsed = Self(
-            year, month, day, hour, minute, second, microsecond, tz
-        )
-        if midnight_end_of_day:
-            return parsed.shift(days=1)
-        return parsed
-
-    @staticmethod
-    def _parse_arrow_formats(
-        date_str: String,
-        formats: List[String],
-        tzinfo: TimeZone = TimeZone.none(),
-    ) raises -> Self:
-        for i in range(len(formats)):
-            try:
-                return Self._parse_arrow(date_str, formats[i], tzinfo)
             except e:
                 pass
         raise Error("date string does not match any format")
@@ -1509,9 +837,7 @@ struct Morrow(
         var parsed_tz = TimeZone.none()
 
         while True:
-            var directive = Self._find_strptime_extension_directive(
-                normalized_fmt
-            )
+            var directive = _find_strptime_extension_directive(normalized_fmt)
             if directive.pos == -1:
                 break
 
@@ -1522,7 +848,7 @@ struct Morrow(
                 value_end = value_start
                 while (
                     value_end < normalized_date.byte_length()
-                    and Self._is_ascii_digit(
+                    and _is_ascii_digit(
                         Int(normalized_date.as_bytes()[value_end])
                     )
                     and value_end - value_start < 6
@@ -1532,7 +858,7 @@ struct Morrow(
                     raise Error("microsecond is missing")
                 if (
                     value_end < normalized_date.byte_length()
-                    and Self._is_ascii_digit(
+                    and _is_ascii_digit(
                         Int(normalized_date.as_bytes()[value_end])
                     )
                 ):
@@ -1543,13 +869,13 @@ struct Morrow(
                     digits += "0"
                 microsecond = Int(digits)
             elif directive.value == ord("z"):
-                var parsed = Self._parse_strptime_timezone_offset(
+                var parsed = _parse_strptime_timezone_offset(
                     normalized_date, value_start
                 )
                 value_end = parsed.pos
                 parsed_tz = parsed.tz
             else:
-                var parsed = Self._parse_strptime_timezone_name(
+                var parsed = _parse_strptime_timezone_name(
                     normalized_date, value_start
                 )
                 value_end = parsed.pos
@@ -1563,134 +889,7 @@ struct Morrow(
             )
 
         var tm = c_strptime(normalized_date, normalized_fmt)
-        return Self._from_strptime_tm(tm, microsecond, tzinfo, parsed_tz)
-
-    @staticmethod
-    def _from_strptime_tm(
-        tm: CTm,
-        microsecond: Int,
-        tzinfo: TimeZone,
-        parsed_tz: TimeZone = TimeZone.none(),
-    ) raises -> Self:
-        var tz: TimeZone
-        if not tzinfo.is_none():
-            tz = tzinfo
-        elif not parsed_tz.is_none():
-            tz = parsed_tz
-        else:
-            tz = TimeZone(Int(tm.tm_gmtoff))
-        return Self._from_components(
-            Int(tm.tm_year) + 1900,
-            Int(tm.tm_mon) + 1,
-            Int(tm.tm_mday),
-            Int(tm.tm_hour),
-            Int(tm.tm_min),
-            Int(tm.tm_sec),
-            microsecond,
-            tz,
-        )
-
-    @staticmethod
-    def _find_strptime_extension_directive(fmt: String) -> MorrowParseInt:
-        var pos = 0
-        while pos + 1 < fmt.byte_length():
-            if fmt.as_bytes()[pos] == 37:
-                if fmt.as_bytes()[pos + 1] == 37:
-                    pos += 2
-                    continue
-                if (
-                    fmt.as_bytes()[pos + 1] == 102
-                    or fmt.as_bytes()[pos + 1] == 122
-                    or fmt.as_bytes()[pos + 1] == 90
-                ):
-                    return MorrowParseInt(Int(fmt.as_bytes()[pos + 1]), pos)
-                pos += 2
-            else:
-                pos += 1
-        return MorrowParseInt(0, -1)
-
-    @staticmethod
-    def _parse_strptime_timezone_name(
-        date_str: String, date_pos: Int
-    ) raises -> MorrowParseTimeZone:
-        return Self._parse_timezone_name(date_str, date_pos)
-
-    @staticmethod
-    def _parse_strptime_timezone_offset(
-        date_str: String, date_pos: Int
-    ) raises -> MorrowParseTimeZone:
-        if date_pos >= date_str.byte_length():
-            raise Error("timezone is missing")
-        if date_str.as_bytes()[date_pos] == 90:
-            return MorrowParseTimeZone(TimeZone.from_utc("UTC"), date_pos + 1)
-
-        var sign = 1
-        if date_str.as_bytes()[date_pos] == 45:
-            sign = -1
-        elif not date_str.as_bytes()[date_pos] == 43:
-            raise Error("timezone must be Z or a fixed offset")
-
-        var pos = date_pos + 1
-        if (
-            pos + 2 > date_str.byte_length()
-            or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
-            or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
-        ):
-            raise Error("timezone hour is invalid")
-        var hours = Int(date_str[byte = pos : pos + 2])
-        pos += 2
-
-        var minutes: Int
-        var seconds = 0
-        if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 58:
-            pos += 1
-            if (
-                pos + 2 > date_str.byte_length()
-                or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
-                or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
-            ):
-                raise Error("timezone minute is invalid")
-            minutes = Int(date_str[byte = pos : pos + 2])
-            pos += 2
-            if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 58:
-                pos += 1
-                if (
-                    pos + 2 > date_str.byte_length()
-                    or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
-                    or not Self._is_ascii_digit(
-                        Int(date_str.as_bytes()[pos + 1])
-                    )
-                ):
-                    raise Error("timezone second is invalid")
-                seconds = Int(date_str[byte = pos : pos + 2])
-                pos += 2
-        else:
-            if (
-                pos + 2 > date_str.byte_length()
-                or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
-                or not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
-            ):
-                raise Error("timezone minute is invalid")
-            minutes = Int(date_str[byte = pos : pos + 2])
-            pos += 2
-            if (
-                pos + 2 <= date_str.byte_length()
-                and Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
-                and Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
-            ):
-                seconds = Int(date_str[byte = pos : pos + 2])
-                pos += 2
-
-        if minutes > 59:
-            raise Error("timezone minute is invalid")
-        if seconds > 59:
-            raise Error("timezone second is invalid")
-        var offset = sign * (hours * 3600 + minutes * 60 + seconds)
-        if offset <= -86400 or offset >= 86400:
-            raise Error(
-                "timezone offset must be strictly between -24:00 and +24:00"
-            )
-        return MorrowParseTimeZone(TimeZone(offset), pos)
+        return _from_strptime_tm(tm, microsecond, tzinfo, parsed_tz)
 
     @staticmethod
     def strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:
@@ -1914,25 +1113,21 @@ struct Morrow(
         """
         return self.to("UTC")._time_tuple()
 
-    @staticmethod
-    def _relative_locale(name: String) raises -> Locale:
-        return Locale(name, _names=False, _relative=True)
-
     def humanize(self, *, locale: String = "en") raises -> String:
-        return self.humanize(locale=Self._relative_locale(locale))
+        return self.humanize(locale=_relative_locale(locale))
 
     def humanize(self, *, locale: Locale) raises -> String:
-        return self._humanize_text(Self.utcnow(), False, "auto", locale)
+        return _humanize_text(self, Self.utcnow(), False, "auto", locale)
 
     def humanize(
         self, only_distance: Bool, *, locale: String = "en"
     ) raises -> String:
-        return self.humanize(
-            only_distance, locale=Self._relative_locale(locale)
-        )
+        return self.humanize(only_distance, locale=_relative_locale(locale))
 
     def humanize(self, only_distance: Bool, *, locale: Locale) raises -> String:
-        return self._humanize_text(Self.utcnow(), only_distance, "auto", locale)
+        return _humanize_text(
+            self, Self.utcnow(), only_distance, "auto", locale
+        )
 
     def humanize(
         self,
@@ -1946,7 +1141,7 @@ struct Morrow(
             other,
             only_distance,
             granularity,
-            locale=Self._relative_locale(locale),
+            locale=_relative_locale(locale),
         )
 
     def humanize(
@@ -1957,13 +1152,13 @@ struct Morrow(
         *,
         locale: Locale,
     ) raises -> String:
-        return self._humanize_text(other, only_distance, granularity, locale)
+        return _humanize_text(self, other, only_distance, granularity, locale)
 
     def humanize(
         self, other: Self, granularity: List[String], *, locale: String = "en"
     ) raises -> String:
         return self.humanize(
-            other, False, granularity, locale=Self._relative_locale(locale)
+            other, False, granularity, locale=_relative_locale(locale)
         )
 
     def humanize(
@@ -1983,7 +1178,7 @@ struct Morrow(
             other,
             only_distance,
             granularity,
-            locale=Self._relative_locale(locale),
+            locale=_relative_locale(locale),
         )
 
     def humanize(
@@ -1997,14 +1192,14 @@ struct Morrow(
         if len(granularity) == 0:
             raise Error("granularity cannot be empty")
         if len(granularity) == 1 and granularity[0] == "auto":
-            return self._humanize_text(other, only_distance, "auto", locale)
+            return _humanize_text(self, other, only_distance, "auto", locale)
 
-        var ordered_granularity = Self._normalize_humanize_granularity_list(
+        var ordered_granularity = _normalize_humanize_granularity_list(
             granularity
         )
         self._check_awareness(other)
         var delta_us = self._utc_microseconds() - other._utc_microseconds()
-        var rounded_delta_seconds = Self._rounded_seconds(delta_us)
+        var rounded_delta_seconds = _rounded_seconds(delta_us)
         var remaining = abs(rounded_delta_seconds)
         if (
             len(ordered_granularity) == 1
@@ -2018,9 +1213,9 @@ struct Morrow(
         var deltas = List[Int]()
         for i in range(len(ordered_granularity)):
             var unit = ordered_granularity[i]
-            var unit_seconds = Self._humanize_unit_seconds(unit)
+            var unit_seconds = _humanize_unit_seconds(unit)
             var count = remaining // unit_seconds
-            frames.append(Self._humanize_frame(unit, count))
+            frames.append(_humanize_frame(unit, count))
             deltas.append(-count if negative else count)
             remaining = remaining % unit_seconds
         if len(frames) == 1:
@@ -2029,69 +1224,15 @@ struct Morrow(
             )
         return locale._describe_multi(frames, deltas, negative, only_distance)
 
-    def _humanize_text(
-        self,
-        other: Self,
-        only_distance: Bool,
-        granularity: String,
-        locale: Locale,
-    ) raises -> String:
-        """
-        Return a human-readable relative difference in the given locale.
-        """
-        self._check_awareness(other)
-        var delta_us = self._utc_microseconds() - other._utc_microseconds()
-        var unit = granularity
-        if unit != "auto":
-            _ = Self._humanize_unit_seconds(unit)
-
-        if delta_us == 0:
-            return locale._describe(0, 0, False, only_distance)
-
-        var rounded_delta_seconds = Self._rounded_seconds(delta_us)
-        var seconds = abs(rounded_delta_seconds)
-        if unit == "auto":
-            return self._humanize_auto(other, delta_us, only_distance, locale)
-        if unit == "second" and seconds < 2:
-            return locale._describe(0, 0, False, only_distance)
-        var count = Self._humanize_count(seconds, unit)
-        return Self._describe_count(
-            locale, rounded_delta_seconds, count, unit, only_distance
-        )
-
-    @staticmethod
-    def _humanize_frame(unit: String, count: Int) raises -> Int:
-        if count == 1:
-            return frame_index(unit)
-        return frame_index(Self._plural_humanize_unit(unit))
-
-    @staticmethod
-    def _describe_count(
-        locale: Locale,
-        delta_seconds: Int,
-        count: Int,
-        unit: String,
-        only_distance: Bool,
-    ) raises -> String:
-        var negative = delta_seconds < 0
-        return locale._describe(
-            Self._humanize_frame(unit, count),
-            -count if negative else count,
-            negative,
-            only_distance,
-        )
-
     def dehumanize(
         self, input_string: String, *, locale: String = "en"
     ) raises -> Self:
         var grammar = locale_grammar(locale)
         if grammar == 1:
-            return self._dehumanize_en(input_string)
+            return _dehumanize_en(self, input_string)
         if grammar == 2:
-            return self._dehumanize_en(english_relative(input_string))
-        return self.dehumanize(
-            input_string, locale=Self._relative_locale(locale)
-        )
+            return _dehumanize_en(self, english_relative(input_string))
+        return self.dehumanize(input_string, locale=_relative_locale(locale))
 
     def dehumanize(
         self, input_string: String, *, locale: Locale
@@ -2112,87 +1253,6 @@ struct Morrow(
             minutes=parts.count("minutes"),
             seconds=parts.count("seconds"),
         )
-
-    def _dehumanize_en(self, input_string: String) raises -> Self:
-        """
-        Shift this Morrow by an English human-readable relative difference.
-        """
-        if input_string == "just now":
-            return self
-
-        var future: Bool
-        var phrase: String
-        if input_string.byte_length() > 3 and input_string[byte=0:3] == "in ":
-            future = True
-            phrase = String(input_string[byte=3:])
-        elif (
-            input_string.byte_length() > 4
-            and input_string[byte = input_string.byte_length() - 4 :] == " ago"
-        ):
-            future = False
-            phrase = String(
-                input_string[byte = 0 : input_string.byte_length() - 4]
-            )
-        else:
-            raise Error(
-                "humanized string must start with 'in ' or end with ' ago'"
-            )
-
-        var result = self
-        var parsed = False
-        var pos = 0
-        while pos < phrase.byte_length():
-            while pos < phrase.byte_length() and phrase.as_bytes()[pos] == 32:
-                pos += 1
-            if pos >= phrase.byte_length():
-                break
-
-            var word_start = pos
-            while pos < phrase.byte_length() and Int(
-                phrase.as_bytes()[pos]
-            ) != ord(" "):
-                pos += 1
-            var count_word = String(phrase[byte=word_start:pos])
-            if count_word == "and":
-                continue
-
-            var count: Int
-            if count_word == "a" or count_word == "an":
-                count = 1
-            else:
-                count = Int(count_word)
-
-            while pos < phrase.byte_length() and phrase.as_bytes()[pos] == 32:
-                pos += 1
-            if pos >= phrase.byte_length():
-                raise Error("humanized distance is invalid")
-
-            var unit_start = pos
-            while pos < phrase.byte_length() and Int(
-                phrase.as_bytes()[pos]
-            ) != ord(" "):
-                pos += 1
-            var raw_unit = String(phrase[byte=unit_start:pos])
-            try:
-                var unit = Self._normalize_dehumanize_unit(
-                    count_word, count, raw_unit
-                )
-                if not future:
-                    count = -count
-                result = result._shift_humanize_unit(unit, count)
-                parsed = True
-            except e:
-                if (
-                    count_word == "1"
-                    and count == 1
-                    and Self._is_singular_humanize_unit(raw_unit)
-                ):
-                    continue
-                raise Error("humanized distance is invalid")
-
-        if not parsed:
-            raise Error("humanized distance is invalid")
-        return result
 
     def to(self, tz: TimeZone) raises -> Self:
         """Convert an instant using the target zone's rules at that instant."""
@@ -2982,58 +2042,6 @@ struct Morrow(
             return TimeZone.from_name(tz_str)
 
     @staticmethod
-    def _parse_iso_timezone_offset(
-        date_str: String, date_pos: Int
-    ) raises -> MorrowParseTimeZone:
-        var sign = Int(date_str.as_bytes()[date_pos])
-        if sign != ord("+") and sign != ord("-"):
-            raise Error("isoformat timezone must be a fixed offset")
-
-        var pos = date_pos + 1
-        if pos + 2 > date_str.byte_length():
-            raise Error("isoformat timezone hour is invalid")
-        for i in range(2):
-            if not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
-                raise Error("isoformat timezone hour is invalid")
-        pos += 2
-
-        if pos == date_str.byte_length():
-            return MorrowParseTimeZone(
-                TimeZone.from_utc(String(date_str[byte=date_pos:pos])), pos
-            )
-
-        if date_str.as_bytes()[pos] == 58:
-            var colon_pos = pos
-            pos += 1
-            if pos == date_str.byte_length():
-                return MorrowParseTimeZone(
-                    TimeZone.from_utc(
-                        String(date_str[byte=date_pos:colon_pos])
-                    ),
-                    pos,
-                )
-            if pos + 2 > date_str.byte_length():
-                raise Error("isoformat timezone minute is invalid")
-            for i in range(2):
-                if not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
-                    raise Error("isoformat timezone minute is invalid")
-            pos += 2
-        elif (
-            pos + 2 <= date_str.byte_length()
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
-        ):
-            pos += 2
-        else:
-            raise Error("isoformat timezone minute is invalid")
-
-        if pos != date_str.byte_length():
-            raise Error("isoformat timezone has trailing data")
-        return MorrowParseTimeZone(
-            TimeZone.from_utc(String(date_str[byte=date_pos:pos])), pos
-        )
-
-    @staticmethod
     def _from_utc_microseconds_value(total_us: Int) raises -> Self:
         var seconds = total_us // _US_PER_SECOND
         var microsecond = total_us % _US_PER_SECOND
@@ -3065,511 +2073,6 @@ struct Morrow(
     @staticmethod
     def _from_expanded_timestamp_value(timestamp: Int) raises -> Self:
         return Self.utcfromtimestamp(normalize_timestamp(Float64(timestamp)))
-
-    @staticmethod
-    def _starts_with(s: String, pos: Int, pattern: String) -> Bool:
-        if pos + pattern.byte_length() > s.byte_length():
-            return False
-        for i in range(pattern.byte_length()):
-            if Int(s.as_bytes()[pos + i]) != Int(pattern.as_bytes()[i]):
-                return False
-        return True
-
-    @staticmethod
-    def _starts_with_ascii_case_insensitive(
-        s: String, pos: Int, pattern: String
-    ) -> Bool:
-        if pos + pattern.byte_length() > s.byte_length():
-            return False
-        for i in range(pattern.byte_length()):
-            if Self._ascii_lower(
-                Int(s.as_bytes()[pos + i])
-            ) != Self._ascii_lower(Int(pattern.as_bytes()[i])):
-                return False
-        return True
-
-    @staticmethod
-    def _ascii_lower(c: Int) -> Int:
-        if c >= ord("A") and c <= ord("Z"):
-            return c + 32
-        return c
-
-    @staticmethod
-    def _has_left_parse_boundary(s: String, pos: Int) -> Bool:
-        if pos == 0:
-            return True
-        var c = Int(s.as_bytes()[pos - 1])
-        if Self._is_ascii_whitespace(c):
-            return True
-        if Self._is_parse_punctuation(c):
-            return pos == 1 or Self._is_ascii_whitespace(
-                Int(s.as_bytes()[pos - 2])
-            )
-        return False
-
-    @staticmethod
-    def _has_right_parse_boundary(s: String, pos: Int) -> Bool:
-        if pos == s.byte_length():
-            return True
-        var c = Int(s.as_bytes()[pos])
-        if Self._is_ascii_whitespace(c):
-            return True
-        if Self._is_parse_punctuation(c):
-            return pos + 1 == s.byte_length() or Self._is_ascii_whitespace(
-                Int(s.as_bytes()[pos + 1])
-            )
-        return False
-
-    @staticmethod
-    def _is_parse_punctuation(c: Int) -> Bool:
-        return (
-            c == ord(",")
-            or c == ord(".")
-            or c == ord(";")
-            or c == ord(":")
-            or c == ord("?")
-            or c == ord("!")
-            or c == ord('"')
-            or c == ord("`")
-            or c == ord("'")
-            or c == ord("[")
-            or c == ord("]")
-            or c == ord("{")
-            or c == ord("}")
-            or c == ord("(")
-            or c == ord(")")
-            or c == ord("<")
-            or c == ord(">")
-        )
-
-    @staticmethod
-    def _is_ascii_alphanumeric(c: Int) -> Bool:
-        return (
-            Self._is_ascii_digit(c)
-            or (c >= ord("A") and c <= ord("Z"))
-            or (c >= ord("a") and c <= ord("z"))
-        )
-
-    @staticmethod
-    def _is_ascii_digit(c: Int) -> Bool:
-        return c >= ord("0") and c <= ord("9")
-
-    @staticmethod
-    def _is_ascii_whitespace(c: Int) -> Bool:
-        return c == ord(" ") or (c >= 9 and c <= 13)
-
-    @staticmethod
-    def _normalize_whitespace(s: String) -> String:
-        var result = ""
-        var pending_space = False
-        var i = 0
-        while i < s.byte_length():
-            var width = utf8_width(s, i)
-            if Self._is_ascii_whitespace(Int(s.as_bytes()[i])):
-                if result.byte_length() > 0:
-                    pending_space = True
-            else:
-                if pending_space:
-                    result += " "
-                    pending_space = False
-                result += s[byte = i : i + width]
-            i += width
-        return result
-
-    @staticmethod
-    def _is_whitespace_regex_literal(fmt: String, start: Int, end: Int) -> Bool:
-        return (
-            end - start == 3
-            and Int(fmt.as_bytes()[start]) == 92
-            and Int(fmt.as_bytes()[start + 1]) == ord("s")
-            and Int(fmt.as_bytes()[start + 2]) == ord("+")
-        )
-
-    @staticmethod
-    def _is_optional_whitespace_regex_literal(
-        fmt: String, start: Int, end: Int
-    ) -> Bool:
-        return (
-            end - start == 3
-            and Int(fmt.as_bytes()[start]) == 92
-            and Int(fmt.as_bytes()[start + 1]) == ord("s")
-            and Int(fmt.as_bytes()[start + 2]) == ord("*")
-        )
-
-    @staticmethod
-    def _is_single_optional_whitespace_regex_literal(
-        fmt: String, start: Int, end: Int
-    ) -> Bool:
-        return (
-            end - start == 3
-            and Int(fmt.as_bytes()[start]) == 92
-            and Int(fmt.as_bytes()[start + 1]) == ord("s")
-            and Int(fmt.as_bytes()[start + 2]) == ord("?")
-        )
-
-    @staticmethod
-    def _parse_whitespace_regex(date_str: String, date_pos: Int) raises -> Int:
-        var pos = date_pos
-        while pos < date_str.byte_length() and Self._is_ascii_whitespace(
-            Int(date_str.as_bytes()[pos])
-        ):
-            pos += 1
-        if pos == date_pos:
-            raise Error("whitespace is missing")
-        return pos
-
-    @staticmethod
-    def _parse_optional_whitespace_regex(
-        date_str: String, date_pos: Int
-    ) -> Int:
-        var pos = date_pos
-        while pos < date_str.byte_length() and Self._is_ascii_whitespace(
-            Int(date_str.as_bytes()[pos])
-        ):
-            pos += 1
-        return pos
-
-    @staticmethod
-    def _parse_single_optional_whitespace_regex(
-        date_str: String, date_pos: Int
-    ) -> Int:
-        if date_pos < date_str.byte_length() and Self._is_ascii_whitespace(
-            Int(date_str.as_bytes()[date_pos])
-        ):
-            return date_pos + 1
-        return date_pos
-
-    @staticmethod
-    def _parse_literal_char(
-        date_str: String, date_pos: Int, fmt: String, fmt_pos: Int
-    ) raises:
-        if date_pos >= date_str.byte_length():
-            raise Error("date string is shorter than format")
-        if Int(date_str.as_bytes()[date_pos]) != Int(fmt.as_bytes()[fmt_pos]):
-            raise Error("date string does not match format literal")
-
-    @staticmethod
-    def _parse_fixed_int(
-        date_str: String, date_pos: Int, count: Int
-    ) raises -> MorrowParseInt:
-        if date_pos + count > date_str.byte_length():
-            raise Error("date string is shorter than numeric token")
-        for i in range(count):
-            if not Self._is_ascii_digit(Int(date_str.as_bytes()[date_pos + i])):
-                raise Error("numeric token contains non-digit data")
-        return MorrowParseInt(
-            Int(date_str[byte = date_pos : date_pos + count]), date_pos + count
-        )
-
-    @staticmethod
-    def _parse_variable_int(
-        date_str: String, date_pos: Int, max_count: Int
-    ) raises -> MorrowParseInt:
-        var pos = date_pos
-        var end = date_pos + max_count
-        if end > date_str.byte_length():
-            end = date_str.byte_length()
-        while pos < end and Self._is_ascii_digit(Int(date_str.as_bytes()[pos])):
-            pos += 1
-        if pos == date_pos:
-            raise Error("numeric token is missing")
-        return MorrowParseInt(Int(date_str[byte=date_pos:pos]), pos)
-
-    @staticmethod
-    def _parse_subsecond(
-        date_str: String, date_pos: Int, count: Int
-    ) raises -> MorrowParseInt:
-        var pos = date_pos
-        while pos < date_str.byte_length() and Self._is_ascii_digit(
-            Int(date_str.as_bytes()[pos])
-        ):
-            pos += 1
-        if pos == date_pos:
-            raise Error("subsecond token is missing")
-
-        var digit_count = pos - date_pos
-        if digit_count <= 6:
-            var digits = String(date_str[byte=date_pos:pos])
-            while digits.byte_length() < 6:
-                digits += "0"
-            return MorrowParseInt(Int(digits), pos)
-
-        var value = Int(date_str[byte = date_pos : date_pos + 6])
-        var round_digit = Int(date_str[byte = date_pos + 6 : date_pos + 7])
-        var should_round = round_digit > 5
-        if round_digit == 5:
-            var has_remaining = False
-            for i in range(date_pos + 7, pos):
-                if Int(date_str.as_bytes()[i]) != ord("0"):
-                    has_remaining = True
-            should_round = has_remaining or value % 2 == 1
-        if should_round:
-            value += 1
-        return MorrowParseInt(value, pos)
-
-    @staticmethod
-    def _validate_timestamp_seconds_token(timestamp_str: String) raises:
-        var length = timestamp_str.byte_length()
-        if length == 0:
-            raise Error("timestamp token is missing")
-        var pos = 0
-        if timestamp_str.as_bytes()[pos] == 45:
-            pos += 1
-            if pos == length:
-                raise Error("timestamp token is missing")
-
-        var digit_start = pos
-        while pos < length and Self._is_ascii_digit(
-            Int(timestamp_str.as_bytes()[pos])
-        ):
-            pos += 1
-        var digit_count = pos - digit_start
-        if digit_count == 0:
-            raise Error("timestamp token must start with digits")
-
-        var has_fraction = False
-        if pos < length and timestamp_str.as_bytes()[pos] == 46:
-            has_fraction = True
-            pos += 1
-            var fraction_start = pos
-            while pos < length and Self._is_ascii_digit(
-                Int(timestamp_str.as_bytes()[pos])
-            ):
-                pos += 1
-            if pos == fraction_start:
-                raise Error("timestamp token fraction is missing")
-
-        if pos != length:
-            raise Error("timestamp token has invalid characters")
-        if not has_fraction and digit_count < 2:
-            raise Error("timestamp token integer is too short")
-
-    @staticmethod
-    def _validate_expanded_timestamp_token(timestamp_str: String) raises:
-        var length = timestamp_str.byte_length()
-        if length == 0:
-            raise Error("timestamp token is missing")
-        var pos = 0
-        if timestamp_str.as_bytes()[pos] == 45:
-            pos += 1
-            if pos == length:
-                raise Error("timestamp token is missing")
-        while pos < length and Self._is_ascii_digit(
-            Int(timestamp_str.as_bytes()[pos])
-        ):
-            pos += 1
-        if pos != length:
-            raise Error("timestamp token has invalid characters")
-
-    @staticmethod
-    def _parse_ordinal_suffix(
-        date_str: String, date_pos: Int, value: Int
-    ) raises -> Int:
-        if date_pos + 2 > date_str.byte_length():
-            raise Error("ordinal suffix is missing")
-        var expected = "th"
-        var mod100 = value % 100
-        if mod100 < 11 or mod100 > 13:
-            var mod10 = value % 10
-            if mod10 == 1:
-                expected = "st"
-            elif mod10 == 2:
-                expected = "nd"
-            elif mod10 == 3:
-                expected = "rd"
-        if Self._starts_with_ascii_case_insensitive(
-            date_str, date_pos, expected
-        ):
-            return date_pos + 2
-        raise Error("ordinal suffix is invalid")
-
-    @staticmethod
-    def _parse_two_digit_year(year: Int) -> Int:
-        if year >= 69:
-            return 1900 + year
-        return 2000 + year
-
-    @staticmethod
-    def _parse_month_name(
-        date_str: String,
-        date_pos: Int,
-        abbreviated: Bool,
-        locale: Locale,
-    ) raises -> MorrowParseInt:
-        if not locale.is_fast_english():
-            var matched = locale._match_month(date_str, date_pos, abbreviated)
-            return MorrowParseInt(matched.value, matched.pos)
-        for value in range(1, 13):
-            var name = month_abbreviation(value) if abbreviated else month_name(
-                value
-            )
-            if Self._starts_with_ascii_case_insensitive(
-                date_str, date_pos, name
-            ):
-                return MorrowParseInt(value, date_pos + name.byte_length())
-        raise Error("month name is invalid")
-
-    @staticmethod
-    def _parse_weekday_name(
-        date_str: String,
-        date_pos: Int,
-        abbreviated: Bool,
-        locale: Locale,
-    ) raises -> MorrowParseInt:
-        if not locale.is_fast_english():
-            var matched = locale._match_weekday(date_str, date_pos, abbreviated)
-            return MorrowParseInt(matched.value, matched.pos)
-        for value in range(1, 8):
-            var name = day_abbreviation(value) if abbreviated else day_name(
-                value
-            )
-            if Self._starts_with_ascii_case_insensitive(
-                date_str, date_pos, name
-            ):
-                return MorrowParseInt(value, date_pos + name.byte_length())
-        raise Error("weekday name is invalid")
-
-    @staticmethod
-    def _parse_iso_week_date(
-        date_str: String, date_pos: Int
-    ) raises -> MorrowParseIsoWeek:
-        var year_parsed = Self._parse_fixed_int(date_str, date_pos, 4)
-        var pos = year_parsed.pos
-        if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 45:
-            pos += 1
-        if pos >= date_str.byte_length() or Int(
-            date_str.as_bytes()[pos]
-        ) != ord("W"):
-            raise Error("ISO week date is missing W marker")
-        pos += 1
-        var week_parsed = Self._parse_fixed_int(date_str, pos, 2)
-        pos = week_parsed.pos
-
-        var weekday = 1
-        if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 45:
-            if pos + 1 < date_str.byte_length() and Self._is_ascii_digit(
-                Int(date_str.as_bytes()[pos + 1])
-            ):
-                pos += 1
-                var weekday_parsed = Self._parse_fixed_int(date_str, pos, 1)
-                weekday = weekday_parsed.value
-                pos = weekday_parsed.pos
-        elif pos < date_str.byte_length() and Self._is_ascii_digit(
-            Int(date_str.as_bytes()[pos])
-        ):
-            var weekday_parsed = Self._parse_fixed_int(date_str, pos, 1)
-            weekday = weekday_parsed.value
-            pos = weekday_parsed.pos
-
-        return MorrowParseIsoWeek(
-            year_parsed.value, week_parsed.value, weekday, pos
-        )
-
-    @staticmethod
-    def _parse_timezone_name(
-        date_str: String, date_pos: Int
-    ) raises -> MorrowParseTimeZone:
-        if date_pos >= date_str.byte_length():
-            raise Error("timezone is missing")
-        var end = date_pos
-        while end < date_str.byte_length():
-            var c = Int(date_str.as_bytes()[end])
-            if not (
-                Self._is_ascii_alphanumeric(c)
-                or c == ord("/")
-                or c == ord("_")
-                or c == ord("-")
-                or c == ord("+")
-            ):
-                break
-            end += 1
-        var name = String(date_str[byte=date_pos:end])
-        if name.byte_length() == 3 and Self._starts_with_ascii_case_insensitive(
-            name, 0, "UTC"
-        ):
-            return MorrowParseTimeZone(Self._utc_timezone(), end)
-        if name.byte_length() == 3 and Self._starts_with_ascii_case_insensitive(
-            name, 0, "GMT"
-        ):
-            return MorrowParseTimeZone(TimeZone(0, "GMT"), end)
-        return MorrowParseTimeZone(TimeZone.from_name(name), end)
-
-    @staticmethod
-    def _parse_timezone_offset(
-        date_str: String, date_pos: Int, colon: Bool
-    ) raises -> MorrowParseTimeZone:
-        if Self._starts_with(date_str, date_pos, "Z"):
-            return MorrowParseTimeZone(Self._utc_timezone(), date_pos + 1)
-        if date_pos >= date_str.byte_length():
-            raise Error("timezone is missing")
-
-        var sign = Int(date_str.as_bytes()[date_pos])
-        if sign != ord("+") and sign != ord("-"):
-            raise Error("timezone must be Z or a fixed offset")
-
-        var pos = date_pos + 1
-        if pos + 2 > date_str.byte_length():
-            raise Error("timezone hour is invalid")
-        for i in range(2):
-            if not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
-                raise Error("timezone hour is invalid")
-        pos += 2
-
-        if pos < date_str.byte_length() and date_str.as_bytes()[pos] == 58:
-            if not colon:
-                raise Error("timezone offset must not contain a colon")
-            var colon_pos = pos
-            pos += 1
-            if pos + 2 > date_str.byte_length():
-                return MorrowParseTimeZone(
-                    TimeZone.from_utc(
-                        String(date_str[byte=date_pos:colon_pos])
-                    ),
-                    colon_pos,
-                )
-            for i in range(2):
-                if not Self._is_ascii_digit(Int(date_str.as_bytes()[pos + i])):
-                    return MorrowParseTimeZone(
-                        TimeZone.from_utc(
-                            String(date_str[byte=date_pos:colon_pos])
-                        ),
-                        colon_pos,
-                    )
-            pos += 2
-        elif (
-            pos + 2 <= date_str.byte_length()
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[pos]))
-            and Self._is_ascii_digit(Int(date_str.as_bytes()[pos + 1]))
-        ):
-            if colon:
-                raise Error("timezone offset minutes must contain a colon")
-            pos += 2
-        return MorrowParseTimeZone(
-            TimeZone.from_utc(String(date_str[byte=date_pos:pos])), pos
-        )
-
-    @staticmethod
-    def _parse_am_pm(
-        date_str: String, date_pos: Int, locale: Locale
-    ) raises -> MorrowParseInt:
-        """Return 1 for AM or 2 for PM and the position after the marker."""
-        if not locale.is_fast_english():
-            var matched = locale._match_meridian(date_str, date_pos)
-            return MorrowParseInt(matched.value, matched.pos)
-        if Self._starts_with(date_str, date_pos, "AM") or Self._starts_with(
-            date_str, date_pos, "am"
-        ):
-            return MorrowParseInt(1, date_pos + 2)
-        if Self._starts_with(date_str, date_pos, "PM") or Self._starts_with(
-            date_str, date_pos, "pm"
-        ):
-            return MorrowParseInt(2, date_pos + 2)
-        # Mixed-case markers are accepted without changing the hour (1.0).
-        if Self._starts_with_ascii_case_insensitive(
-            date_str, date_pos, "AM"
-        ) or Self._starts_with_ascii_case_insensitive(date_str, date_pos, "PM"):
-            return MorrowParseInt(0, date_pos + 2)
-        raise Error("AM/PM marker is invalid")
 
     @staticmethod
     def _validate_day_time_args(
@@ -3627,346 +2130,6 @@ struct Morrow(
             microsecond,
             self.tz,
         )
-
-    def _humanize_auto(
-        self,
-        other: Self,
-        delta_us: Int,
-        only_distance: Bool,
-        locale: Locale,
-    ) raises -> String:
-        var rounded_delta_seconds = Self._rounded_seconds(delta_us)
-        var seconds = abs(rounded_delta_seconds)
-        if seconds < 60:
-            if seconds < 10:
-                return locale._describe(0, 0, False, only_distance)
-            return Self._describe_count(
-                locale, rounded_delta_seconds, seconds, "second", only_distance
-            )
-        elif seconds < 3600:
-            if seconds < 120:
-                return Self._describe_count(
-                    locale, rounded_delta_seconds, 1, "minute", only_distance
-                )
-            var minutes = seconds // 60
-            if minutes < 2:
-                minutes = 2
-            return Self._describe_count(
-                locale, rounded_delta_seconds, minutes, "minute", only_distance
-            )
-        elif seconds < 86400:
-            if seconds < 7200:
-                return Self._describe_count(
-                    locale, rounded_delta_seconds, 1, "hour", only_distance
-                )
-            var hours = seconds // 3600
-            if hours < 2:
-                hours = 2
-            return Self._describe_count(
-                locale, rounded_delta_seconds, hours, "hour", only_distance
-            )
-
-        var calendar_months = self._humanize_calendar_months(other)
-        if seconds < 172800:
-            return Self._describe_count(
-                locale, rounded_delta_seconds, 1, "day", only_distance
-            )
-        elif seconds < 604800:
-            var days = seconds // 86400
-            if days < 2:
-                days = 2
-            return Self._describe_count(
-                locale, rounded_delta_seconds, days, "day", only_distance
-            )
-        elif calendar_months >= 1 and seconds < 31536000:
-            return Self._describe_count(
-                locale,
-                rounded_delta_seconds,
-                calendar_months,
-                "month",
-                only_distance,
-            )
-        elif seconds < 2592000 and not locale.has_timeframe("weeks"):
-            # Locales without week text fall back to days, unlike Arrow.
-            return Self._describe_count(
-                locale,
-                rounded_delta_seconds,
-                seconds // 86400,
-                "day",
-                only_distance,
-            )
-        elif seconds < 1209600:
-            return Self._describe_count(
-                locale, rounded_delta_seconds, 1, "week", only_distance
-            )
-        elif seconds < 2592000:
-            var weeks = seconds // 604800
-            if weeks < 2:
-                weeks = 2
-            return Self._describe_count(
-                locale, rounded_delta_seconds, weeks, "week", only_distance
-            )
-        elif seconds < 63072000:
-            return Self._describe_count(
-                locale, rounded_delta_seconds, 1, "year", only_distance
-            )
-
-        var years = seconds // 31536000
-        if years < 2:
-            years = 2
-        return Self._describe_count(
-            locale, rounded_delta_seconds, years, "year", only_distance
-        )
-
-    def _humanize_calendar_months(self, other: Self) raises -> Int:
-        var start = other
-        var end = self
-        if self._utc_microseconds() < other._utc_microseconds():
-            start = self
-            end = other
-
-        var months = (end.year - start.year) * 12 + end.month - start.month
-        var days: Int
-        if end.day >= start.day:
-            days = end.day - start.day
-        else:
-            months -= 1
-            var previous_year = end.year
-            var previous_month = end.month - 1
-            if previous_month < 1:
-                previous_month = 12
-                previous_year -= 1
-            days = (
-                end.day
-                + _days_in_month(previous_year, previous_month)
-                - start.day
-            )
-
-        if days > 14:
-            months += 1
-        if months > 12:
-            return 12
-        return months
-
-    @staticmethod
-    def _rounded_seconds(delta_us: Int) -> Int:
-        var sign = 1
-        var abs_us = delta_us
-        if abs_us < 0:
-            sign = -1
-            abs_us = -abs_us
-        var seconds = abs_us // _US_PER_SECOND
-        var remainder = abs_us % _US_PER_SECOND
-        if remainder > _US_PER_SECOND // 2:
-            seconds += 1
-        elif remainder == _US_PER_SECOND // 2 and seconds % 2 == 1:
-            seconds += 1
-        return sign * seconds
-
-    @staticmethod
-    def _humanize_count(seconds: Int, unit: String) raises -> Int:
-        var unit_seconds = Self._humanize_unit_seconds(unit)
-        return seconds // unit_seconds
-
-    @staticmethod
-    def _humanize_unit_seconds(unit: String) raises -> Int:
-        if unit == "second":
-            return 1
-        elif unit == "minute":
-            return 60
-        elif unit == "hour":
-            return 3600
-        elif unit == "day":
-            return 86400
-        elif unit == "week":
-            return 604800
-        elif unit == "month":
-            return _HUMANIZE_SECONDS_PER_MONTH
-        elif unit == "quarter":
-            return _HUMANIZE_SECONDS_PER_QUARTER
-        elif unit == "year":
-            return 31536000
-        else:
-            raise Error("unsupported granularity")
-
-    @staticmethod
-    def _normalize_dehumanize_unit(
-        count_word: String, count: Int, raw_unit: String
-    ) raises -> String:
-        var unit = raw_unit
-        if (
-            unit.byte_length() > 0
-            and unit.as_bytes()[unit.byte_length() - 1] == 44
-        ):
-            var unit_without_comma = String(
-                unit[byte = 0 : unit.byte_length() - 1]
-            )
-            unit = unit_without_comma^
-
-        if count_word == "a" or count_word == "an":
-            if not Self._is_singular_humanize_unit(
-                unit
-            ) and not Self._is_plural_humanize_unit(unit):
-                raise Error("humanized distance is invalid")
-            var normalized = Self._normalize_humanize_unit(unit)
-            if count_word == "an":
-                if normalized != "hour":
-                    raise Error("humanized distance is invalid")
-            elif normalized == "hour":
-                raise Error("humanized distance is invalid")
-            return normalized
-
-        if not Self._is_plural_humanize_unit(unit):
-            raise Error("humanized distance is invalid")
-        return Self._normalize_humanize_unit(unit)
-
-    @staticmethod
-    def _is_singular_humanize_unit(unit: String) -> Bool:
-        return (
-            unit == "second"
-            or unit == "minute"
-            or unit == "hour"
-            or unit == "day"
-            or unit == "week"
-            or unit == "month"
-            or unit == "quarter"
-            or unit == "year"
-        )
-
-    @staticmethod
-    def _is_plural_humanize_unit(unit: String) -> Bool:
-        return (
-            unit == "seconds"
-            or unit == "minutes"
-            or unit == "hours"
-            or unit == "days"
-            or unit == "weeks"
-            or unit == "months"
-            or unit == "quarters"
-            or unit == "years"
-        )
-
-    @staticmethod
-    def _normalize_humanize_granularity_list(
-        granularity: List[String],
-    ) raises -> List[String]:
-        var has_year = False
-        var has_quarter = False
-        var has_month = False
-        var has_week = False
-        var has_day = False
-        var has_hour = False
-        var has_minute = False
-        var has_second = False
-
-        for i in range(len(granularity)):
-            var unit = granularity[i]
-            _ = Self._humanize_unit_seconds(unit)
-            if unit == "year":
-                if has_year:
-                    raise Error("unsupported granularity")
-                has_year = True
-            elif unit == "quarter":
-                if has_quarter:
-                    raise Error("unsupported granularity")
-                has_quarter = True
-            elif unit == "month":
-                if has_month:
-                    raise Error("unsupported granularity")
-                has_month = True
-            elif unit == "week":
-                if has_week:
-                    raise Error("unsupported granularity")
-                has_week = True
-            elif unit == "day":
-                if has_day:
-                    raise Error("unsupported granularity")
-                has_day = True
-            elif unit == "hour":
-                if has_hour:
-                    raise Error("unsupported granularity")
-                has_hour = True
-            elif unit == "minute":
-                if has_minute:
-                    raise Error("unsupported granularity")
-                has_minute = True
-            elif unit == "second":
-                if has_second:
-                    raise Error("unsupported granularity")
-                has_second = True
-
-        var ordered = List[String]()
-        if has_year:
-            ordered.append("year")
-        if has_quarter:
-            ordered.append("quarter")
-        if has_month:
-            ordered.append("month")
-        if has_week:
-            ordered.append("week")
-        if has_day:
-            ordered.append("day")
-        if has_hour:
-            ordered.append("hour")
-        if has_minute:
-            ordered.append("minute")
-        if has_second:
-            ordered.append("second")
-        return ordered^
-
-    @staticmethod
-    def _normalize_humanize_unit(unit: String) raises -> String:
-        if unit == "second" or unit == "seconds":
-            return "second"
-        elif unit == "minute" or unit == "minutes":
-            return "minute"
-        elif unit == "hour" or unit == "hours":
-            return "hour"
-        elif unit == "day" or unit == "days":
-            return "day"
-        elif unit == "week" or unit == "weeks":
-            return "week"
-        elif unit == "month" or unit == "months":
-            return "month"
-        elif unit == "quarter" or unit == "quarters":
-            return "quarter"
-        elif unit == "year" or unit == "years":
-            return "year"
-        else:
-            raise Error("unsupported granularity")
-
-    @staticmethod
-    def _plural_humanize_unit(unit: String) raises -> String:
-        if unit == "quarter":
-            return "quarters"
-        return unit + "s"
-
-    @staticmethod
-    def _find_byte(s: String, c: Int) -> Int:
-        for i in range(s.byte_length()):
-            if Int(s.as_bytes()[i]) == c:
-                return i
-        return -1
-
-    def _shift_humanize_unit(self, unit: String, count: Int) raises -> Self:
-        if unit == "second":
-            return self.shift(seconds=count)
-        elif unit == "minute":
-            return self.shift(minutes=count)
-        elif unit == "hour":
-            return self.shift(hours=count)
-        elif unit == "day":
-            return self.shift(days=count)
-        elif unit == "week":
-            return self.shift(weeks=count)
-        elif unit == "month":
-            return self.shift(months=count)
-        elif unit == "quarter":
-            return self.shift(months=count * 3)
-        elif unit == "year":
-            return self.shift(years=count)
-        else:
-            raise Error("unsupported granularity")
 
     def _check_awareness(self, other: Self) raises:
         if self.tz.is_none() != other.tz.is_none():
@@ -4559,45 +2722,6 @@ struct MorrowTimeTuple(Copyable, ImplicitlyCopyable, Movable, Writable):
             + String(self.isdst)
             + ")"
         )
-
-
-struct MorrowParseInt(Copyable, ImplicitlyCopyable, Movable):
-    var value: Int
-    var pos: Int
-
-    def __init__(out self, value: Int, pos: Int):
-        self.value = value
-        self.pos = pos
-
-
-struct MorrowParseIsoWeek(Copyable, ImplicitlyCopyable, Movable):
-    var year: Int
-    var week: Int
-    var weekday: Int
-    var pos: Int
-
-    def __init__(out self, year: Int, week: Int, weekday: Int, pos: Int):
-        self.year = year
-        self.week = week
-        self.weekday = weekday
-        self.pos = pos
-
-
-struct MorrowParseTimeZone(Copyable, ImplicitlyCopyable, Movable):
-    var tz: TimeZone
-    var pos: Int
-
-    def __init__(out self, tz: TimeZone, pos: Int):
-        self.tz = tz
-        self.pos = pos
-
-    def __init__(out self, *, copy: Self):
-        self.tz = copy.tz
-        self.pos = copy.pos
-
-    def __init__(out self, *, deinit move: Self):
-        self.tz = move.tz^
-        self.pos = move.pos
 
 
 struct MorrowIterator(Copyable, ImplicitlyCopyable, Movable):
