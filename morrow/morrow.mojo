@@ -2032,39 +2032,13 @@ struct Morrow(
         )
 
     def _format_tokens(self, fmt: String) raises -> String:
-        return format_morrow(
-            self.year,
-            self.month,
-            self.day,
-            self.hour,
-            self.minute,
-            self.second,
-            self.microsecond,
-            self.tz.offset,
-            self.tz.name,
-            self.tz.is_none(),
-            self.isoweekday(),
-            fmt,
-        )
+        return format_morrow(self, fmt)
 
     def strftime(self, fmt: String) raises -> String:
         """
         Format using Python ``datetime.strftime`` directives.
         """
-        return format_strftime(
-            self.year,
-            self.month,
-            self.day,
-            self.hour,
-            self.minute,
-            self.second,
-            self.microsecond,
-            self.tz.offset,
-            self.tz.name,
-            self.tz.is_none(),
-            self.isoweekday(),
-            fmt,
-        )
+        return format_strftime(self, fmt)
 
     def isoformat(
         self, sep: String = "T", timespec: StringLiteral = "auto"
