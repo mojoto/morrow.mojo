@@ -1804,7 +1804,10 @@ struct Morrow(
         )
 
     def _shift_frame(self, frame: String, count: Int) raises -> Self:
-        var unit = _frame_unit(frame)
+        return self._shift_unit(_frame_unit(frame), count)
+
+    def _shift_unit(self, unit: String, count: Int) raises -> Self:
+        """Shift by count of a singular unit from `_frame_unit`."""
         if unit == "year":
             return self.shift(years=count)
         elif unit == "quarter":
@@ -1827,8 +1830,8 @@ struct Morrow(
         self, frame: String, count: Int, original_day: Int
     ) raises -> Self:
         """Shift by frame, restoring a day that month-end clamping shortened."""
-        var shifted = self._shift_frame(frame, count)
         var unit = _frame_unit(frame)
+        var shifted = self._shift_unit(unit, count)
         if unit == "year" or unit == "quarter" or unit == "month":
             if shifted.day < original_day and original_day <= days_in_month(
                 shifted.year, shifted.month
