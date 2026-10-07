@@ -8,7 +8,7 @@ PACKAGE := morrow.mojoc
 TEST_FILES := $(sort $(wildcard tests/test_*.mojo))
 DOCS_DIR := website
 
-.PHONY: help install test test-package benchmark format build package clean doc-install doc-serve doc-build doc-clean
+.PHONY: help install test test-package benchmark format locales build package clean doc-install doc-serve doc-build doc-clean
 
 help:
 	@printf "Targets:\n"
@@ -17,6 +17,7 @@ help:
 	@printf "  test-package  Build and test the precompiled package in isolation\n"
 	@printf "  benchmark  Run repeatable performance samples\n"
 	@printf "  format   Format Mojo sources and tests\n"
+	@printf "  locales  Regenerate morrow/_locale_data.mojo from Arrow\n"
 	@printf "  build    Build $(PACKAGE)\n"
 	@printf "  package  Build the distributable Conda package\n"
 	@printf "  clean    Remove generated build artifacts\n"
@@ -50,6 +51,9 @@ benchmark:
 
 format:
 	$(MOJO) format morrow tests
+
+locales:
+	uv run --with arrow==1.4.0 python tools/gen_locale_data.py
 
 build:
 	$(MOJO) precompile morrow -o $(PACKAGE)
