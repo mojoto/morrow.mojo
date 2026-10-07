@@ -1,9 +1,9 @@
 """Relative-time helpers behind Morrow.humanize and Morrow.dehumanize."""
 from ._calendar import US_PER_SECOND, days_in_month
-
 from .locale import Locale, frame_index
+from .morrow import Morrow
+
 from std.collections import List
-from .morrow import Morrow, US_PER_SECOND
 
 
 comptime _HUMANIZE_SECONDS_PER_MONTH = 2635200  # 30.5 days
@@ -472,3 +472,43 @@ def _shift_humanize_unit(
         return value.shift(years=count)
     else:
         raise Error("unsupported granularity")
+
+
+def _humanize_granular(
+    value: Morrow,
+    other: Morrow,
+    only_distance: Bool,
+    granularity: List[String],
+    locale: Locale,
+) raises -> String:
+    """Describe the distance split across the requested units."""
+    if len(granularity) == 0:
+        raise Error("granularity cannot be empty")
+    if len(granularity) == 1 and granularity[0] == "auto":
+        return _humanize_text(value, other, only_distance, "auto", locale)
+
+    var ordered_granularity = _normalize_humanize_granularity_list(granularity)
+    value._check_awareness(other)
+    var delta_us = value._utc_microseconds() - other._utc_microseconds()
+    var rounded_delta_seconds = _rounded_seconds(delta_us)
+    var remaining = abs(rounded_delta_seconds)
+    if (
+        len(ordered_granularity) == 1
+        and ordered_granularity[0] == "second"
+        and remaining < 2
+    ):
+        return locale._describe(0, 0, False, only_distance)
+
+    var negative = rounded_delta_seconds < 0
+    var frames = List[Int]()
+    var deltas = List[Int]()
+    for i in range(len(ordered_granularity)):
+        var unit = ordered_granularity[i]
+        var unit_seconds = _humanize_unit_seconds(unit)
+        var count = remaining // unit_seconds
+        frames.append(_humanize_frame(unit, count))
+        deltas.append(-count if negative else count)
+        remaining = remaining % unit_seconds
+    if len(frames) == 1:
+        return locale._describe(frames[0], deltas[0], negative, only_distance)
+    return locale._describe_multi(frames, deltas, negative, only_distance)

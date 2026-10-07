@@ -1,4 +1,4 @@
-from ._text import is_digit, pad
+from ._text import pad
 from ._calendar import (
     US_PER_SECOND,
     US_PER_MINUTE,
@@ -23,42 +23,36 @@ from ._calendar import (
     day_abbreviation,
 )
 from .locale import Locale, english_relative, is_english_locale, locale_grammar
-from ._libc import (
-    c_gettimeofday,
-    c_gmtime,
-    c_strptime,
-    c_strptime_consumed,
-    CTimeval,
-)
+from ._libc import c_gettimeofday, c_gmtime, CTimeval
 from .timezone import TimeZone
+from ._values import (
+    MorrowDate,
+    MorrowIsoCalendar,
+    MorrowSpan,
+    MorrowTime,
+    MorrowTimeTuple,
+)
+from ._ranges import MorrowIterator, MorrowSpanIterator, MorrowIntervalIterator
 from ._icu import Calendar
 from .timedelta import TimeDelta
 from .formatter import format_morrow, format_strftime
-from std.iter import StopIteration
-from std.collections import List
-from std.format import Writable, Writer
-from std.hashlib import Hasher
 from ._parser import (
     _parse_iso_auto,
     _parse_arrow,
     _parse_arrow_formats,
-    _from_strptime_tm,
-    _find_strptime_extension_directive,
-    _parse_strptime_timezone_name,
-    _parse_strptime_timezone_offset,
-    is_digit,
     _normalize_whitespace,
     _parse_isoformat,
+    _parse_strptime,
 )
 from ._humanize import (
     _relative_locale,
     _humanize_text,
-    _humanize_frame,
     _dehumanize_en,
-    _rounded_seconds,
-    _humanize_unit_seconds,
-    _normalize_humanize_granularity_list,
+    _humanize_granular,
 )
+from std.collections import List
+from std.format import Writable, Writer
+from std.hashlib import Hasher
 
 comptime _UNBOUNDED_LIMIT = -2147483648
 
@@ -308,31 +302,6 @@ struct Morrow(
         return Self.now(tz)
 
     @staticmethod
-    def _from_components(
-        year: Int,
-        month: Int,
-        day: Int,
-        hour: Int,
-        minute: Int,
-        second: Int,
-        microsecond: Int,
-        tz: TimeZone,
-    ) raises -> Self:
-        Self._validate_fields(
-            year, month, day, hour, minute, second, microsecond
-        )
-        return Self(
-            year,
-            month,
-            day,
-            hour,
-            minute,
-            second,
-            microsecond,
-            tz,
-        )
-
-    @staticmethod
     def get(
         year: Int,
         month: Int,
@@ -345,7 +314,7 @@ struct Morrow(
         """
         Create a UTC Morrow from date and time components.
         """
-        return Self._from_components(
+        return Self(
             year,
             month,
             day,
@@ -361,7 +330,7 @@ struct Morrow(
         """
         Create a Morrow from date components and a timezone.
         """
-        return Self._from_components(year, month, day, 0, 0, 0, 0, tz)
+        return Self(year, month, day, 0, 0, 0, 0, tz)
 
     @staticmethod
     def get(year: Int, month: Int, day: Int, tz_str: String) raises -> Self:
@@ -384,9 +353,7 @@ struct Morrow(
         """
         Create a Morrow from date and time components with a timezone.
         """
-        return Self._from_components(
-            year, month, day, hour, minute, second, microsecond, tz
-        )
+        return Self(year, month, day, hour, minute, second, microsecond, tz)
 
     @staticmethod
     def get(
@@ -837,60 +804,7 @@ struct Morrow(
         >>> Morrow.strptime('20-01-2019 15:49:10', '%d-%m-%Y %H:%M:%S')
             <Morrow [2019-01-20T15:49:10+00:00]>
         """
-        var normalized_date = date_str
-        var normalized_fmt = fmt
-        var microsecond = 0
-        var parsed_tz = TimeZone.none()
-
-        while True:
-            var directive = _find_strptime_extension_directive(normalized_fmt)
-            if directive.pos == -1:
-                break
-
-            var prefix_fmt = String(normalized_fmt[byte = 0 : directive.pos])
-            var value_start = c_strptime_consumed(normalized_date, prefix_fmt)
-            var value_end: Int
-            if directive.value == ord("f"):
-                value_end = value_start
-                while (
-                    value_end < normalized_date.byte_length()
-                    and is_digit(Int(normalized_date.as_bytes()[value_end]))
-                    and value_end - value_start < 6
-                ):
-                    value_end += 1
-                if value_end == value_start:
-                    raise Error("microsecond is missing")
-                if value_end < normalized_date.byte_length() and is_digit(
-                    Int(normalized_date.as_bytes()[value_end])
-                ):
-                    raise Error("unconverted data remains")
-
-                var digits = String(normalized_date[byte=value_start:value_end])
-                while digits.byte_length() < 6:
-                    digits += "0"
-                microsecond = Int(digits)
-            elif directive.value == ord("z"):
-                var parsed = _parse_strptime_timezone_offset(
-                    normalized_date, value_start
-                )
-                value_end = parsed.pos
-                parsed_tz = parsed.tz
-            else:
-                var parsed = _parse_strptime_timezone_name(
-                    normalized_date, value_start
-                )
-                value_end = parsed.pos
-                parsed_tz = parsed.tz
-
-            normalized_date = String(
-                normalized_date[byte=0:value_start]
-            ) + String(normalized_date[byte=value_end:])
-            normalized_fmt = prefix_fmt + String(
-                normalized_fmt[byte = directive.pos + 2 :]
-            )
-
-        var tm = c_strptime(normalized_date, normalized_fmt)
-        return _from_strptime_tm(tm, microsecond, tzinfo, parsed_tz)
+        return _parse_strptime(date_str, fmt, tzinfo)
 
     @staticmethod
     def strptime(date_str: String, fmt: String, tz_str: String) raises -> Self:
@@ -984,21 +898,7 @@ struct Morrow(
         """
         Return a ctime formatted representation of the date and time.
         """
-        return (
-            day_abbreviation(self.isoweekday())
-            + " "
-            + month_abbreviation(self.month)
-            + " "
-            + pad(self.day, 2, " ")
-            + " "
-            + pad(self.hour, 2)
-            + ":"
-            + pad(self.minute, 2)
-            + ":"
-            + pad(self.second, 2)
-            + " "
-            + pad(self.year, 4)
-        )
+        return self.strftime("%c")
 
     def date(self) -> MorrowDate:
         """
@@ -1190,40 +1090,9 @@ struct Morrow(
         *,
         locale: Locale,
     ) raises -> String:
-        if len(granularity) == 0:
-            raise Error("granularity cannot be empty")
-        if len(granularity) == 1 and granularity[0] == "auto":
-            return _humanize_text(self, other, only_distance, "auto", locale)
-
-        var ordered_granularity = _normalize_humanize_granularity_list(
-            granularity
+        return _humanize_granular(
+            self, other, only_distance, granularity, locale
         )
-        self._check_awareness(other)
-        var delta_us = self._utc_microseconds() - other._utc_microseconds()
-        var rounded_delta_seconds = _rounded_seconds(delta_us)
-        var remaining = abs(rounded_delta_seconds)
-        if (
-            len(ordered_granularity) == 1
-            and ordered_granularity[0] == "second"
-            and remaining < 2
-        ):
-            return locale._describe(0, 0, False, only_distance)
-
-        var negative = rounded_delta_seconds < 0
-        var frames = List[Int]()
-        var deltas = List[Int]()
-        for i in range(len(ordered_granularity)):
-            var unit = ordered_granularity[i]
-            var unit_seconds = _humanize_unit_seconds(unit)
-            var count = remaining // unit_seconds
-            frames.append(_humanize_frame(unit, count))
-            deltas.append(-count if negative else count)
-            remaining = remaining % unit_seconds
-        if len(frames) == 1:
-            return locale._describe(
-                frames[0], deltas[0], negative, only_distance
-            )
-        return locale._describe_multi(frames, deltas, negative, only_distance)
 
     def dehumanize(
         self, input_string: String, *, locale: String = "en"
@@ -1382,9 +1251,6 @@ struct Morrow(
             self.microsecond if microsecond == -1 else microsecond
         )
         var tzinfo_ = self.tz if tzinfo.is_none() else tzinfo
-        Self._validate_fields(
-            year_, month_, day_, hour_, minute_, second_, microsecond_
-        )
         return Self(
             year_,
             month_,
@@ -1468,15 +1334,6 @@ struct Morrow(
             year -= 1
         var max_day = days_in_month(year, month)
         var day = self.day if self.day <= max_day else max_day
-        Self._validate_fields(
-            year,
-            month,
-            day,
-            self.hour,
-            self.minute,
-            self.second,
-            self.microsecond,
-        )
         var shifted = Self(
             year,
             month,
@@ -1874,9 +1731,9 @@ struct Morrow(
     ) raises -> MorrowSpan:
         var start_ = start
         var end_ = end
-        if Int(bounds.as_bytes()[0]) == 40:  # (
+        if Int(bounds.as_bytes()[0]) == ord("("):
             start_ = start_.shift(microseconds=1)
-        if Int(bounds.as_bytes()[1]) == 41:  # )
+        if Int(bounds.as_bytes()[1]) == ord(")"):
             end_ = end_.shift(microseconds=-1)
         return MorrowSpan(start_, end_)
 
@@ -1894,13 +1751,13 @@ struct Morrow(
         var high = end._utc_microseconds()
 
         var left: Bool
-        if Int(bounds.as_bytes()[0]) == 91:  # [
+        if Int(bounds.as_bytes()[0]) == ord("["):
             left = value >= low
         else:
             left = value > low
 
         var right: Bool
-        if Int(bounds.as_bytes()[1]) == 93:  # ]
+        if Int(bounds.as_bytes()[1]) == ord("]"):
             right = value <= high
         else:
             right = value < high
@@ -1913,93 +1770,68 @@ struct Morrow(
             raise Error("bounds must be one of [), [], (), (]")
         var left = Int(bounds.as_bytes()[0])
         var right = Int(bounds.as_bytes()[1])
-        if (left != 91 and left != 40) or (right != 93 and right != 41):
+        if (left != ord("[") and left != ord("(")) or (
+            right != ord("]") and right != ord(")")
+        ):
             raise Error("bounds must be one of [), [], (), (]")
 
     def _floor_frame(self, frame: String, week_start: Int = 1) raises -> Self:
-        if frame == "year" or frame == "years":
-            return Self(self.year, 1, 1, 0, 0, 0, 0, self.tz)
-        elif frame == "quarter" or frame == "quarters":
-            var month = ((self.month - 1) // 3) * 3 + 1
-            return Self(self.year, month, 1, 0, 0, 0, 0, self.tz)
-        elif frame == "month" or frame == "months":
-            return Self(self.year, self.month, 1, 0, 0, 0, 0, self.tz)
-        elif frame == "week" or frame == "weeks":
+        var unit = _frame_unit(frame)
+        if unit == "week":
             if week_start < 1 or week_start > 7:
                 raise Error("week_start must be in 1..7")
             var offset = self.isoweekday() - week_start
             if offset < 0:
                 offset += 7
-            return Self(
-                self.year, self.month, self.day, 0, 0, 0, 0, self.tz
-            )._shift_day_time(-offset, 0, 0, 0, 0)
-        elif frame == "day" or frame == "days":
-            return Self(self.year, self.month, self.day, 0, 0, 0, 0, self.tz)
-        elif frame == "hour" or frame == "hours":
-            return Self(
-                self.year, self.month, self.day, self.hour, 0, 0, 0, self.tz
-            )
-        elif frame == "minute" or frame == "minutes":
-            return Self(
-                self.year,
-                self.month,
-                self.day,
-                self.hour,
-                self.minute,
-                0,
-                0,
-                self.tz,
-            )
-        elif frame == "second" or frame == "seconds":
-            return Self(
-                self.year,
-                self.month,
-                self.day,
-                self.hour,
-                self.minute,
-                self.second,
-                0,
-                self.tz,
-            )
-        elif frame == "microsecond" or frame == "microseconds":
+            return self._floor_frame("day")._shift_day_time(-offset, 0, 0, 0, 0)
+        if unit == "microsecond":
             return self
-        else:
-            raise Error("unsupported frame")
+        var month = self.month
+        if unit == "year":
+            month = 1
+        elif unit == "quarter":
+            month = ((self.month - 1) // 3) * 3 + 1
+        var keep_day = unit != "year" and unit != "quarter" and unit != "month"
+        return Self(
+            self.year,
+            month,
+            self.day if keep_day else 1,
+            self.hour if unit == "hour"
+            or unit == "minute"
+            or unit == "second" else 0,
+            self.minute if unit == "minute" or unit == "second" else 0,
+            self.second if unit == "second" else 0,
+            0,
+            self.tz,
+        )
 
     def _shift_frame(self, frame: String, count: Int) raises -> Self:
-        if frame == "year" or frame == "years":
+        var unit = _frame_unit(frame)
+        if unit == "year":
             return self.shift(years=count)
-        elif frame == "quarter" or frame == "quarters":
+        elif unit == "quarter":
             return self.shift(months=count * 3)
-        elif frame == "month" or frame == "months":
+        elif unit == "month":
             return self.shift(months=count)
-        elif frame == "week" or frame == "weeks":
+        elif unit == "week":
             return self.shift(weeks=count)
-        elif frame == "day" or frame == "days":
+        elif unit == "day":
             return self.shift(days=count)
-        elif frame == "hour" or frame == "hours":
+        elif unit == "hour":
             return self.shift(hours=count)
-        elif frame == "minute" or frame == "minutes":
+        elif unit == "minute":
             return self.shift(minutes=count)
-        elif frame == "second" or frame == "seconds":
+        elif unit == "second":
             return self.shift(seconds=count)
-        elif frame == "microsecond" or frame == "microseconds":
-            return self.shift(microseconds=count)
-        else:
-            raise Error("unsupported frame")
+        return self.shift(microseconds=count)
 
     def _shift_frame_preserving_day(
         self, frame: String, count: Int, original_day: Int
     ) raises -> Self:
+        """Shift by frame, restoring a day that month-end clamping shortened."""
         var shifted = self._shift_frame(frame, count)
-        if (
-            frame == "year"
-            or frame == "years"
-            or frame == "quarter"
-            or frame == "quarters"
-            or frame == "month"
-            or frame == "months"
-        ):
+        var unit = _frame_unit(frame)
+        if unit == "year" or unit == "quarter" or unit == "month":
             if shifted.day < original_day and original_day <= days_in_month(
                 shifted.year, shifted.month
             ):
@@ -2255,74 +2087,37 @@ struct Morrow(
         if sep.byte_length() != 1:
             raise Error("isoformat separator must be one character")
 
-        var date_str = self._date_string()
-        var time_str: String
-        if timespec == "auto":
-            if self.microsecond == 0:
-                time_str = (
-                    pad(self.hour, 2)
-                    + ":"
-                    + pad(self.minute, 2)
-                    + ":"
-                    + pad(self.second, 2)
-                )
-            else:
-                time_str = self._time_string_microseconds()
-        elif timespec == "microseconds":
-            time_str = self._time_string_microseconds()
-        elif timespec == "milliseconds":
-            time_str = (
-                pad(self.hour, 2)
-                + ":"
-                + pad(self.minute, 2)
-                + ":"
-                + pad(self.second, 2)
-                + "."
-                + pad(self.microsecond // 1000, 3)
-            )
-        elif timespec == "seconds":
-            time_str = (
-                pad(self.hour, 2)
-                + ":"
-                + pad(self.minute, 2)
-                + ":"
-                + pad(self.second, 2)
-            )
-        elif timespec == "minutes":
-            time_str = pad(self.hour, 2) + ":" + pad(self.minute, 2)
-        elif timespec == "hours":
-            time_str = pad(self.hour, 2)
-        else:
-            raise Error()
-        if self.tz.is_none():
-            return date_str + sep + time_str
-        else:
-            return date_str + sep + time_str + self.tz.format()
-
-    def _date_string(self) -> String:
-        return (
-            pad(self.year, 4)
-            + "-"
-            + pad(self.month, 2)
-            + "-"
-            + pad(self.day, 2)
-        )
-
-    def _time_string_microseconds(self) -> String:
-        return (
+        var clock = (
             pad(self.hour, 2)
             + ":"
             + pad(self.minute, 2)
             + ":"
             + pad(self.second, 2)
-            + "."
-            + pad(self.microsecond, 6)
         )
+        var time_str: String
+        if timespec == "auto":
+            time_str = clock if self.microsecond == 0 else (
+                clock + "." + pad(self.microsecond, 6)
+            )
+        elif timespec == "microseconds":
+            time_str = clock + "." + pad(self.microsecond, 6)
+        elif timespec == "milliseconds":
+            time_str = clock + "." + pad(self.microsecond // 1000, 3)
+        elif timespec == "seconds":
+            time_str = clock
+        elif timespec == "minutes":
+            time_str = String(clock[byte=0:5])
+        elif timespec == "hours":
+            time_str = String(clock[byte=0:2])
+        else:
+            raise Error()
+        var result = self.date().to_string() + sep + time_str
+        if not self.tz.is_none():
+            result += self.tz.format()
+        return result
 
     def _isoformat_auto(self) -> String:
-        var result = (
-            self._date_string() + "T" + self._time_string_microseconds()
-        )
+        var result = self.date().to_string() + "T" + self.time().to_string()
         if not self.tz.is_none():
             result += self.tz.format()
         return result
@@ -2442,363 +2237,21 @@ struct Morrow(
         )
 
 
-struct MorrowSpan(Copyable, ImplicitlyCopyable, Movable, Writable):
-    var start: Morrow
-    var end: Morrow
-
-    def __init__(out self, start: Morrow, end: Morrow):
-        self.start = start
-        self.end = end
-
-    def __init__(out self, *, copy: Self):
-        self.start = copy.start
-        self.end = copy.end
-
-    def __init__(out self, *, deinit move: Self):
-        self.start = move.start^
-        self.end = move.end^
-
-    def __str__(self) -> String:
-        return self.to_string()
-
-    def write_to(self, mut writer: Some[Writer]):
-        writer.write(self.to_string())
-
-    def to_string(self) -> String:
-        return (
-            "MorrowSpan(start="
-            + self.start._isoformat_auto()
-            + ", end="
-            + self.end._isoformat_auto()
-            + ")"
-        )
-
-
-struct MorrowIsoCalendar(Copyable, ImplicitlyCopyable, Movable, Writable):
-    var year: Int
-    var week: Int
-    var weekday: Int
-
-    def __init__(out self, year: Int, week: Int, weekday: Int):
-        self.year = year
-        self.week = week
-        self.weekday = weekday
-
-    def __str__(self) -> String:
-        return self.to_string()
-
-    def write_to(self, mut writer: Some[Writer]):
-        writer.write(self.to_string())
-
-    def to_string(self) -> String:
-        return (
-            "MorrowIsoCalendar(year="
-            + String(self.year)
-            + ", week="
-            + String(self.week)
-            + ", weekday="
-            + String(self.weekday)
-            + ")"
-        )
-
-
-struct MorrowDate(Copyable, ImplicitlyCopyable, Movable, Writable):
-    var year: Int
-    var month: Int
-    var day: Int
-
-    def __init__(out self, year: Int, month: Int, day: Int):
-        self.year = year
-        self.month = month
-        self.day = day
-
-    def __str__(self) -> String:
-        return self.to_string()
-
-    def write_to(self, mut writer: Some[Writer]):
-        writer.write(self.to_string())
-
-    def to_string(self) -> String:
-        return (
-            pad(self.year, 4)
-            + "-"
-            + pad(self.month, 2)
-            + "-"
-            + pad(self.day, 2)
-        )
-
-
-struct MorrowTime(Copyable, ImplicitlyCopyable, Movable, Writable):
-    var hour: Int
-    var minute: Int
-    var second: Int
-    var microsecond: Int
-    var tz: TimeZone
-
-    def __init__(
-        out self,
-        hour: Int,
-        minute: Int,
-        second: Int,
-        microsecond: Int,
-        tz: TimeZone = TimeZone.none(),
+def _frame_unit(frame: String) raises -> String:
+    """The singular unit of a range frame such as "weeks"."""
+    var unit = frame
+    if frame.byte_length() > 1 and frame.endswith("s"):
+        unit = String(frame[byte = 0 : frame.byte_length() - 1])
+    if (
+        unit == "year"
+        or unit == "quarter"
+        or unit == "month"
+        or unit == "week"
+        or unit == "day"
+        or unit == "hour"
+        or unit == "minute"
+        or unit == "second"
+        or unit == "microsecond"
     ):
-        self.hour = hour
-        self.minute = minute
-        self.second = second
-        self.microsecond = microsecond
-        self.tz = tz
-
-    def __str__(self) -> String:
-        return self.to_string()
-
-    def write_to(self, mut writer: Some[Writer]):
-        writer.write(self.to_string())
-
-    def to_string(self) -> String:
-        var result = (
-            pad(self.hour, 2)
-            + ":"
-            + pad(self.minute, 2)
-            + ":"
-            + pad(self.second, 2)
-            + "."
-            + pad(self.microsecond, 6)
-        )
-        if not self.tz.is_none():
-            result += self.tz.format()
-        return result
-
-
-struct MorrowTimeTuple(Copyable, ImplicitlyCopyable, Movable, Writable):
-    var year: Int
-    var mon: Int
-    var mday: Int
-    var hour: Int
-    var min: Int
-    var sec: Int
-    var wday: Int
-    var yday: Int
-    var isdst: Int
-
-    def __init__(
-        out self,
-        year: Int,
-        mon: Int,
-        mday: Int,
-        hour: Int,
-        min: Int,
-        sec: Int,
-        wday: Int,
-        yday: Int,
-        isdst: Int,
-    ):
-        self.year = year
-        self.mon = mon
-        self.mday = mday
-        self.hour = hour
-        self.min = min
-        self.sec = sec
-        self.wday = wday
-        self.yday = yday
-        self.isdst = isdst
-
-    def __str__(self) -> String:
-        return self.to_string()
-
-    def write_to(self, mut writer: Some[Writer]):
-        writer.write(self.to_string())
-
-    def to_string(self) -> String:
-        return (
-            "MorrowTimeTuple(year="
-            + String(self.year)
-            + ", mon="
-            + String(self.mon)
-            + ", mday="
-            + String(self.mday)
-            + ", hour="
-            + String(self.hour)
-            + ", min="
-            + String(self.min)
-            + ", sec="
-            + String(self.sec)
-            + ", wday="
-            + String(self.wday)
-            + ", yday="
-            + String(self.yday)
-            + ", isdst="
-            + String(self.isdst)
-            + ")"
-        )
-
-
-struct MorrowIterator(Copyable, ImplicitlyCopyable, Movable):
-    """A constant-memory iterator over calendar points."""
-
-    var frame: String
-    var current: Morrow
-    var end: Morrow
-    var remaining: Int
-    var original_day: Int
-    var started: Bool
-
-    def __init__(
-        out self, frame: String, start: Morrow, end: Morrow, limit: Int
-    ) raises:
-        start._check_awareness(end)
-        _ = start._floor_frame(frame)
-        self.frame = frame
-        self.current = start
-        self.end = end
-        self.remaining = limit
-        self.original_day = start.day
-        self.started = False
-
-    def __iter__(self) -> Self:
-        return self
-
-    def __next__(mut self) raises -> Morrow:
-        if self.remaining != _UNBOUNDED_LIMIT and self.remaining <= 0:
-            raise StopIteration()
-        if self.started:
-            if self.current >= self.end:
-                raise StopIteration()
-            self.current = self.current._shift_frame_preserving_day(
-                self.frame, 1, self.original_day
-            )
-        if self.current > self.end:
-            raise StopIteration()
-        self.started = True
-        if self.remaining != _UNBOUNDED_LIMIT:
-            self.remaining -= 1
-        return self.current
-
-
-struct MorrowSpanIterator(Copyable, ImplicitlyCopyable, Movable):
-    """A constant-memory iterator over bounded calendar spans."""
-
-    var frame: String
-    var current: Morrow
-    var end: Morrow
-    var step: Int
-    var remaining: Int
-    var bounds: String
-    var exact: Bool
-    var week_start: Int
-    var original_day: Int
-    var started: Bool
-
-    def __init__(
-        out self,
-        frame: String,
-        start: Morrow,
-        end: Morrow,
-        step: Int,
-        limit: Int,
-        bounds: String,
-        exact: Bool,
-        week_start: Int,
-    ) raises:
-        if step < 1:
-            raise Error("interval must be greater than 0")
-        Morrow._validate_bounds(bounds)
-        start._check_awareness(end)
-        var floor = start._floor_frame(frame, week_start)
-        self.frame = frame
-        self.current = start if exact else floor
-        self.end = end
-        self.step = step
-        self.remaining = 0 if start > end else limit
-        self.bounds = bounds
-        self.exact = exact
-        self.week_start = week_start
-        self.original_day = start.day
-        self.started = False
-
-    def __iter__(self) -> Self:
-        return self
-
-    def __next__(mut self) raises -> MorrowSpan:
-        if self.remaining != _UNBOUNDED_LIMIT and self.remaining <= 0:
-            raise StopIteration()
-        if self.started:
-            if self.exact:
-                self.current = self.current._shift_frame_preserving_day(
-                    self.frame, self.step, self.original_day
-                )
-            else:
-                self.current = self.current._shift_frame(self.frame, self.step)
-        var end_key = self.end._utc_microseconds()
-        var key = self.current._utc_microseconds()
-        if key > end_key or (self.exact and key == end_key):
-            raise StopIteration()
-        var span = self.current.span(
-            self.frame,
-            count=self.step,
-            bounds=self.bounds,
-            exact=self.exact,
-            week_start=self.week_start,
-        )
-        if self.exact:
-            var start_key = span.start._utc_microseconds()
-            if start_key == end_key or start_key - 1 == end_key:
-                raise StopIteration()
-            if span.end._utc_microseconds() > end_key:
-                span.end = self.end
-                if self.bounds.as_bytes()[1] == 41:
-                    span.end = span.end.shift(microseconds=-1)
-        self.started = True
-        if self.remaining != _UNBOUNDED_LIMIT:
-            self.remaining -= 1
-        return span
-
-
-struct MorrowIntervalIterator(Copyable, ImplicitlyCopyable, Movable):
-    """Group spans without materializing the underlying range."""
-
-    var spans: MorrowSpanIterator
-    var group: Int
-    var remaining: Int
-
-    def __init__(
-        out self,
-        frame: String,
-        start: Morrow,
-        end: Morrow,
-        interval: Int,
-        limit: Int,
-        bounds: String,
-        exact: Bool,
-        week_start: Int,
-    ) raises:
-        if interval < 1:
-            raise Error("interval must be greater than 0")
-        self.spans = MorrowSpanIterator(
-            frame,
-            start,
-            end,
-            1 if exact else interval,
-            _UNBOUNDED_LIMIT,
-            bounds,
-            exact,
-            week_start,
-        )
-        self.group = interval if exact else 1
-        self.remaining = limit
-
-    def __iter__(self) -> Self:
-        return self
-
-    def __next__(mut self) raises -> MorrowSpan:
-        if self.remaining != _UNBOUNDED_LIMIT and self.remaining <= 0:
-            raise StopIteration()
-        var span = self.spans.__next__()
-        for _ in range(1, self.group):
-            try:
-                span.end = self.spans.__next__().end
-            except StopIteration:
-                break
-        if self.remaining != _UNBOUNDED_LIMIT:
-            self.remaining -= 1
-        return span
+        return unit
+    raise Error("unsupported frame")

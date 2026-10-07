@@ -1,7 +1,5 @@
 """Locale data and rules shared by formatting, parsing and relative time text."""
 from ._text import utf8_width, starts_at, find_byte, pad
-from std.format import Writable, Writer
-
 from ._locale_data import (
     LOCALE_ZH_CN,
     LOCALE_ZH_TW,
@@ -10,6 +8,8 @@ from ._locale_data import (
     _locale_names,
     _locale_record,
 )
+from std.format import Writable, Writer
+
 
 # Record layout of _locale_data: 0 name; 1-12 months; 13-24 month
 # abbreviations; 25-31 weekdays (Monday first); 32-38 weekday abbreviations;

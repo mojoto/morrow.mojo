@@ -15,12 +15,12 @@ from ._calendar import (
     day_name,
     day_abbreviation,
 )
-
 from .locale import Locale
-from ._libc import CTm
+from ._libc import CTm, c_strptime, c_strptime_consumed
 from .timezone import TimeZone
+from .morrow import Morrow
+
 from std.collections import List
-from .morrow import Morrow, US_PER_SECOND
 
 
 struct MorrowParseInt(Copyable, ImplicitlyCopyable, Movable):
@@ -714,7 +714,7 @@ def _from_strptime_tm(
         tz = parsed_tz
     else:
         tz = TimeZone(Int(tm.tm_gmtoff))
-    return Morrow._from_components(
+    return Morrow(
         Int(tm.tm_year) + 1900,
         Int(tm.tm_mon) + 1,
         Int(tm.tm_mday),
@@ -1311,3 +1311,63 @@ def _parse_am_pm(
     ) or starts_at_ascii_ignore_case(date_str, date_pos, "PM"):
         return MorrowParseInt(0, date_pos + 2)
     raise Error("AM/PM marker is invalid")
+
+
+def _parse_strptime(
+    date_str: String, fmt: String, tzinfo: TimeZone
+) raises -> Morrow:
+    """Parse with libc strptime, handling %f, %z and %Z in Mojo."""
+    var normalized_date = date_str
+    var normalized_fmt = fmt
+    var microsecond = 0
+    var parsed_tz = TimeZone.none()
+
+    while True:
+        var directive = _find_strptime_extension_directive(normalized_fmt)
+        if directive.pos == -1:
+            break
+
+        var prefix_fmt = String(normalized_fmt[byte = 0 : directive.pos])
+        var value_start = c_strptime_consumed(normalized_date, prefix_fmt)
+        var value_end: Int
+        if directive.value == ord("f"):
+            value_end = value_start
+            while (
+                value_end < normalized_date.byte_length()
+                and is_digit(Int(normalized_date.as_bytes()[value_end]))
+                and value_end - value_start < 6
+            ):
+                value_end += 1
+            if value_end == value_start:
+                raise Error("microsecond is missing")
+            if value_end < normalized_date.byte_length() and is_digit(
+                Int(normalized_date.as_bytes()[value_end])
+            ):
+                raise Error("unconverted data remains")
+
+            var digits = String(normalized_date[byte=value_start:value_end])
+            while digits.byte_length() < 6:
+                digits += "0"
+            microsecond = Int(digits)
+        elif directive.value == ord("z"):
+            var parsed = _parse_strptime_timezone_offset(
+                normalized_date, value_start
+            )
+            value_end = parsed.pos
+            parsed_tz = parsed.tz
+        else:
+            var parsed = _parse_strptime_timezone_name(
+                normalized_date, value_start
+            )
+            value_end = parsed.pos
+            parsed_tz = parsed.tz
+
+        normalized_date = String(normalized_date[byte=0:value_start]) + String(
+            normalized_date[byte=value_end:]
+        )
+        normalized_fmt = prefix_fmt + String(
+            normalized_fmt[byte = directive.pos + 2 :]
+        )
+
+    var tm = c_strptime(normalized_date, normalized_fmt)
+    return _from_strptime_tm(tm, microsecond, tzinfo, parsed_tz)
