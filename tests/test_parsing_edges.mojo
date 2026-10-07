@@ -80,6 +80,14 @@ def test_strptime_requires_complete_input() raises:
         _ = Morrow.strptime("2024-01", "%Y-%m-%d")
 
 
+def test_short_iso_dates_raise_instead_of_aborting() raises:
+    for value in ["2024+02", "2024+0", "2024x1", "2024 1"]:
+        with assert_raises():
+            _ = Morrow.get(value)
+        with assert_raises():
+            _ = Morrow.fromisoformat(value)
+
+
 def test_token_extraction_respects_boundaries() raises:
     assert_true(
         Morrow.get("date: 2024-02-29 done", "YYYY-MM-DD") == Morrow(2024, 2, 29)
