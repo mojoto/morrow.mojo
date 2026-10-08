@@ -31,8 +31,6 @@ The property suite runs 1,000 samples per property (6,000 total) with fixed seed
 
 The official `PropTest` runner is available too. A minimal runner probe compiled on 1.1 but failed with a generic callback type error on the tested 1.0 compiler, so this project uses the shared seeded generator directly rather than different property suites per compiler.
 
-Built-in locale records are generated from Arrow 1.4.0. CI runs `uv run --with arrow==1.4.0 python tools/gen_locale_data.py --check`, which fails when `morrow/_locale_data.mojo` differs from the generator output; run `make locales` after changing the generator.
-
 ## Coverage and tooling status
 
 Checked against Mojo 1.0.0 and 1.1.0 on September 22, 2026:
