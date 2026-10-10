@@ -92,22 +92,6 @@ Modular Community channel 的每个配方只构建一个编译器版本，目前
 | `make doc-serve` | 预览已构建的 Docusaurus 站点 |
 | `make doc-clean` | 删除 Docusaurus 生成文件 |
 
-### 源码结构
-
-公共 API 以 `morrow/__init__.mojo` 导出的内容为准。下划线开头的模块是私有模块，其中供其他模块调用的函数不带前导下划线。
-
-| 模块 | 职责 |
-| --- | --- |
-| `morrow.mojo` | `Morrow` 类型：构造、访问、转换和运算 |
-| `_values.mojo`、`_ranges.mojo` | 日期、时间和区间视图；惰性范围迭代器 |
-| `_parser.mojo` | ISO 8601、Arrow 标记和 strptime 解析 |
-| `formatter.mojo` | Arrow 标记和 strftime 格式化 |
-| `_humanize.mojo`、`locale.mojo` | 相对时间文本和各语言规则 |
-| `_locale_data.mojo` | 源自 Arrow 1.4.0 的内置语言数据 |
-| `timezone.mojo`、`_tzif.mojo`、`_icu.mojo` | 固定偏移、系统 tzdata 和 ICU 回退 |
-| `timedelta.mojo` | `TimeDelta` |
-| `_calendar.mojo`、`_text.mojo`、`_libc.mojo` | 共用的历法计算、字节级文本工具和 libc 调用 |
-
 文档相关目标需要 Node.js 和 npm。先运行 `make doc-install` 安装依赖，再依次运行 `make doc-build` 和 `make doc-serve` 预览构建结果。
 
 格式化、解析和相对时间支持 81 种语言，也可以用 `Locale` 自定义语言。命名时区和本地时区读取系统 tzdata，缺少时区文件时回退到 ICU（macOS 自带，Debian/Ubuntu 可安装 `libicu-dev`）。

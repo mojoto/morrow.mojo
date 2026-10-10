@@ -107,23 +107,6 @@ Run `make help` to list the available targets.
 | `make doc-serve` | Serve the built Docusaurus site |
 | `make doc-clean` | Remove generated Docusaurus files |
 
-### Source layout
-
-The public API is what `morrow/__init__.mojo` exports. Underscored modules are
-private; the functions they share with other modules have no leading underscore.
-
-| Module | Responsibility |
-| --- | --- |
-| `morrow.mojo` | The `Morrow` type: construction, accessors, conversion, arithmetic |
-| `_values.mojo`, `_ranges.mojo` | Date, time and span views; lazy range iterators |
-| `_parser.mojo` | ISO 8601, Arrow token and strptime parsing |
-| `formatter.mojo` | Arrow token and strftime formatting |
-| `_humanize.mojo`, `locale.mojo` | Relative time text and per-locale rules |
-| `_locale_data.mojo` | Built-in locale records derived from Arrow 1.4.0 |
-| `timezone.mojo`, `_tzif.mojo`, `_icu.mojo` | Fixed offsets, system tzdata, ICU fallback |
-| `timedelta.mojo` | `TimeDelta` |
-| `_calendar.mojo`, `_text.mojo`, `_libc.mojo` | Shared calendar math, byte-level text helpers, libc calls |
-
 The documentation targets require Node.js and npm. Run `make doc-install` before
 building the documentation, then use `make doc-build` followed by
 `make doc-serve` to preview the built site.
