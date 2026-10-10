@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="website/static/img/morrow-logo.png" alt="Morrow logo" width="128" height="128" />
+</p>
+
 # Morrow.mojo
 
 Human-friendly date and time utilities for Mojo. Morrow provides an
